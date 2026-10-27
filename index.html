@@ -211,6 +211,8 @@ html.locked .lk{display:flex}
 .au{display:none;position:fixed;inset:0;z-index:105;background:var(--bg);align-items:center;justify-content:center;padding:20px}
 html.noauth .au{display:flex}
 .au .mbox{box-shadow:none}
+.le{flex:1;min-width:0;text-align:right;line-height:1.25;font-size:.76rem;color:var(--mu)}
+.le b{color:var(--ink);font-weight:600}
 #wipe{color:var(--out);border-color:var(--out)}
 </style>
 </head>
@@ -237,7 +239,7 @@ html.noauth .au{display:flex}
   </div>
 </div>
 <main>
-<header><h1>Meu caixa</h1><button id="th" type="button" aria-label="Alternar tema claro ou escuro"></button></header>
+<header><h1>Meu caixa</h1><small id="le" class="le" aria-live="polite"></small><button id="th" type="button" aria-label="Alternar tema claro ou escuro"></button></header>
 <input id="m" type="month" hidden>
 <div class="per" id="per">
   <button id="pp" type="button" aria-label="Mês anterior">‹</button>
@@ -451,7 +453,7 @@ const CATS={out:[],in:[]};
 const DEF={out:['Moradia','Alimentação','Transporte','Saúde','Lazer','Educação','Outros'],in:['Salário','Extra','Outros']};
 let S={tx:[],bud:{},goal:{name:'',target:0,saved:0},sheet:[],rec:[],rules:{},myname:'',budm:{},cx:[],mig:0,cats:null,lastConv:null,cards:[],lastCard:null,cmig:0};
 try{const r=localStorage.getItem('caixa-v1');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
-const save=()=>{try{S.ts=Date.now();localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}if(window.cloudPush)cloudPush()};
+const save=()=>{if(window.leCheck)leCheck();try{S.ts=Date.now();localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}if(window.cloudPush)cloudPush()};
 const $=id=>document.getElementById(id);
 const fmt=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -1256,41 +1258,62 @@ $('lkf').addEventListener('click',()=>{if(confirm('Isso remove a senha e os dado
 $('wipe').addEventListener('click',async()=>{
   if(!confirm('Apagar TODOS os dados? Lançamentos, orçamentos, cartões e categorias'+(cu?', inclusive a cópia na nuvem.':' deste aparelho.')))return;
   if(!confirm('Tem certeza? Não dá para desfazer.'))return;
-  clearTimeout(pushT);dirty=false;
-  if(cu){try{await FB.del(cu.uid)}catch(e){toast('Não consegui apagar a cópia da nuvem. Tente de novo com internet.',true);return}}
+  wiping=true;clearTimeout(pushT);
+  if(cu){try{await FB.del(cu.uid)}catch(e){wiping=false;toast('Não consegui apagar a cópia da nuvem. Tente de novo com internet.',true);return}}
   try{localStorage.removeItem('caixa-v1')}catch(e){}location.reload();
 });
 updSec();if(document.documentElement.classList.contains('locked'))setTimeout(()=>$('lkp').focus(),50);
 
 // ----- nuvem (Firebase): login e sincronização -----
-var cu=null,pushT=null,dirty=false,pulling=false,cstat='';
+var leReady=false,leBase=null,cu=null,pushT=null,pulling=false,wiping=false,localOnly=false,lastPull=0,cstat='';
 const blankS=()=>({tx:[],bud:{},goal:{name:'',target:0,saved:0},sheet:[],rec:[],rules:{},myname:'',budm:{},cx:[],mig:0,cats:null,lastConv:null,cards:[],lastCard:null,cmig:0});
 const emptyS=x=>!(x.tx&&x.tx.length)&&!Object.keys(x.bud||{}).length&&!(x.sheet&&x.sheet.length)&&!(x.cx&&x.cx.length)&&!(x.cards&&x.cards.length)&&!Object.keys(x.budm||{}).length&&!(x.goal&&x.goal.target);
+const canon=v=>JSON.stringify(v,(k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,y)=>(o[y]=x[y],o),{}):x);
+const core=()=>{const o=Object.assign({},S);delete o.ts;delete o.cts;delete o.sh;return o};
+const cstate=()=>canon(core());
+const isDirty=()=>cstate()!==S.sh;
+const store=()=>{try{localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}};
 function updCloud(){$('cld').textContent=cu?'Conta: '+cu.email+(cstat?' · '+cstat:''):'Sem conta conectada: os dados ficam só neste aparelho.';$('au-out').hidden=!cu}
 function setCloud(t){cstat=t;updCloud()}
-function reinit(){syncCats();migBud();migGoal();migRows();migCards();fillCats();fillCards();render();renderCx();showBk();renderSheet();renderRec()}
-async function flush(){
-  if(!cu||!dirty||pulling)return;
-  const snap=JSON.stringify(S),ts=S.ts||Date.now();dirty=false;
+function reinit(){syncCats();migBud();migGoal();migRows();migCards();fillCats();fillCards();render();renderCx();showBk();renderSheet();renderRec();showLe()}
+function applyCloud(data,ct){const o=Object.assign(blankS(),data);delete o.ts;delete o.cts;delete o.sh;S=o;S.cts=ct;S.sh=cstate();store();leReady=false;reinit();leBase=leState();leReady=true;setCloud('sincronizado')}
+async function send(){
+  const snap=JSON.stringify(core()),st=cstate(),ts=Date.now();
   if(snap.length>900000)toast('Seus dados estão chegando no limite de tamanho da nuvem (1 MB). Baixe um backup.',true);
-  try{await FB.set(cu.uid,{data:snap,updatedAt:ts});setCloud('sincronizado')}
-  catch(e){dirty=true;setCloud('sem conexão, envio pendente')}
+  await FB.set(cu.uid,{data:snap,updatedAt:ts});
+  S.cts=ts;S.sh=st;store();setCloud('sincronizado');
 }
-window.cloudPush=function(){if(!cu||pulling)return;dirty=true;setCloud('enviando...');clearTimeout(pushT);pushT=setTimeout(flush,1500)};
-async function pull(){
+async function flush(){
+  if(!cu||wiping||localOnly)return;
+  if(pulling){clearTimeout(pushT);pushT=setTimeout(flush,800);return}
+  if(S.sh===undefined||!isDirty())return;
   pulling=true;
   try{
-    const r=await FB.get(cu.uid),loc=S.ts||0;
-    if(r.exists()){
-      const c=r.data(),ct=c.updatedAt||0;
-      if(emptyS(S)||ct>loc){
-        S=Object.assign(blankS(),JSON.parse(c.data));S.ts=ct;
-        try{localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}
-        reinit();setCloud('sincronizado');
-      }else if(loc>ct){dirty=true;pulling=false;await flush();return}
-      else setCloud('sincronizado');
-    }else if(!emptyS(S)){dirty=true;pulling=false;await flush();return}
-    else setCloud('sincronizado');
+    const r=await FB.get(cu.uid),ex=r.exists(),ct=ex?(r.data().updatedAt||0):0;
+    if(ex?ct!==(S.cts||0):!!S.cts){pulling=false;await pull();return}
+    await send();
+  }catch(e){setCloud('sem conexão, envio pendente')}
+  pulling=false;
+}
+window.cloudPush=function(){if(!cu||wiping||localOnly)return;setCloud('enviando...');clearTimeout(pushT);pushT=setTimeout(flush,1500)};
+async function pull(){
+  if(!cu||pulling||wiping)return;
+  pulling=true;lastPull=Date.now();
+  try{
+    const r=await FB.get(cu.uid),ex=r.exists(),c=ex?r.data():null,ct=ex?(c.updatedAt||0):0;
+    const synced=S.sh!==undefined,dirty=synced?isDirty():!emptyS(S);
+    if(ex){
+      if(!dirty){if(!synced||ct!==S.cts)applyCloud(JSON.parse(c.data),ct);else setCloud('sincronizado')}
+      else if(synced&&ct===S.cts)await send();
+      else if(confirm('Este aparelho tem dados que não estão na nuvem, e a nuvem também tem dados diferentes.\n\nOK = usar os dados da nuvem (descarta os deste aparelho).\nCancelar = enviar os deste aparelho para a nuvem.'))applyCloud(JSON.parse(c.data),ct);
+      else await send();
+    }else{
+      if(dirty){
+        if(synced||confirm('Este aparelho tem dados que ainda não estão na nuvem. Enviar para a nuvem?\n\nOK = enviar. Cancelar = manter só neste aparelho.'))await send();
+        else{localOnly=true;setCloud('dados só neste aparelho, não enviados')}
+      }else if(synced&&S.cts)applyCloud({},0);
+      else{S.cts=0;S.sh=cstate();store();setCloud('sincronizado')}
+    }
   }catch(e){setCloud('não consegui ler a nuvem');toast(e&&e.code==='permission-denied'?'A nuvem recusou o acesso. Confira se o Firestore e as regras de segurança foram criados.':'Não consegui falar com a nuvem agora. Seus dados continuam neste aparelho.',true)}
   pulling=false;
 }
@@ -1313,15 +1336,20 @@ $('aur').addEventListener('click',()=>doAuth('reset'));
 $('aup').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth('in')});
 $('au-out').addEventListener('click',async()=>{
   clearTimeout(pushT);await flush();
-  if(dirty&&!confirm('Há alterações que ainda não foram enviadas para a nuvem e serão perdidas se você sair. Sair mesmo assim?'))return;
+  if(isDirty()&&!confirm('Há alterações que ainda não foram enviadas para a nuvem e serão perdidas se você sair. Sair mesmo assim?'))return;
   try{await FB.signOut()}catch(e){}
   try{localStorage.removeItem('caixa-v1')}catch(e){}location.reload();
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&dirty){clearTimeout(pushT);flush()}});
-addEventListener('online',()=>{if(dirty)flush()});
+document.addEventListener('visibilitychange',()=>{if(!cu)return;if(document.hidden){if(S.sh!==undefined&&isDirty()){clearTimeout(pushT);flush()}}else if(Date.now()-lastPull>20000)pull()});
+addEventListener('online',()=>{if(cu){if(S.sh!==undefined&&isDirty())flush();else pull()}});
 function startCloud(){FB.onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();if(u)await pull()})}
 if(window.FB)startCloud();else addEventListener('fb-ready',startCloud,{once:true});
 updCloud();
+// ----- data da última alteração -----
+const leState=()=>{const o=Object.assign({},S);['ts','cts','sh','lastEdit','lastBackup'].forEach(k=>delete o[k]);return canon(o)};
+window.leCheck=function(){if(!leReady)return;const c=leState();if(c!==leBase){S.lastEdit=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);leBase=c;showLe()}};
+function showLe(){const el=$('le'),v=S.lastEdit;if(!el)return;if(!v){el.innerHTML='Última alteração<br><b>—</b>';return}const[d,t]=v.split('T'),[y,mo,da]=d.split('-');el.innerHTML='Última alteração<br><b>'+da+'/'+mo+'/'+y+' · '+t+'</b>'}
+leBase=leState();leReady=true;showLe();
 
 </script>
 <script type="module">
