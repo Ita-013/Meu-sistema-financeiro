@@ -34,9 +34,9 @@ button{cursor:pointer}
 .tape{background:var(--ink);color:var(--bg);border-radius:20px;padding:22px 20px 18px;margin-bottom:16px}
 .tape .lbl{font-size:.95rem;opacity:.75}
 .big{font-size:clamp(2.4rem,11vw,3.4rem);font-weight:800;letter-spacing:-.04em;line-height:1.05;margin:4px 0 16px}
-.big.neg{color:#F6A3BA}
+.big.neg{color:#E5483C}
 .tape .bar{background:rgba(255,255,255,.2);height:14px;border-radius:7px}
-.tape .bar i{background:#F6A3BA}
+.tape .bar i{background:#E5483C}
 .tape .row{display:flex;justify-content:space-between;margin-top:12px;font-size:.9rem;gap:8px}
 .tape b{font-weight:600}
 nav{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--ln);padding:4px;border-radius:12px;margin-bottom:16px}
@@ -265,8 +265,8 @@ html.noauth .au{display:flex}
 <section class="tape" id="tape" aria-live="polite">
   <div class="lbl" id="lbl">Sobrou no mês</div>
   <div class="big" id="bal">R$ 0,00</div>
-  <div class="bar"><i id="spent" style="width:0"></i></div>
   <div class="row"><span data-go="rcard" role="button" tabindex="0">Receitas <b id="inc"></b></span><span data-go="ocard" role="button" tabindex="0">Despesas <b id="exp"></b></span></div>
+  <div class="row"><span role="button" tabindex="0" data-ca="goc">A pagar <b id="cm"></b></span></div>
 </section>
 
 <nav role="tablist" aria-label="Seções">
@@ -278,8 +278,6 @@ html.noauth .au{display:flex}
 </nav>
 
 <section id="res" role="tabpanel">
-  <div class="card" id="lvcard"><small>Livre para gastar</small><div class="big" id="lv"></div><small id="lvd"></small>
-    <div class="sum3"><div><small>Comprometido</small><b id="cm"></b></div><div><small>Já gasto</small><b id="gs"></b></div><div><small>Planejado</small><b id="pl"></b></div></div></div>
   <div class="card" id="vcard"><h2>Próximos vencimentos</h2><div id="vl"></div></div>
   <div class="card" id="ocard">
     <h2>Orçado x realizado<button class="inf" type="button" aria-label="Ajuda" data-tipid="ocn">i</button></h2>
@@ -501,10 +499,9 @@ function render(){
   const tx=S.tx.filter(t=>t.date.slice(0,7)===m).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
   const inc=tx.filter(t=>t.type==='in').reduce((s,t)=>s+t.amount,0);
   const exp=tx.filter(t=>t.type==='out').reduce((s,t)=>s+t.amount,0);
-  const bal=inc-exp;
+  const cm0=window.compReady?openCm():0,bal=inc-exp-cm0;
   $('lbl').textContent=bal<0?'Faltou no mês':'Sobrou no mês';
   $('bal').textContent=fmt(Math.abs(bal));$('bal').className='big'+(bal<0?' neg':'');
-  $('spent').style.width=(inc>0?Math.min(100,exp/inc*100):(exp>0?100:0))+'%';
   $('inc').textContent=fmt(inc);$('exp').textContent=fmt(exp);
 
   const by={};tx.filter(t=>t.type==='out').forEach(t=>by[t.cat]=(by[t.cat]||0)+t.amount);
@@ -541,7 +538,7 @@ function render(){
   $('icats').innerHTML=irows.length?irows.map(c=>{
     const v=byI[c]||0,pp=pv(c),open=openIn===c,bw=pp?Math.min(100,v/pp*100):(incN?v/incN*100:0);
     return `<li><div class="rw"><button type="button" class="cn" data-i="${esc(c)}" aria-expanded="${open}">${esc(c)} <span aria-hidden="true">${open?'▾':'▸'}</span></button><b class="in">${fmt(v)}</b></div><div class="bar" data-i="${esc(c)}"><i style="width:${bw}%"></i></div><div class="rw sub" data-i="${esc(c)}"><small>${pp?'Previsto '+fmt(pp):Math.round(incN?v/incN*100:0)+'% das receitas'}</small><small>${pp?(v>=pp?'Recebido '+Math.round(v/pp*100)+'%':'Faltam '+fmt(pp-v)):''}</small></div>${open?detail(c,'in'):''}</li>`}).join(''):'<li class="empty">Sem receitas neste mês.</li>';
-if(window.renderComp)renderComp(ob,rl);
+if(window.compReady)renderComp(ob,rl);
 }
 
 
@@ -1382,12 +1379,9 @@ function openOf(mm){const cur=today().slice(0,7);return[...(mm===cur?lateOld():[
 function fnd(id){id=String(id);if(id[0]==='v'){const mm=id.split('@')[1];return occ(mm).find(x=>x.id===id)}return S.comp.find(x=>String(x.id)===id)}
 function real(x){if(!x.virt)return x;const o=Object.assign({},x);delete o.virt;o.id=uid();S.comp.push(o);return o}
 function stt(x){if(x.st==='g')return['Pago','var(--in)'];if(x.st==='i')return['Ignorado','var(--mu)'];if(!x.d)return['A pagar','var(--am)'];const n=dd(x.d,today());return n<0?['Atrasada há '+(-n)+(n===-1?' dia':' dias'),'var(--out)']:n===0?['Vence hoje','var(--am)']:['Vence em '+n+(n===1?' dia':' dias'),'var(--am)']}
+window.openCm=()=>openOf(m).reduce((a,x)=>a+x.v,0);
 function renderComp(ob,rl){
-  const cur=today().slice(0,7),cm=openOf(m).reduce((a,x)=>a+x.v,0),lv=ob-rl-cm;
-  $('cm').textContent=fmt(cm);$('gs').textContent=fmt(rl);$('pl').textContent=ob?fmt(ob):'—';
-  $('lv').textContent=ob?fmt(Math.abs(lv)):'—';$('lv').style.color=ob?(lv<0?'var(--out)':'var(--in)'):'';
-  const dl=m===cur?dim(m)-(+today().slice(8,10))+1:0;
-  $('lvd').textContent=!ob?'Defina o orçado das categorias em Orçamentos.':lv<0?'Estourou o planejado em '+fmt(-lv)+'.':dl>0?fmt(lv/dl)+' por dia · '+dl+(dl===1?' dia':' dias'):'Sobra do mês, considerando as contas a pagar.';
+  $('cm').textContent=fmt(openCm());
   const o=openOf(m).sort((a,b)=>(a.d||'9').localeCompare(b.d||'9')).slice(0,5);
   $('vl').innerHTML=o.length?o.map(x=>{const t=stt(x);return `<div class="cr" data-ca="edit" data-id="${esc(x.id)}"><div>${esc(x.n)}<small style="color:${t[1]}">${t[0]}</small></div><b>${fmt(x.v)}</b></div>`}).join(''):'<small>Nenhuma conta a pagar neste mês.</small>';
   if(!$('cpv').hidden)renderCpv();
@@ -1434,13 +1428,15 @@ $('pok').addEventListener('click',()=>{
   const v=Math.round(parse($('pv').value)*100)/100,d=$('pd').value||today();if(!(v>0)){toast('Digite o valor pago.',true);return}
   const x=real(cPg),t={id:uid(),type:'out',amount:v,desc:x.n.slice(0,120),cat:x.c,date:d};S.tx.push(t);Object.assign(x,{st:'g',tx:t.id,pv:v});$('cpg').hidden=true;redo();
 });
+function goc(){document.querySelector('[data-t=lan]').click();lview(true)}
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.ca==='goc'){e.preventDefault();goc()}});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ca]');if(!b)return;const a=b.dataset.ca,x=b.dataset.id?fnd(b.dataset.id):null;
-  if(a==='new')openForm();else if(!x)return;
+  if(a==='goc')goc();else if(a==='new')openForm();else if(!x)return;
   else if(a==='edit')openForm(x);
   else if(a==='pay'){cPg=x;$('pgn').textContent=x.n;$('pv').value=num(x.v);$('pd').value=today();$('cpg').hidden=false}
   else if(a==='ign'){real(x).st='i';redo()}
   else if(a==='undo'){real(x).st='a';redo()}});
-if(S.comp.length||S.cfix.length)render();
+window.compReady=true;render();
 leBase=leState();leReady=true;showLe();
 
 </script>
