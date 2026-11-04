@@ -369,6 +369,15 @@ html.noauth .au{display:flex}
 
 
 <section id="rec" role="tabpanel" hidden>
+  <div class="card" id="pgc">
+    <h2>Open Finance<button class="inf" type="button" aria-label="Ajuda" data-tip="As movimentações do banco e dos cartões chegam sozinhas ao abrir o sistema. Aqui embaixo você só escolhe categoria e forma de pagamento.">i</button></h2>
+    <small id="pgs"></small>
+    <div id="pgmap"></div>
+    <label class="fl" for="pgfrom" style="margin-top:10px"><small>Buscar movimentações a partir de</small></label>
+    <input id="pgfrom" type="date">
+    <button class="go" id="pgsync" type="button" style="margin-top:10px">Sincronizar agora</button>
+    <p id="pgm" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem"></p>
+  </div>
   <div class="card">
     <h2>Importar movimentações<button class="inf" type="button" aria-label="Ajuda" data-tip="Exporte o extrato (OFX ou CSV) no app ou site do seu banco e escolha o arquivo aqui. Nada sai do seu aparelho.">i</button></h2>
     <div class="opt" role="radiogroup" aria-label="Tipo de arquivo" style="margin-top:8px">
@@ -658,7 +667,7 @@ function importText(txt){
   const cxs=(Array.isArray(o.cx)?o.cx:[]).map((x,i)=>({id:Number.isFinite(x.id)?x.id:Date.now()+i+5000,name:String(x.name||'Caixinha').slice(0,40),target:Number(x.target)>0?Number(x.target):0,mv:(Array.isArray(x.mv)?x.mv:[]).map((v,q)=>({id:Number.isFinite(v.id)?v.id:Date.now()+q+9000,date:/^\d{4}-\d{2}-\d{2}$/.test(v.date)?v.date:today(),amt:Number(v.amt),note:v.note?String(v.note).slice(0,40):undefined,tx:Number.isFinite(v.tx)?v.tx:undefined})).filter(v=>isFinite(v.amt)&&v.amt!==0)}));
   const okc=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'&&x.trim()&&norm(x)!=='caixinhas').map(x=>x.trim().slice(0,30)):[];
   const cts=o.cats&&typeof o.cats==='object'?{out:okc(o.cats.out),in:okc(o.cats.in)}:{out:[],in:[]};
-  const cds=(Array.isArray(o.cards)?o.cards:[]).filter(c=>c&&typeof c.name==='string'&&c.name.trim()).map((c,i)=>({id:Number.isFinite(c.id)?c.id:Date.now()+i+7000,name:c.name.trim().slice(0,30)}));
+  const cds=(Array.isArray(o.cards)?o.cards:[]).filter(c=>c&&typeof c.name==='string'&&c.name.trim()).map((c,i)=>({id:Number.isFinite(c.id)?c.id:Date.now()+i+7000,name:c.name.trim().slice(0,30),...(typeof c.pg==='string'&&c.pg?{pg:c.pg.slice(0,80)}:{})}));
   const replace=document.querySelector('input[name=bm]:checked').value==='replace';
   let added,skipped=0;
   if(replace){
@@ -967,6 +976,7 @@ function recImport(t,kind){
   save();renderRec();
   rmsg(`${add} movimentação(ões) nova(s)${old?', '+old+' já importada(s)':''}${dups?', '+dups+' parece(m) já lançada(s)':''}${auto?', '+auto+' interna(s) ignorada(s) automaticamente (reservas, cofrinho, fatura e transferências suas)':''}.`);
 }
+const recCardSel=(x,pay)=>pay==='Cartão'&&x.type==='out'&&S.cards.length?`<select data-f="card" aria-label="Cartão" style="margin-bottom:10px"><option value="">Escolha o cartão</option>${S.cards.map(c=>`<option value="${c.id}"${c.id===x.card?' selected':''}>${esc(c.name)}</option>`).join('')}</select>`:'';
 function renderRec(){
   const pend=S.rec.filter(x=>x.st==='pend').sort((a,b)=>b.date.localeCompare(a.date)),ign=S.rec.filter(x=>x.st==='ign').length,done=S.rec.filter(x=>x.st==='done').length;
   {const rb=document.querySelector('nav [data-t=rec]');rb.textContent='⚙'+(pend.length?' '+pend.length:'');rb.setAttribute('aria-label','Conciliação e configurações'+(pend.length?', '+pend.length+' pendentes':''))}
@@ -975,7 +985,7 @@ function renderRec(){
   $('rc-all').textContent='Lançar sugeridas ('+sug+')';$('rc-all').disabled=!sug;$('rc-undo').hidden=!ign;
   $('rcl').innerHTML=pend.length?pend.map(x=>{
     const s=recSug(x),cat=x.cat||s.cat||'',pay=x.pay||s.pay||recPay(x);
-    return `<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${x.dup?'<span class="dupb">parece já lançado</span>':''}</small><div class="g2"><select data-f="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select><select data-f="pay" aria-label="Forma de pagamento">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div><div class="bk"><button class="pri" data-a="ok" type="button">Lançar</button>${x.dup?'<button data-a="had" type="button">Já lancei</button>':''}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Importe um extrato acima.</li>';
+    return `<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${x.dup?'<span class="dupb">parece já lançado</span>':''}</small><div class="g2"><select data-f="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select><select data-f="pay" aria-label="Forma de pagamento">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div>${recCardSel(x,pay)}<div class="bk"><button class="pri" data-a="ok" type="button">Lançar</button>${x.dup?'<button data-a="had" type="button">Já lancei</button>':''}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.</li>';
 }
 function recCommit(x,cat,pay){S.tx.push({id:Date.now()+Math.floor(Math.random()*1e4),type:x.type,amount:x.amount,desc:x.desc.slice(0,120),cat,date:x.date,pay,card:(pay==='Cartão'&&x.type==='out'&&x.card)?x.card:undefined});x.st='done';const k=rkey(x.desc);if(k)S.rules[k]={cat,pay}}
 $('rc-file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;let t='';
@@ -983,12 +993,14 @@ $('rc-file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f
   e.target.value='';recImport(t,document.querySelector('input[name=rk]:checked').value)});
 $('rc-go').addEventListener('click',()=>recImport($('rc-txt').value,document.querySelector('input[name=rk]:checked').value));
 $('rc-undo').addEventListener('click',()=>{S.rec.forEach(x=>{if(x.st==='ign')x.st='pend'});save();renderRec()});
-$('rcl').addEventListener('change',e=>{const li=e.target.closest('li'),f=e.target.dataset.f;if(!li||!f)return;const x=S.rec.find(v=>v.id===li.dataset.r);if(x){x[f]=e.target.value;save()}});
+$('rcl').addEventListener('change',e=>{const li=e.target.closest('li'),f=e.target.dataset.f;if(!li||!f)return;const x=S.rec.find(v=>v.id===li.dataset.r);if(x){x[f]=f==='card'?(+e.target.value||undefined):e.target.value;save();if(f==='pay')renderRec()}});
 $('rcl').addEventListener('click',e=>{
   const a=e.target.dataset.a,li=e.target.closest('li');if(!a||!li)return;
   const x=S.rec.find(v=>v.id===li.dataset.r);if(!x)return;
   if(a==='ok'){const cs=li.querySelector('[data-f=cat]'),cat=cs.value,pay=li.querySelector('[data-f=pay]').value;
     if(!cat){rmsg('Escolha uma categoria antes de lançar.',true);cs.focus();return}
+    const ks=li.querySelector('[data-f=card]');if(ks)x.card=+ks.value||undefined;
+    if(pay==='Cartão'&&x.type==='out'&&S.cards.length&&!x.card){rmsg('Escolha o cartão.',true);if(ks)ks.focus();return}
     recCommit(x,cat,pay);rmsg('Lançado: '+x.desc.slice(0,40)+'.')}
   else if(a==='had'){x.st='done';rmsg('Marcada como já lançada.')}
   else if(a==='skip'){x.st='ign';rmsg('Movimentação ignorada.')}
@@ -1373,11 +1385,11 @@ $('au-out').addEventListener('click',async()=>{
 });
 document.addEventListener('visibilitychange',()=>{if(!cu)return;if(document.hidden){if(S.sh!==undefined&&isDirty()){clearTimeout(pushT);flush()}}else if(Date.now()-lastPull>20000)pull()});
 addEventListener('online',()=>{if(cu){if(S.sh!==undefined&&isDirty())flush();else pull()}});
-function startCloud(){FB.onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();if(u)await pull()})}
+function startCloud(){FB.onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();if(u){await pull();if(window.pgAuto)pgAuto()}})}
 if(window.FB)startCloud();else addEventListener('fb-ready',startCloud,{once:true});
 updCloud();
 // ----- data da última alteração -----
-const leState=()=>{const o=Object.assign({},S);['ts','cts','sh','lastEdit','lastBackup'].forEach(k=>delete o[k]);return canon(o)};
+const leState=()=>{const o=Object.assign({},S);['ts','cts','sh','lastEdit','lastBackup'].forEach(k=>delete o[k]);o.rec=(o.rec||[]).filter(x=>!(x.pg&&x.st==='pend'));return canon(o)};
 window.leCheck=function(){if(!leReady)return;const c=leState();if(c!==leBase){S.lastEdit=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);leBase=c;showLe()}};
 function showLe(){const el=$('le'),v=S.lastEdit;if(!el)return;if(!v){el.innerHTML='Última alteração<br><b>—</b>';return}const[d,t]=v.split('T'),[y,mo,da]=d.split('-');el.innerHTML='Última alteração<br><b>'+da+'/'+mo+'/'+y+' · '+t+'</b>'}
 
@@ -1497,6 +1509,75 @@ $('etsv').addEventListener('click',()=>{
   if(t.sid){const r=S.sheet.find(x=>x.sid===t.sid);if(r){r.v={};S.tx.filter(x=>x.sid===t.sid).forEach(x=>{const k=x.date.slice(0,7);r.v[k]=Math.round(((r.v[k]||0)+x.amount)*100)/100});if(all){r.cat=c;r.name='Parcelas: '+base}}}
   $('etm').hidden=true;save();render();renderSheet();toast('Lançamento atualizado.');
 });
+
+// ----- Open Finance (Pluggy): movimentações e cartões direto na conciliação -----
+const PGK='caixa-pg',PGBASE=(/^https?:$/.test(location.protocol)&&!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()))?'':'https://meu-sistema-pink.vercel.app';
+const pgLoad=()=>{try{return JSON.parse(localStorage.getItem(PGK))||{}}catch(e){return{}}};
+const pgSaveSt=o=>{try{localStorage.setItem(PGK,JSON.stringify(o))}catch(e){}};
+const isoD=dt=>new Date(dt.getTime()-dt.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const pgMsg=(t,bad)=>{const el=$('pgm');el.textContent=t;el.style.color=bad?'var(--out)':'var(--mu)'};
+const pgLabel=a=>[a.inst,a.name||(a.card?'Cartão':'Conta'),a.number?'•'+String(a.number).slice(-4):''].filter(Boolean).join(' ');
+let pgBusy=false,pgLastTry=0;
+function pgShow(){
+  const st=pgLoad();$('pgfrom').value=st.from||isoD(new Date(new Date().getFullYear(),new Date().getMonth(),1));
+  $('pgs').textContent=st.last?'Última consulta: '+new Date(st.last).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Ainda não consultou o banco neste aparelho.';
+  const un=(st.accs||[]).filter(a=>a.card&&!S.cards.some(c=>c.pg===a.id));
+  $('pgmap').innerHTML=un.length?'<small style="display:block;margin:8px 0 4px">Escolha a qual cartão do sistema cada cartão do banco corresponde:</small>'+un.map(a=>`<div class="g2" style="align-items:center"><span>${esc(pgLabel(a))}</span><select data-pgacc="${esc(a.id)}" aria-label="Cartão do sistema para ${esc(pgLabel(a))}"><option value="">Escolha</option>${S.cards.filter(c=>!c.pg).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}<option value="__new">+ Criar cartão novo</option></select></div>`).join(''):'';
+}
+function pgIngest(d){
+  const have=new Set(S.rec.map(x=>x.id)),me=norm(S.myname||''),A=new Map(d.accounts.map(a=>[a.id,a]));
+  let add=0,dups=0,auto=0,nomap=0;
+  d.transactions.forEach(t=>{
+    const a=A.get(t.accountId);if(!a)return;
+    let cid;
+    if(a.card){const c=S.cards.find(c=>c.pg===a.id);if(!c){nomap++;return}cid=c.id}
+    const id='p:'+t.id;if(have.has(id))return;
+    const date=String(t.date||'').slice(0,10),type=t.type==='CREDIT'?'in':'out',amount=Math.round(Math.abs(+t.amount||0)*100)/100;
+    if(!amount||!/^\d{4}-\d\d-\d\d$/.test(date))return;
+    let desc=String(t.description||'(sem descrição)').replace(/\s+/g,' ').trim();
+    if(t.totalInstallments>1&&!/\(\d+\/\d+\)\s*$/.test(desc))desc+=' ('+t.installmentNumber+'/'+t.totalInstallments+')';
+    const mv={id,pg:1,date,type,amount,desc,st:'pend',kind:a.card?'fatura':'conta',card:(a.card&&type==='out')?cid:undefined},nd=norm(desc);
+    if(a.card&&type==='in'&&/^pagamento/.test(nd))mv.st='ign';
+    if(/dinheiro (retirado|reservado)|cofrinho|pagamento de fatura/.test(nd)||(me.length>3&&nd.includes(me)&&/transfer|pix/.test(nd)))mv.st='ign';
+    if(mv.st==='ign')auto++;
+    mv.dup=S.tx.some(x=>x.type===type&&Math.abs((x.gross||x.amount)-amount)<.005&&Math.abs(new Date(x.date)-new Date(date))<=864e5);
+    if(mv.dup&&mv.st==='pend')dups++;
+    S.rec.push(mv);have.add(id);add++});
+  return{add,dups,auto,nomap};
+}
+async function pgSync(manual){
+  if(pgBusy)return;
+  if(!window.FB||!cu){if(manual)pgMsg('Entre na sua conta para consultar o banco.',true);return}
+  const st=pgLoad(),from=$('pgfrom').value||st.from||isoD(new Date(new Date().getFullYear(),new Date().getMonth(),1));
+  pgBusy=true;$('pgsync').disabled=true;pgMsg('Consultando o banco...');
+  try{
+    const tk=await FB.token();
+    let r,d=null;
+    try{r=await fetch(PGBASE+'/api/pluggy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify({from})});d=await r.json()}catch(e){if(!r)throw new Error('net')}
+    if(!r.ok||!d){
+      const m=r.status===404?'A função /api/pluggy não foi encontrada. Suba a pasta api junto com o index.html.':r.status===401?'Esta conta não tem permissão para consultar o banco.':(d&&d.error==='config')?'Faltam variáveis na Vercel: '+(d.missing||[]).join(', ')+'.':'O Pluggy não respondeu agora'+(d&&d.detail?' ('+d.detail+')':'')+'.';
+      throw new Error(m)}
+    for(let i=0;i<20&&pulling;i++)await new Promise(z=>setTimeout(z,500));
+    const res=pgIngest(d);
+    const w=new Date(Date.now()-15*864e5),nf=isoD(w)>from?isoD(w):from;
+    pgSaveSt({from:nf,last:Date.now(),accs:d.accounts});
+    save();render();renderRec();pgShow();
+    pgMsg(res.add?`${res.add} movimentação(ões) nova(s)${res.dups?', '+res.dups+' parece(m) já lançada(s)':''}${res.auto?', '+res.auto+' interna(s) ignorada(s)':''}.`:'Nada novo por enquanto.');
+    if(res.nomap)pgMsg('Escolha acima o cartão de cada conta do banco para puxar as compras do cartão.',true);
+  }catch(e){pgMsg(e&&e.message==='net'||/Failed to fetch|NetworkError/.test(String(e&&e.message))?'Sem conexão para consultar o banco agora.':(e&&e.message)||'Não consegui consultar o banco.',true)}
+  pgBusy=false;$('pgsync').disabled=false;
+}
+window.pgAuto=function(){if(!cu||Date.now()-pgLastTry<6e5)return;pgLastTry=Date.now();pgSync(false)};
+$('pgsync').addEventListener('click',()=>{pgLastTry=Date.now();pgSync(true)});
+$('pgfrom').addEventListener('change',()=>{const st=pgLoad();st.from=$('pgfrom').value||st.from;pgSaveSt(st)});
+$('pgmap').addEventListener('change',e=>{
+  const id=e.target.dataset.pgacc;if(!id||!e.target.value)return;
+  const a=(pgLoad().accs||[]).find(x=>x.id===id);if(!a)return;
+  if(e.target.value==='__new'){let n=(a.inst||a.name||'Cartão').slice(0,30);if(S.cards.some(c=>norm(c.name)===norm(n)))n=(n+' '+String(a.number||'').slice(-4)).trim().slice(0,30);S.cards.push({id:uid(),name:n,pg:id})}
+  else{const c=S.cards.find(x=>String(x.id)===e.target.value);if(c)c.pg=id}
+  save();fillCards();render();renderRec();pgShow();pgSync(true)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&window.pgAuto)pgAuto()});
+pgShow();
 window.compReady=true;render();
 leBase=leState();leReady=true;showLe();
 
@@ -1507,7 +1588,7 @@ import{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmail
 import{getFirestore,doc,getDoc,setDoc,deleteDoc}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyCyL7rDgS58XejYjJ_vEdA97z72n4GJoWI",authDomain:"sistema-financeiro-59729.firebaseapp.com",projectId:"sistema-financeiro-59729",storageBucket:"sistema-financeiro-59729.firebasestorage.app",messagingSenderId:"701039353095",appId:"1:701039353095:web:865803023ae3fc9d0879a2"});
 const auth=getAuth(app),db=getFirestore(app),ref=u=>doc(db,"users",u);
-window.FB={onAuthStateChanged:f=>onAuthStateChanged(auth,f),signIn:(e,p)=>signInWithEmailAndPassword(auth,e,p),signUp:(e,p)=>createUserWithEmailAndPassword(auth,e,p),reset:e=>sendPasswordResetEmail(auth,e),signOut:()=>signOut(auth),get:u=>getDoc(ref(u)),set:(u,d)=>setDoc(ref(u),d),del:u=>deleteDoc(ref(u))};
+window.FB={onAuthStateChanged:f=>onAuthStateChanged(auth,f),signIn:(e,p)=>signInWithEmailAndPassword(auth,e,p),signUp:(e,p)=>createUserWithEmailAndPassword(auth,e,p),reset:e=>sendPasswordResetEmail(auth,e),signOut:()=>signOut(auth),token:()=>auth.currentUser?auth.currentUser.getIdToken():Promise.resolve(null),get:u=>getDoc(ref(u)),set:(u,d)=>setDoc(ref(u),d),del:u=>deleteDoc(ref(u))};
 window.dispatchEvent(new Event("fb-ready"));
 </script>
 <script>
@@ -1515,5 +1596,7 @@ if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)&&!(window.C
   addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
 }
 </script>
+<!-- Integração Pluggy: contas automáticas, Painel, Previsão e notificações -->
+<script src="pluggy.js"></script>
 </body>
 </html>
