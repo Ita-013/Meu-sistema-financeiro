@@ -406,7 +406,19 @@ html.noauth .au{display:flex}
   <div class="card">
     <div class="rw"><h2 id="rct" style="margin:0">Pendentes</h2><button id="rc-all" type="button" class="sm"></button></div>
     <small id="rcs"></small>
+    <div class="bk" style="margin-top:8px"><button id="rc-ig" type="button" class="sm" hidden></button></div>
     <ul id="rcl" style="margin-top:8px"></ul>
+    <ul id="rcig" hidden style="margin-top:12px;border-top:1px solid var(--bd,#333);padding-top:8px"></ul>
+  </div>
+  <div class="card">
+    <details id="rlsd" class="adv"><summary id="rlss">Memória de preenchimento</summary>
+      <small style="display:block;margin:6px 0 10px">Quando a descrição de uma movimentação começa com o texto abaixo, a categoria e a forma de pagamento já vêm preenchidas. O sistema aprende sozinho cada vez que você lança; aqui você corrige, apaga ou adiciona regras.</small>
+      <div id="rll"></div>
+      <small style="display:block;margin:12px 0 4px">Adicionar regra</small>
+      <input id="rl-k" placeholder="Parte da descrição (ex.: mercadinho sao luiz)" aria-label="Parte da descrição" autocomplete="off">
+      <div class="g2" style="margin-top:8px"><select id="rl-c" aria-label="Categoria"></select><select id="rl-p" aria-label="Forma de pagamento"><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select></div>
+      <button class="go" id="rl-add" type="button" style="margin-top:8px">Salvar regra</button>
+    </details>
   </div>
   <div class="card" id="seg">
     <h2>Segurança</h2>
@@ -603,6 +615,7 @@ const addTx=()=>{
     note='Compra de '+fmt(amt)+' dividida em '+n+' parcelas de '+fmt(each)+', lançadas de '+lab(addM(bk,1-k))+' a '+lab(addM(bk,n-k))+'. A linha "Parcelas: '+base.slice(0,30)+'" foi para a aba Orçamentos.';
   }else{const ntx={id:Date.now(),type:tp,amount:amt,desc,cat:c,date:eff,pay,card:cardId||undefined};if(ruled&&eff!==d){ntx.pd=d;note='Lançado na fatura que vence em '+brd(eff)+'.'}S.tx.push(ntx)}
   if(cardId)S.lastCard=cardId;
+  if(base!==c)learnRule(base,c,pay,cardId);
   save();m=eff.slice(0,7);$('m').value=m;$('v').value='';$('ds').value='';$('pk').value='';$('pn2').value='';$('pcx').checked=false;parUI();render();
   if(note){er.style.color='var(--in)';er.textContent=note}else er.textContent='';
 };
@@ -613,11 +626,11 @@ $('list').addEventListener('click',e=>{
   const sd=e.target.dataset&&e.target.dataset.sid;
   if(sd){const b=e.target;
     if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Toque de novo para excluir todas';setTimeout(()=>{b.dataset.arm='';b.textContent='Excluir todas as parcelas'},3500);return}
-    S.tx=S.tx.filter(t=>String(t.sid)!==sd);S.sheet=S.sheet.filter(r=>String(r.sid)!==sd);save();render();renderSheet();toast('Todas as parcelas foram excluídas.');return}
+    S.tx=S.tx.filter(t=>String(t.sid)!==sd);S.sheet=S.sheet.filter(r=>String(r.sid)!==sd);save();render();renderSheet();renderRec();toast('Todas as parcelas foram excluídas.');return}
   const id=e.target.dataset&&e.target.dataset.id;if(!id)return;
   const t=S.tx.find(x=>String(x.id)===id);
   if(t&&t.cx){const x=S.cx.find(y=>y.id===t.cx);if(x)x.mv=x.mv.filter(v=>v.id!==t.cxm)}
-  S.tx=S.tx.filter(x=>String(x.id)!==id);save();render();renderCx();renderSheet();
+  S.tx=S.tx.filter(x=>String(x.id)!==id);save();render();renderCx();renderSheet();renderRec();
 });
 $('cats').addEventListener('change',e=>{
   const c=e.target.dataset.c;if(!c)return;
@@ -636,6 +649,7 @@ document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()
   document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x===b));
   ['res','lan','plan','cxs','rec'].forEach(id=>$(id).hidden=id!==b.dataset.t);
   if(b.dataset.t==='plan')renderSheet();
+  if(b.dataset.t==='rec')renderRec();
   const nv=b.parentElement,r1=b.getBoundingClientRect(),r2=nv.getBoundingClientRect();
   nv.scrollBy({left:(r1.left+r1.width/2)-(r2.left+r2.width/2),behavior:'smooth'});
 }));
@@ -668,7 +682,7 @@ function importText(txt){
   let o;
   try{o=JSON.parse(txt)}catch(err){o=null}
   if(!o||o.app!=='meu-caixa'||!Array.isArray(o.tx)){msg('Backup inválido. Use um arquivo ou texto gerado por este sistema.',true);return}
-  const ok=o.tx.map((t,i)=>({id:Number.isFinite(t.id)?t.id:Date.now()+i,type:t.type,amount:Number(t.amount),desc:String(t.desc||t.cat||'').slice(0,120),cat:String(t.cat||'Outros').slice(0,40),date:String(t.date||''),pay:['Pix','Dinheiro','Cartão'].includes(t.pay)?t.pay:'',cx:Number.isFinite(t.cx)?t.cx:undefined,cxm:Number.isFinite(t.cxm)?t.cxm:undefined,sid:Number.isFinite(t.sid)?t.sid:undefined,gross:Number(t.gross)>0?Number(t.gross):undefined,res:rsClean(t.res),card:Number.isFinite(t.card)?t.card:undefined}))
+  const ok=o.tx.map((t,i)=>({id:Number.isFinite(t.id)?t.id:Date.now()+i,type:t.type,amount:Number(t.amount),desc:String(t.desc||t.cat||'').slice(0,120),cat:String(t.cat||'Outros').slice(0,40),date:String(t.date||''),pay:['Pix','Dinheiro','Cartão'].includes(t.pay)?t.pay:'',cx:Number.isFinite(t.cx)?t.cx:undefined,cxm:Number.isFinite(t.cxm)?t.cxm:undefined,sid:Number.isFinite(t.sid)?t.sid:undefined,gross:Number(t.gross)>0?Number(t.gross):undefined,res:rsClean(t.res),card:Number.isFinite(t.card)?t.card:undefined,pd:/^\d{4}-\d\d-\d\d$/.test(t.pd||'')?t.pd:undefined}))
     .filter(t=>(t.type==='in'||t.type==='out')&&t.amount>0&&isFinite(t.amount)&&/^\d{4}-\d{2}-\d{2}$/.test(t.date));
   const bud={};CATS.out.forEach(c=>{const v=Number(o.bud&&o.bud[c]);if(v>0)bud[c]=v});
   const g=o.goal||{},goal={name:String(g.name||'').slice(0,60),target:Number(g.target)>0?Number(g.target):0,saved:Number(g.saved)>0?Number(g.saved):0};
@@ -946,6 +960,7 @@ const pdNote=t=>t.pd?', compra em '+t.pd.slice(8,10)+'/'+t.pd.slice(5,7):'';
 const PAYS=['Pix','Dinheiro','Cartão'];
 const KW=[[/ifood|restaurante|padaria|lanchonete|mercado|supermerc|atacad|feira|acougue|hortifruti|\bsuper\b|supermec|burger|pizza|resto|massas|paladar|sorvet|cafe|acai|churrasc/,'Alimentação','out'],[/uber|99 ?app|99pop|posto|combust|ipiranga|shell|estaciona|pedagio|onibus|metro/,'Transporte','out'],[/farmac|drogasil|drogaria|droga ?raia|pacheco|hospital|clinica|laborat|unimed/,'Saúde','out'],[/netflix|spotify|cinema|popcorn|disney|prime ?video|hbo|youtube|steam|playstation|xbox/,'Lazer','out'],[/alugue|condomin|energia|energetic|enel|cemig|sabesp|copasa|internet|vivo|claro/,'Moradia','out'],[/curso|escola|faculdade|udemy|alura|livraria/,'Educação','out'],[/salario|folha de pag/,'Salário','in'],[/rendimento/,'Extra','in']];
 const rkey=d=>norm(d).replace(/^(pagamento com qr pix|pagamento com pix|pagamento|pix enviado|pix recebido|compra no debito|compra no credito|transferencia (recebida|enviada))\s*/,'').replace(/[0-9]+/g,' ').replace(/[^a-z ]/g,' ').split(/\s+/).filter(w=>w.length>2).slice(0,3).join(' ');
+function learnRule(desc,cat,pay,card){const k=rkey(String(desc||''));if(!k||!cat||cat==='Caixinhas')return;S.rules=S.rules||{};const r={cat,pay:pay||''};if(pay==='Cartão'&&card)r.card=card;S.rules[k]=r}
 const rmsg=(t,bad)=>{$('rcm').textContent=t;$('rcm').style.color=bad?'var(--out)':'var(--in)'};
 function toISO(x){x=String(x).trim().replace(/"/g,'');let a;
   if(a=x.match(/^(\d{4})(\d{2})(\d{2})/))return a[1]+'-'+a[2]+'-'+a[3];
@@ -999,8 +1014,10 @@ function recImport(t,kind){
   save();renderRec();
   rmsg(`${add} movimentação(ões) nova(s)${old?', '+old+' já importada(s)':''}${dups?', '+dups+' parece(m) já lançada(s)':''}${auto?', '+auto+' interna(s) ignorada(s) automaticamente (reservas, cofrinho, fatura e transferências suas)':''}.`);
 }
-const recCardSel=(x,pay)=>pay==='Cartão'&&x.type==='out'&&S.cards.length?`<select data-f="card" aria-label="Cartão" style="margin-bottom:10px"><option value="">Escolha o cartão</option>${S.cards.map(c=>`<option value="${c.id}"${c.id===x.card?' selected':''}>${esc(c.name)}</option>`).join('')}</select>`:'';
+const recCardSel=(x,pay,s)=>{const cd=x.card||(s&&s.card);return pay==='Cartão'&&x.type==='out'&&S.cards.length?`<select data-f="card" aria-label="Cartão" style="margin-bottom:10px"><option value="">Escolha o cartão</option>${S.cards.map(c=>`<option value="${c.id}"${c.id===cd?' selected':''}>${esc(c.name)}</option>`).join('')}</select>`:''};
+let showIgn=false;
 function renderRec(){
+  recMaint();
   const pend=S.rec.filter(x=>x.st==='pend').sort((a,b)=>b.date.localeCompare(a.date)),ign=S.rec.filter(x=>x.st==='ign').length,done=S.rec.filter(x=>x.st==='done').length;
   {const rb=document.querySelector('nav [data-t=rec]');rb.textContent='⚙'+(pend.length?' '+pend.length:'');rb.setAttribute('aria-label','Conciliação e configurações'+(pend.length?', '+pend.length+' pendentes':''))}
   $('rct').textContent='Pendentes: '+pend.length;$('rcs').textContent=done+' conciliada(s), '+ign+' ignorada(s).';
@@ -1008,14 +1025,60 @@ function renderRec(){
   $('rc-all').textContent='Lançar sugeridas ('+sug+')';$('rc-all').disabled=!sug;$('rc-undo').hidden=!ign;
   $('rcl').innerHTML=pend.length?pend.map(x=>{
     const s=recSug(x),cat=x.cat||s.cat||'',pay=x.pay||s.pay||recPay(x);
-    return `<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${(()=>{const du=recDue(x,pay);return du!==x.date?' · vence '+brd(du):''})()}${x.dup?'<span class="dupb">parece já lançado</span>':''}</small><div class="g2"><select data-f="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select><select data-f="pay" aria-label="Forma de pagamento">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div>${recCardSel(x,pay)}<div class="bk"><button class="pri" data-a="ok" type="button">Lançar</button>${x.dup?'<button data-a="had" type="button">Já lancei</button>':''}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.</li>';
+    return `<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${(()=>{const du=recDue(x,pay);return du!==x.date?' · vence '+brd(du):''})()}${x.dup?'<span class="dupb">parece já lançado</span>':''}</small><div class="g2"><select data-f="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select><select data-f="pay" aria-label="Forma de pagamento">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div>${recCardSel(x,pay,s)}<div class="bk"><button class="pri" data-a="ok" type="button">Lançar</button>${x.dup?'<button data-a="had" type="button">Já lancei</button>':''}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.</li>';
+  const igl=S.rec.filter(x=>x.st==='ign').sort((a,b)=>b.date.localeCompare(a.date));
+  $('rc-ig').hidden=!igl.length;$('rc-ig').textContent=(showIgn?'Ocultar':'Mostrar')+' ignoradas ('+igl.length+')';
+  $('rcig').hidden=!(showIgn&&igl.length);
+  if(showIgn)$('rcig').innerHTML='<li class="empty" style="margin-bottom:6px">Ignoradas: não entram no seu controle. Toque para trazer de volta.</li>'+igl.slice(0,150).map(x=>`<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${RWHY[x.why]?' · '+RWHY[x.why]:''}</small><div class="bk"><button class="pri" data-a="rest" type="button">Mover para pendentes</button></div></li>`).join('');
+  $('rlss').textContent='Memória de preenchimento ('+Object.keys(S.rules||{}).length+')';
+  if($('rlsd').open)renderRules();
+}
+const RWHY={rend:'Rendimento',int:'Movimentação interna',own:'Entre suas contas',manual:'Ignorada por você'};
+function recMaint(){
+  let ch=false;
+  // lançamentos criados pela conciliação e depois excluídos voltam a ser pendentes
+  S.rec.forEach(x=>{if(x.st==='done'&&x.tx&&!S.tx.some(t=>t.id===x.tx)){x.st='pend';delete x.tx;ch=true}});
+  // reparo único dos que já tinham sido excluídos antes desta versão
+  if(!S.recFix&&S.rec.length){
+    S.recFix=1;ch=true;let n=0;const near=(a,b)=>Math.abs(new Date(a)-new Date(b))<=864e5;
+    S.rec.forEach(x=>{if(x.st!=='done'||x.tx)return;
+      const ok=S.tx.some(t=>t.type===x.type&&(Math.abs((t.gross||t.amount)-x.amount)<.005||Math.abs(t.amount-x.amount)<.005)&&(near(t.date,x.date)||(t.pd&&near(t.pd,x.date))))
+        ||S.tx.some(t=>(t.res||[]).some(r=>Math.abs(r.amt-x.amount)<.005&&near(r.date,x.date)));
+      if(!ok){x.st='pend';n++}});
+    if(n)setTimeout(()=>toast(n+' movimentação(ões) lançadas e depois excluídas voltaram para as pendentes.'),600);
+  }
+  // memória inicial a partir dos lançamentos que você já tem
+  if(!S.rulesBoot&&S.tx.length){
+    S.rulesBoot=1;ch=true;S.rules=S.rules||{};const agg={};
+    S.tx.forEach(t=>{if(t.cx||t.cat==='Caixinhas'||!t.desc)return;const k=rkey(String(t.desc).replace(/\s*\(\d+\/\d+\)\s*$/,''));if(!k||k.length<4)return;
+      const a=agg[k]=agg[k]||{n:0,c:{},p:{},t:{}};a.n++;a.c[t.cat]=(a.c[t.cat]||0)+1;a.p[t.pay||'']=(a.p[t.pay||'']||0)+1;a.t[t.type]=1});
+    Object.entries(agg).forEach(([k,a])=>{if(S.rules[k]||Object.keys(a.t).length>1)return;
+      const [c,n]=Object.entries(a.c).sort((x,y)=>y[1]-x[1])[0];if(n/a.n<.7)return;
+      S.rules[k]={cat:c,pay:Object.entries(a.p).sort((x,y)=>y[1]-x[1])[0][0]}});
+  }
+  if(ch)save();
+}
+function renderRules(){
+  const cats=[...new Set([...CATS.out,...CATS.in])].filter(c=>c!=='Caixinhas'),R=Object.entries(S.rules||{}).sort((a,b)=>a[0].localeCompare(b[0]));
+  const opt=(list,v)=>(list.includes(v)?list:[...list,v]).map(c=>`<option${c===v?' selected':''}>${esc(c)}</option>`).join('');
+  $('rl-c').innerHTML=cats.map(c=>`<option>${esc(c)}</option>`).join('');
+  $('rll').innerHTML=R.length?R.slice(0,200).map(([k,r])=>`<div data-rk="${esc(k)}" style="margin-bottom:14px"><div class="rw"><span class="rd">${esc(k)}</span><button class="sm" type="button" data-rdel="${esc(k)}">Esquecer</button></div><div class="g2" style="margin-top:6px"><select data-rf="cat" aria-label="Categoria de ${esc(k)}">${opt(cats,r.cat)}</select><select data-rf="pay" aria-label="Forma de pagamento de ${esc(k)}">${opt(PAYS,r.pay||'Pix')}</select></div></div>`).join(''):'<p class="empty" style="margin:0">Nenhuma regra ainda. Ela aparece aqui quando você lançar uma movimentação.</p>';
 }
 const recDue=(x,pay)=>{if(!(pay==='Cartão'&&x.type==='out'&&x.card))return x.date;if(/^\d{4}-\d\d-\d\d$/.test(x.bd||''))return x.bd;return invDue(x.card,x.date)};
-function recCommit(x,cat,pay){const du=recDue(x,pay),ntx={id:Date.now()+Math.floor(Math.random()*1e4),type:x.type,amount:x.amount,desc:x.desc.slice(0,120),cat,date:du,pay,card:(pay==='Cartão'&&x.type==='out'&&x.card)?x.card:undefined};if(du!==x.date)ntx.pd=x.date;S.tx.push(ntx);x.st='done';const k=rkey(x.desc);if(k)S.rules[k]={cat,pay}}
+function recCommit(x,cat,pay){const du=recDue(x,pay),ntx={id:Date.now()+Math.floor(Math.random()*1e4),type:x.type,amount:x.amount,desc:x.desc.slice(0,120),cat,date:du,pay,card:(pay==='Cartão'&&x.type==='out'&&x.card)?x.card:undefined};if(du!==x.date)ntx.pd=x.date;ntx.rid=x.id;x.tx=ntx.id;S.tx.push(ntx);x.st='done';delete x.why;learnRule(x.desc,cat,pay,ntx.card)}
 $('rc-file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;let t='';
   try{t=await readTxt(f)}catch(err){rmsg('Não consegui ler o arquivo. Tente colar o texto na opção abaixo.',true);return}
   e.target.value='';recImport(t,document.querySelector('input[name=rk]:checked').value)});
 $('rc-go').addEventListener('click',()=>recImport($('rc-txt').value,document.querySelector('input[name=rk]:checked').value));
+$('rc-ig').addEventListener('click',()=>{showIgn=!showIgn;renderRec()});
+$('rcig').addEventListener('click',e=>{if(e.target.dataset.a!=='rest')return;const li=e.target.closest('li'),x=S.rec.find(v=>v.id===li.dataset.r);if(!x)return;x.st='pend';delete x.why;x.pgchk=1;save();renderRec();rmsg('Voltou para as pendentes.')});
+$('rlsd').addEventListener('toggle',()=>{if($('rlsd').open)renderRules()});
+$('rll').addEventListener('change',e=>{const b=e.target.closest('[data-rk]'),f=e.target.dataset.rf;if(!b||!f)return;const r=S.rules[b.dataset.rk];if(!r)return;r[f]=e.target.value;if(f==='pay'&&e.target.value!=='Cartão')delete r.card;save();renderRec()});
+$('rll').addEventListener('click',e=>{const k=e.target.dataset.rdel;if(!k)return;const b=e.target;
+  if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Confirmar?';setTimeout(()=>{b.dataset.arm='';b.textContent='Esquecer'},3500);return}
+  delete S.rules[k];save();renderRec()});
+$('rl-add').addEventListener('click',()=>{const t=$('rl-k').value,k=rkey(t);if(!k){rmsg('Digite pelo menos uma palavra com 3 letras ou mais.',true);return}
+  learnRule(t,$('rl-c').value,$('rl-p').value);$('rl-k').value='';save();renderRec();rmsg('Regra salva: "'+k+'".')});
 $('rc-undo').addEventListener('click',()=>{S.rec.forEach(x=>{if(x.st==='ign')x.st='pend'});save();renderRec()});
 $('rcl').addEventListener('change',e=>{const li=e.target.closest('li'),f=e.target.dataset.f;if(!li||!f)return;const x=S.rec.find(v=>v.id===li.dataset.r);if(x){x[f]=f==='card'?(+e.target.value||undefined):e.target.value;save();if(f==='pay')renderRec()}});
 $('rcl').addEventListener('click',e=>{
@@ -1027,12 +1090,12 @@ $('rcl').addEventListener('click',e=>{
     if(pay==='Cartão'&&x.type==='out'&&S.cards.length&&!x.card){rmsg('Escolha o cartão.',true);if(ks)ks.focus();return}
     recCommit(x,cat,pay);rmsg('Lançado: '+x.desc.slice(0,40)+'.')}
   else if(a==='had'){x.st='done';rmsg('Marcada como já lançada.')}
-  else if(a==='skip'){x.st='ign';rmsg('Movimentação ignorada.')}
+  else if(a==='skip'){x.st='ign';x.why='manual';rmsg('Movimentação ignorada.')}
   else if(a==='rs'){openRp(x);return}
   save();render();renderRec()});
 $('rc-all').addEventListener('click',e=>{const b=e.currentTarget,items=S.rec.filter(x=>x.st==='pend'&&!x.dup&&(x.cat||recSug(x).cat));
   if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Confirmar '+items.length+'?';setTimeout(()=>{b.dataset.arm='';renderRec()},3500);return}
-  b.dataset.arm='';items.forEach(x=>{const s=recSug(x);recCommit(x,x.cat||s.cat,x.pay||s.pay||recPay(x))});
+  b.dataset.arm='';items.forEach(x=>{const s=recSug(x);if(!x.card&&s.card&&S.cards.some(c=>c.id===s.card))x.card=s.card;recCommit(x,x.cat||s.cat,x.pay||s.pay||recPay(x))});
   save();render();renderRec();rmsg(items.length+' lançamento(s) feito(s).')});
 
 $('rc-name').value=S.myname||'';$('rc-name').addEventListener('change',e=>{S.myname=e.target.value.trim();save()});
@@ -1533,6 +1596,7 @@ $('etsv').addEventListener('click',()=>{
   {const rl=pay==='Cartão'&&t.type==='out'&&card&&cardRules(card),ch=d!==etD0||(card||0)!==(oldCard||0)||(pay||'')!==(oldPay||'Pix');
    if(ch){if(rl){const du=invDue(card,d);t.date=du;if(du!==d)t.pd=d;else delete t.pd}else{t.date=d;delete t.pd}}}
   if(t.sid){const r=S.sheet.find(x=>x.sid===t.sid);if(r){r.v={};S.tx.filter(x=>x.sid===t.sid).forEach(x=>{const k=x.date.slice(0,7);r.v[k]=Math.round(((r.v[k]||0)+x.amount)*100)/100});if(all){r.cat=c;r.name='Parcelas: '+base}}}
+  learnRule(base,c,pay,card);
   $('etm').hidden=true;save();render();renderSheet();toast('Lançamento atualizado.');
 });
 
@@ -1577,11 +1641,11 @@ function pgIngest(d){
     const mv={id,pg:1,pgchk:1,date,type,amount,desc,st:'pend',kind:a.card?'fatura':'conta',card:(a.card&&type==='out')?cid:undefined};
     if(t.cp)mv.cp=String(t.cp).slice(0,60);
     if(a.card&&/^\d{4}-\d\d-\d\d$/.test(bd))mv.bd=bd;
-    if(pgSkip(mv,names,t.cp)){mv.st='ign';auto++}
+    {const w=pgSkip(mv,names,t.cp);if(w){mv.st='ign';mv.why=w;auto++}}
     mv.dup=S.tx.some(x=>x.type===type&&Math.abs((x.gross||x.amount)-amount)<.005&&Math.abs(new Date(x.pd||x.date)-new Date(date))<=864e5);
     if(mv.dup&&mv.st==='pend')dups++;
     S.rec.push(mv);have.add(id);add++});
-  S.rec.forEach(x=>{if(x.pg&&x.st==='pend'&&!x.pgchk){x.pgchk=1;if(pgSkip(x,names,x.cp)){x.st='ign';auto++}}});
+  S.rec.forEach(x=>{if(x.pg&&x.st==='pend'&&!x.pgchk){x.pgchk=1;const w=pgSkip(x,names,x.cp);if(w){x.st='ign';x.why=w;auto++}}});
   return{add,dups,auto,nomap};
 }
 async function pgSync(manual){
