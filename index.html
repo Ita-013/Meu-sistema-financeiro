@@ -373,6 +373,13 @@ html.noauth .au{display:flex}
     <h2>Open Finance<button class="inf" type="button" aria-label="Ajuda" data-tip="As movimentações do banco e dos cartões chegam sozinhas ao abrir o sistema. Aqui embaixo você só escolhe categoria e forma de pagamento.">i</button></h2>
     <small id="pgs"></small>
     <div id="pgmap"></div>
+    <div id="pgbk"></div>
+    <details class="adv"><summary>Adicionar outro banco</summary>
+      <small style="display:block;margin:6px 0">Conecte o banco no Meu Pluggy e copie o itemId na página Demo do Pluggy Dashboard (Connected Items).</small>
+      <input id="pgid" placeholder="itemId da conexão (36 caracteres)" aria-label="itemId" autocomplete="off">
+      <input id="pgnm" placeholder="Apelido do banco (ex.: Nubank)" aria-label="Apelido do banco" style="margin-top:8px">
+      <button class="go" id="pgadd" type="button" style="margin-top:8px">Adicionar banco</button>
+    </details>
     <label class="fl" for="pgfrom" style="margin-top:10px"><small>Buscar movimentações a partir de</small></label>
     <input id="pgfrom" type="date">
     <button class="go" id="pgsync" type="button" style="margin-top:10px">Sincronizar agora</button>
@@ -447,6 +454,7 @@ html.noauth .au{display:flex}
     <h3 id="mdt"></h3>
     <input id="mdn" placeholder="Nome da linha" aria-label="Nome da linha" maxlength="40">
     <input id="mdg" inputmode="decimal" placeholder="Meta (opcional)" aria-label="Meta da caixinha" style="margin-top:10px" hidden>
+    <div id="mdcr" hidden style="margin-top:10px"><div class="g2"><input id="mdcl" type="number" inputmode="numeric" min="1" max="31" placeholder="Dia do fechamento" aria-label="Dia do fechamento da fatura"><input id="mdcd" type="number" inputmode="numeric" min="1" max="31" placeholder="Dia do vencimento" aria-label="Dia do vencimento da fatura"></div><small style="display:block;margin-top:6px">As compras no cartão passam a contar no mês do vencimento da fatura. Compras feitas no dia do fechamento ou depois vão para a fatura seguinte.</small></div>
     <p id="mde" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
     <div class="bk"><button class="pri" id="mdok" type="button">Adicionar</button><button id="mdc" type="button">Cancelar</button></div>
     <button class="sm" id="mdx" type="button" hidden style="margin-top:10px;width:100%">Excluir cartão</button>
@@ -523,7 +531,7 @@ function render(){
 
   const by={};tx.filter(t=>t.type==='out').forEach(t=>by[t.cat]=(by[t.cat]||0)+t.amount);
 
-  $('list').innerHTML=tx.length?tx.map(t=>`<li data-ed="${t.id}" style="cursor:pointer"><div><div>${esc(t.desc)}</div><small>${esc(t.cat)}${payLabel(t)?', '+payLabel(t):''}, ${t.date.split('-').reverse().join('/')}</small>${t.res?`<small>Pago ${fmt(t.gross)}, ressarcido ${fmt(t.gross-t.amount)}</small>`:''}</div><b class="${t.type}">${t.type==='out'?'−':'+'}${fmt(t.amount)}</b><div class="acts">${t.type==='out'&&!t.cx?`<button data-rs="${t.id}" aria-label="Registrar ressarcimento de ${esc(t.desc)}">Ressarcimento</button>`:''}<button data-id="${t.id}" aria-label="Excluir ${esc(t.desc)}">Excluir</button>${t.sid?`<button data-sid="${t.sid}" aria-label="Excluir todas as parcelas de ${esc(t.desc)}">Excluir todas as parcelas</button>`:''}</div></li>`).join(''):'<li class="empty">Nenhum lançamento neste mês. Adicione o primeiro acima.</li>';
+  $('list').innerHTML=tx.length?tx.map(t=>`<li data-ed="${t.id}" style="cursor:pointer"><div><div>${esc(t.desc)}</div><small>${esc(t.cat)}${payLabel(t)?', '+payLabel(t):''}, ${t.date.split('-').reverse().join('/')}${pdNote(t)}</small>${t.res?`<small>Pago ${fmt(t.gross)}, ressarcido ${fmt(t.gross-t.amount)}</small>`:''}</div><b class="${t.type}">${t.type==='out'?'−':'+'}${fmt(t.amount)}</b><div class="acts">${t.type==='out'&&!t.cx?`<button data-rs="${t.id}" aria-label="Registrar ressarcimento de ${esc(t.desc)}">Ressarcimento</button>`:''}<button data-id="${t.id}" aria-label="Excluir ${esc(t.desc)}">Excluir</button>${t.sid?`<button data-sid="${t.sid}" aria-label="Excluir todas as parcelas de ${esc(t.desc)}">Excluir todas as parcelas</button>`:''}</div></li>`).join(''):'<li class="empty">Nenhum lançamento neste mês. Adicione o primeiro acima.</li>';
 
   const eff=c=>sbm(c,m);
   const cs=[...CATS.out,...Object.keys(by).filter(c=>!CATS.out.includes(c)&&c!=='Caixinhas')];
@@ -579,21 +587,23 @@ const addTx=()=>{
     if(!(n>=2)||!(k>=1)||k>n){er.textContent='Informe a parcela atual e o total de parcelas, por exemplo 1 e 6.';return}
     par={k,n};desc=base+' ('+k+'/'+n+')';
   }
-  let note='';
+  let note='';const eff=cardId?invDue(cardId,d):d,ruled=!!(cardId&&cardRules(cardId));
   if(par){
-    const n=par.n,k=par.k,each=Math.floor(amt/n*100)/100,last=Math.round((amt-each*(n-1))*100)/100,sid=uid(),dd=+d.slice(8,10);
+    const n=par.n,k=par.k,each=Math.floor(amt/n*100)/100,last=Math.round((amt-each*(n-1))*100)/100,sid=uid(),dd=+eff.slice(8,10),bk=eff.slice(0,7);
     const row={id:uid(),name:'Parcelas: '+base,cat:c,k:'out',p:1,sid,v:{}};
     for(let i=1;i<=n;i++){
-      const key=addM(d.slice(0,7),i-k),[yy,mm]=key.split('-').map(Number),day=Math.min(dd,new Date(yy,mm,0).getDate()),a=i===n?last:each;
-      S.tx.push({id:uid(),type:tp,amount:a,desc:base+' ('+i+'/'+n+')',cat:c,date:key+'-'+String(day).padStart(2,'0'),pay,sid,card:cardId||undefined});
+      const key=addM(bk,i-k),[yy,mm]=key.split('-').map(Number),day=Math.min(dd,new Date(yy,mm,0).getDate()),a=i===n?last:each;
+      const ntx={id:uid(),type:tp,amount:a,desc:base+' ('+i+'/'+n+')',cat:c,date:key+'-'+String(day).padStart(2,'0'),pay,sid,card:cardId||undefined};
+      if(ruled&&i===k&&eff!==d)ntx.pd=d;
+      S.tx.push(ntx);
       row.v[key]=a;
     }
     S.sheet.push(row);renderSheet();
     const lab=key=>MES[+key.slice(5,7)-1]+'/'+key.slice(0,4);
-    note='Compra de '+fmt(amt)+' dividida em '+n+' parcelas de '+fmt(each)+', lançadas de '+lab(addM(d.slice(0,7),1-k))+' a '+lab(addM(d.slice(0,7),n-k))+'. A linha "Parcelas: '+base.slice(0,30)+'" foi para a aba Orçamentos.';
-  }else S.tx.push({id:Date.now(),type:tp,amount:amt,desc,cat:c,date:d,pay,card:cardId||undefined});
+    note='Compra de '+fmt(amt)+' dividida em '+n+' parcelas de '+fmt(each)+', lançadas de '+lab(addM(bk,1-k))+' a '+lab(addM(bk,n-k))+'. A linha "Parcelas: '+base.slice(0,30)+'" foi para a aba Orçamentos.';
+  }else{const ntx={id:Date.now(),type:tp,amount:amt,desc,cat:c,date:eff,pay,card:cardId||undefined};if(ruled&&eff!==d){ntx.pd=d;note='Lançado na fatura que vence em '+brd(eff)+'.'}S.tx.push(ntx)}
   if(cardId)S.lastCard=cardId;
-  save();m=d.slice(0,7);$('m').value=m;$('v').value='';$('ds').value='';$('pk').value='';$('pn2').value='';$('pcx').checked=false;parUI();render();
+  save();m=eff.slice(0,7);$('m').value=m;$('v').value='';$('ds').value='';$('pk').value='';$('pn2').value='';$('pcx').checked=false;parUI();render();
   if(note){er.style.color='var(--in)';er.textContent=note}else er.textContent='';
 };
 $('add').addEventListener('click',addTx);
@@ -667,7 +677,7 @@ function importText(txt){
   const cxs=(Array.isArray(o.cx)?o.cx:[]).map((x,i)=>({id:Number.isFinite(x.id)?x.id:Date.now()+i+5000,name:String(x.name||'Caixinha').slice(0,40),target:Number(x.target)>0?Number(x.target):0,mv:(Array.isArray(x.mv)?x.mv:[]).map((v,q)=>({id:Number.isFinite(v.id)?v.id:Date.now()+q+9000,date:/^\d{4}-\d{2}-\d{2}$/.test(v.date)?v.date:today(),amt:Number(v.amt),note:v.note?String(v.note).slice(0,40):undefined,tx:Number.isFinite(v.tx)?v.tx:undefined})).filter(v=>isFinite(v.amt)&&v.amt!==0)}));
   const okc=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'&&x.trim()&&norm(x)!=='caixinhas').map(x=>x.trim().slice(0,30)):[];
   const cts=o.cats&&typeof o.cats==='object'?{out:okc(o.cats.out),in:okc(o.cats.in)}:{out:[],in:[]};
-  const cds=(Array.isArray(o.cards)?o.cards:[]).filter(c=>c&&typeof c.name==='string'&&c.name.trim()).map((c,i)=>({id:Number.isFinite(c.id)?c.id:Date.now()+i+7000,name:c.name.trim().slice(0,30),...(typeof c.pg==='string'&&c.pg?{pg:c.pg.slice(0,80)}:{})}));
+  const cds=(Array.isArray(o.cards)?o.cards:[]).filter(c=>c&&typeof c.name==='string'&&c.name.trim()).map((c,i)=>({id:Number.isFinite(c.id)?c.id:Date.now()+i+7000,name:c.name.trim().slice(0,30),...(typeof c.pg==='string'&&c.pg?{pg:c.pg.slice(0,80)}:{}),...(c.cl>=1&&c.cl<=31&&c.dd>=1&&c.dd<=31?{cl:c.cl|0,dd:c.dd|0}:{})}));
   const replace=document.querySelector('input[name=bm]:checked').value==='replace';
   let added,skipped=0;
   if(replace){
@@ -810,25 +820,28 @@ function toast(t,bad){const el=$('toast');el.textContent=t;el.className='toast o
 $('toast').addEventListener('click',()=>$('toast').classList.remove('on'));
 const shmsg=(t,bad)=>toast(t,bad);
 let mdKind='out',mdMode='line',mdCb=null,mdCancel=null;
-function openLine(kind,cb,onCancel){mdMode='line';mdKind=kind;mdCb=cb||null;mdCancel=onCancel||null;$('mdt').textContent=kind==='in'?'Nova linha de entrada':'Nova linha de saída';$('mdn').placeholder='Nome da linha';$('mdg').hidden=true;$('mdx').hidden=true;$('mdok').textContent='Adicionar';$('mdn').value='';$('mde').textContent='';$('mdl').hidden=false;setTimeout(()=>$('mdn').focus(),30)}
-function openCxNew(){mdMode='cx';mdCb=null;mdCancel=null;$('mdt').textContent='Nova caixinha';$('mdn').placeholder='Nome (ex.: Viagem)';$('mdg').hidden=false;$('mdx').hidden=true;$('mdg').value='';$('mdok').textContent='Criar';$('mdn').value='';$('mde').textContent='';$('mdl').hidden=false;setTimeout(()=>$('mdn').focus(),30)}
+function openLine(kind,cb,onCancel){$('mdcr').hidden=true;mdMode='line';mdKind=kind;mdCb=cb||null;mdCancel=onCancel||null;$('mdt').textContent=kind==='in'?'Nova linha de entrada':'Nova linha de saída';$('mdn').placeholder='Nome da linha';$('mdg').hidden=true;$('mdx').hidden=true;$('mdok').textContent='Adicionar';$('mdn').value='';$('mde').textContent='';$('mdl').hidden=false;setTimeout(()=>$('mdn').focus(),30)}
+function openCxNew(){$('mdcr').hidden=true;mdMode='cx';mdCb=null;mdCancel=null;$('mdt').textContent='Nova caixinha';$('mdn').placeholder='Nome (ex.: Viagem)';$('mdg').hidden=false;$('mdx').hidden=true;$('mdg').value='';$('mdok').textContent='Criar';$('mdn').value='';$('mde').textContent='';$('mdl').hidden=false;setTimeout(()=>$('mdn').focus(),30)}
 let mdCard=null;
 function openCard(id,cb,onCancel){
   mdMode='card';mdCard=id||null;mdCb=cb||null;mdCancel=onCancel||null;
   const c=id?S.cards.find(x=>x.id===id):null;
   $('mdt').textContent=c?'Editar cartão':'Novo cartão';$('mdn').placeholder='Nome do cartão (ex.: Nubank)';$('mdg').hidden=true;
   $('mdok').textContent=c?'Salvar':'Criar';$('mdn').value=c?c.name:'';$('mde').textContent='';
-  $('mdx').hidden=!c;$('mdx').textContent='Excluir cartão';$('mdx').dataset.arm='';
+  $('mdcr').hidden=false;$('mdcl').value=c&&c.cl?c.cl:'';$('mdcd').value=c&&c.dd?c.dd:'';$('mdx').hidden=!c;$('mdx').textContent='Excluir cartão';$('mdx').dataset.arm='';
   $('mdl').hidden=false;setTimeout(()=>{$('mdn').focus();$('mdn').select()},30);
 }
-function closeLine(ok){if($('mdl').hidden)return;$('mdl').hidden=true;if(!ok&&mdCancel)mdCancel();mdCb=null;mdCancel=null}
+function closeLine(ok){if($('mdl').hidden)return;$('mdl').hidden=true;$('mdcr').hidden=true;if(!ok&&mdCancel)mdCancel();mdCb=null;mdCancel=null}
 function confirmLine(){
   const n=$('mdn').value.trim().slice(0,mdMode==='cx'?40:30);
   if(mdMode==='card'){
     if(!n){$('mde').textContent='Dê um nome ao cartão.';return}
     if(S.cards.some(c=>c.id!==mdCard&&norm(c.name)===norm(n))){$('mde').textContent='Já existe um cartão com esse nome.';return}
+    const cl=parseInt($('mdcl').value,10)||0,dd=parseInt($('mdcd').value,10)||0;
+    if((cl&&!dd)||(dd&&!cl)){$('mde').textContent='Preencha o dia do fechamento e o do vencimento, ou deixe os dois vazios.';return}
+    if((cl&&(cl<1||cl>31))||(dd&&(dd<1||dd>31))){$('mde').textContent='Use dias entre 1 e 31.';return}
     let id=mdCard;const cb=mdCb,novo=!mdCard;
-    if(mdCard)S.cards.find(c=>c.id===mdCard).name=n;else{id=uid();S.cards.push({id,name:n})}
+    if(mdCard){const cc=S.cards.find(c=>c.id===mdCard);cc.name=n;if(cl){cc.cl=cl;cc.dd=dd}else{delete cc.cl;delete cc.dd}}else{id=uid();S.cards.push(cl?{id,name:n,cl,dd}:{id,name:n})}
     closeLine(true);save();fillCards();render();renderRec();if(cb)cb(id);toast(novo?'Cartão "'+n+'" criado.':'Cartão renomeado para "'+n+'".');return;
   }
   if(!n){$('mde').textContent=mdMode==='cx'?'Dê um nome à caixinha.':'Dê um nome à nova linha.';return}
@@ -919,6 +932,16 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closePop()});
 
 const addM=(k,d)=>{const [y,mo]=k.split('-').map(Number),t=new Date(y,mo-1+d,1);return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')};
 const mname=k=>MESL[+k.slice(5,7)-1];
+const cardRules=id=>{const c=S.cards.find(x=>x.id===id);return c&&c.cl&&c.dd?c:null};
+const dueOn=(ym,day)=>{const [y,mo]=ym.split('-').map(Number);return ym+'-'+String(Math.min(day,new Date(y,mo,0).getDate())).padStart(2,'0')};
+// data de saída (vencimento da fatura) de uma compra no cartão; sem regras no cartão, mantém a data
+function invDue(cid,iso){
+  const c=cardRules(cid);if(!c||!/^\d{4}-\d\d-\d\d$/.test(iso||''))return iso;
+  const ym=iso.slice(0,7),cm=+iso.slice(8,10)>=c.cl?addM(ym,1):ym;
+  return dueOn(c.dd>c.cl?cm:addM(cm,1),c.dd);
+}
+const brd=iso=>iso.split('-').reverse().join('/');
+const pdNote=t=>t.pd?', compra em '+t.pd.slice(8,10)+'/'+t.pd.slice(5,7):'';
 
 const PAYS=['Pix','Dinheiro','Cartão'];
 const KW=[[/ifood|restaurante|padaria|lanchonete|mercado|supermerc|atacad|feira|acougue|hortifruti|\bsuper\b|supermec|burger|pizza|resto|massas|paladar|sorvet|cafe|acai|churrasc/,'Alimentação','out'],[/uber|99 ?app|99pop|posto|combust|ipiranga|shell|estaciona|pedagio|onibus|metro/,'Transporte','out'],[/farmac|drogasil|drogaria|droga ?raia|pacheco|hospital|clinica|laborat|unimed/,'Saúde','out'],[/netflix|spotify|cinema|popcorn|disney|prime ?video|hbo|youtube|steam|playstation|xbox/,'Lazer','out'],[/alugue|condomin|energia|energetic|enel|cemig|sabesp|copasa|internet|vivo|claro/,'Moradia','out'],[/curso|escola|faculdade|udemy|alura|livraria/,'Educação','out'],[/salario|folha de pag/,'Salário','in'],[/rendimento/,'Extra','in']];
@@ -970,7 +993,7 @@ function recImport(t,kind){
     if(kind==='fatura'&&type==='in'&&/^pagamento/.test(norm(r.desc)))mv.st='ign';
     const nd=norm(r.desc),me=norm(S.myname||'');
     if(/dinheiro (retirado|reservado)|cofrinho|pagamento de fatura/.test(nd)||(me.length>3&&nd.includes(me)&&/transfer|pix/.test(nd))){if(mv.st==='pend')auto++;mv.st='ign'}
-    mv.dup=S.tx.some(x=>x.type===type&&Math.abs((x.gross||x.amount)-amount)<.005&&Math.abs(new Date(x.date)-new Date(r.date))<=864e5);
+    mv.dup=S.tx.some(x=>x.type===type&&Math.abs((x.gross||x.amount)-amount)<.005&&Math.abs(new Date(x.pd||x.date)-new Date(r.date))<=864e5);
     if(mv.dup&&mv.st==='pend')dups++;
     S.rec.push(mv);add++});
   save();renderRec();
@@ -985,9 +1008,10 @@ function renderRec(){
   $('rc-all').textContent='Lançar sugeridas ('+sug+')';$('rc-all').disabled=!sug;$('rc-undo').hidden=!ign;
   $('rcl').innerHTML=pend.length?pend.map(x=>{
     const s=recSug(x),cat=x.cat||s.cat||'',pay=x.pay||s.pay||recPay(x);
-    return `<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${x.dup?'<span class="dupb">parece já lançado</span>':''}</small><div class="g2"><select data-f="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select><select data-f="pay" aria-label="Forma de pagamento">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div>${recCardSel(x,pay)}<div class="bk"><button class="pri" data-a="ok" type="button">Lançar</button>${x.dup?'<button data-a="had" type="button">Já lancei</button>':''}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.</li>';
+    return `<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${(()=>{const du=recDue(x,pay);return du!==x.date?' · vence '+brd(du):''})()}${x.dup?'<span class="dupb">parece já lançado</span>':''}</small><div class="g2"><select data-f="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select><select data-f="pay" aria-label="Forma de pagamento">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div>${recCardSel(x,pay)}<div class="bk"><button class="pri" data-a="ok" type="button">Lançar</button>${x.dup?'<button data-a="had" type="button">Já lancei</button>':''}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.</li>';
 }
-function recCommit(x,cat,pay){S.tx.push({id:Date.now()+Math.floor(Math.random()*1e4),type:x.type,amount:x.amount,desc:x.desc.slice(0,120),cat,date:x.date,pay,card:(pay==='Cartão'&&x.type==='out'&&x.card)?x.card:undefined});x.st='done';const k=rkey(x.desc);if(k)S.rules[k]={cat,pay}}
+const recDue=(x,pay)=>{if(!(pay==='Cartão'&&x.type==='out'&&x.card))return x.date;if(/^\d{4}-\d\d-\d\d$/.test(x.bd||''))return x.bd;return invDue(x.card,x.date)};
+function recCommit(x,cat,pay){const du=recDue(x,pay),ntx={id:Date.now()+Math.floor(Math.random()*1e4),type:x.type,amount:x.amount,desc:x.desc.slice(0,120),cat,date:du,pay,card:(pay==='Cartão'&&x.type==='out'&&x.card)?x.card:undefined};if(du!==x.date)ntx.pd=x.date;S.tx.push(ntx);x.st='done';const k=rkey(x.desc);if(k)S.rules[k]={cat,pay}}
 $('rc-file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;let t='';
   try{t=await readTxt(f)}catch(err){rmsg('Não consegui ler o arquivo. Tente colar o texto na opção abaixo.',true);return}
   e.target.value='';recImport(t,document.querySelector('input[name=rk]:checked').value)});
@@ -1222,11 +1246,11 @@ function renderFat(){
   $('ftot').textContent=fmt(L.reduce((a,t)=>a+t.amount,0));
   $('fat').innerHTML=rows.length?rows.map(g=>{
     const open=openFat===g.key;
-    return `<li><div class="rw"><button type="button" class="cn" data-f="${esc(g.key)}" aria-expanded="${open}">${esc(g.name)} <span aria-hidden="true">${open?'▾':'▸'}</span></button><b class="out">${fmt(sm(g))}</b></div><div class="rw sub" data-f="${esc(g.key)}"><small>Fatura de ${mname(m)}/${m.slice(0,4)}, ${g.L.length} lançamento(s)</small>${g.id?`<button type="button" class="lnk" data-fe="${g.id}">Editar cartão</button>`:'<small></small>'}</div>${open?detailFat(g):''}</li>`}).join(''):'<li class="empty">Nenhuma compra no cartão neste mês. Para lançar, escolha Cartão como forma de pagamento nos lançamentos.</li>';
+    return `<li><div class="rw"><button type="button" class="cn" data-f="${esc(g.key)}" aria-expanded="${open}">${esc(g.name)} <span aria-hidden="true">${open?'▾':'▸'}</span></button><b class="out">${fmt(sm(g))}</b></div><div class="rw sub" data-f="${esc(g.key)}"><small>${(()=>{const c=g.id&&cardRules(g.id);return c?'Vence em '+String(c.dd).padStart(2,'0')+'/'+m.slice(5,7)+'/'+m.slice(0,4)+' (fecha dia '+c.cl+'), '+g.L.length+' lançamento(s)':'Fatura de '+mname(m)+'/'+m.slice(0,4)+', '+g.L.length+' lançamento(s)'})()}</small>${g.id?`<button type="button" class="lnk" data-fe="${g.id}">Editar cartão</button>`:'<small></small>'}</div>${open?detailFat(g):''}</li>`}).join(''):'<li class="empty">Nenhuma compra no cartão neste mês. Para lançar, escolha Cartão como forma de pagamento nos lançamentos.</li>';
 }
 function detailFat(g){
   const L=[...g.L].sort(dsort==='d'?(a,b)=>b.date.localeCompare(a.date)||b.id-a.id:(a,b)=>b.amount-a.amount);
-  return `<div class="dt"><div class="hd"><span>${L.length} lançamento(s), ${fmt(L.reduce((a,t)=>a+t.amount,0))}</span><span class="st">Ordenar: <button type="button" data-sort="v" aria-pressed="${dsort==='v'}">Valor</button><button type="button" data-sort="d" aria-pressed="${dsort==='d'}">Data</button></span></div><div class="dl">`+L.map(t=>`<div class="dr"><span>${esc(t.desc)}</span><b class="out">${fmt(t.amount)}</b><small>${t.date.split('-').reverse().slice(0,2).join('/')}, ${esc(t.cat)}${t.res?', pago '+fmt(t.gross):''}</small></div>`).join('')+'</div></div>';
+  return `<div class="dt"><div class="hd"><span>${L.length} lançamento(s), ${fmt(L.reduce((a,t)=>a+t.amount,0))}</span><span class="st">Ordenar: <button type="button" data-sort="v" aria-pressed="${dsort==='v'}">Valor</button><button type="button" data-sort="d" aria-pressed="${dsort==='d'}">Data</button></span></div><div class="dl">`+L.map(t=>`<div class="dr"><span>${esc(t.desc)}</span><b class="out">${fmt(t.amount)}</b><small>${(t.pd||t.date).split('-').reverse().slice(0,2).join('/')}, ${esc(t.cat)}${t.res?', pago '+fmt(t.gross):''}</small></div>`).join('')+'</div></div>';
 }
 $('fat').addEventListener('click',e=>{
   const sb=e.target.closest('[data-sort]');if(sb){dsort=sb.dataset.sort;render();return}
@@ -1484,11 +1508,11 @@ document.addEventListener('click',e=>{if(blk){e.stopPropagation();e.preventDefau
 document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('#sh td.nm'))e.preventDefault()});
 
 // ----- editar lançamentos -----
-let etT=null;
+let etT=null,etD0='';
 const etPay=()=>{const o=$('etp').value==='Cartão'&&etT.type==='out';$('etk').hidden=!o};
 function openEt(id){const t=S.tx.find(x=>String(x.id)===String(id));if(!t)return;
   if(t.cx||t.cat==='Caixinhas'){toast('Movimentos de caixinha são editados na aba Caixinhas.',true);return}
-  etT=t;$('etv').value=num(t.amount);$('etv').disabled=!!t.res;$('etd').value=t.date;$('ets').value=t.desc;
+  etT=t;$('etv').value=num(t.amount);$('etv').disabled=!!t.res;$('etd').value=t.pd||t.date;etD0=$('etd').value;$('ets').value=t.desc;
   $('etc').innerHTML=CATS[t.type].filter(c=>c!=='Caixinhas').map(c=>`<option>${esc(c)}</option>`).join('');$('etc').value=t.cat;
   $('etp').hidden=t.type!=='out';$('etp').value=t.pay||'Pix';
   $('etk').innerHTML=S.cards.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(t.card)$('etk').value=t.card;etPay();
@@ -1501,11 +1525,13 @@ $('etsv').addEventListener('click',()=>{
   if(!(v>0))return $('eter').textContent='Digite um valor maior que zero.';if(!d)return $('eter').textContent='Escolha a data.';if(!desc)return $('eter').textContent='Digite a descrição.';
   if(t.type==='out'&&pay==='Cartão'&&!card)return $('eter').textContent='Escolha o cartão.';
   const all=t.sid&&confirm('Esta compra é parcelada. Aplicar descrição, categoria e forma de pagamento a todas as parcelas?\n\nOK = todas as parcelas.\nCancelar = só esta parcela.');
-  const mt=desc.match(/^(.*) \(\d+\/\d+\)$/),base=mt?mt[1]:desc;
+  const oldCard=t.card,oldPay=t.pay,mt=desc.match(/^(.*) \(\d+\/\d+\)$/),base=mt?mt[1]:desc;
   const ap=x=>{x.cat=c;if(t.type==='out'){x.pay=pay;if(card)x.card=card;else delete x.card}};
   if(all){S.tx.filter(x=>x.sid===t.sid).forEach(x=>{const k=x.desc.match(/ \((\d+\/\d+)\)$/);x.desc=base+(k?' ('+k[1]+')':'');ap(x)})}
   else{t.desc=desc;ap(t)}
-  t.amount=v;t.date=d;
+  t.amount=v;
+  {const rl=pay==='Cartão'&&t.type==='out'&&card&&cardRules(card),ch=d!==etD0||(card||0)!==(oldCard||0)||(pay||'')!==(oldPay||'Pix');
+   if(ch){if(rl){const du=invDue(card,d);t.date=du;if(du!==d)t.pd=d;else delete t.pd}else{t.date=d;delete t.pd}}}
   if(t.sid){const r=S.sheet.find(x=>x.sid===t.sid);if(r){r.v={};S.tx.filter(x=>x.sid===t.sid).forEach(x=>{const k=x.date.slice(0,7);r.v[k]=Math.round(((r.v[k]||0)+x.amount)*100)/100});if(all){r.cat=c;r.name='Parcelas: '+base}}}
   $('etm').hidden=true;save();render();renderSheet();toast('Lançamento atualizado.');
 });
@@ -1521,11 +1547,22 @@ let pgBusy=false,pgLastTry=0;
 function pgShow(){
   const st=pgLoad();$('pgfrom').value=st.from||isoD(new Date(new Date().getFullYear(),new Date().getMonth(),1));
   $('pgs').textContent=st.last?'Última consulta: '+new Date(st.last).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Ainda não consultou o banco neste aparelho.';
+  const bk=S.pgItems||[];$('pgbk').innerHTML=bk.length?'<small style="display:block;margin:10px 0 4px">Bancos conectados</small>'+bk.map(i=>`<div class="rw" style="gap:8px;margin-bottom:6px"><span>${esc(i.name||'Banco')} <small>${esc(i.id.slice(0,8))}…</small></span><button class="sm" type="button" data-pgdel="${esc(i.id)}">Remover</button></div>`).join(''):'';
   const un=(st.accs||[]).filter(a=>a.card&&!S.cards.some(c=>c.pg===a.id));
   $('pgmap').innerHTML=un.length?'<small style="display:block;margin:8px 0 4px">Escolha a qual cartão do sistema cada cartão do banco corresponde:</small>'+un.map(a=>`<div class="g2" style="align-items:center"><span>${esc(pgLabel(a))}</span><select data-pgacc="${esc(a.id)}" aria-label="Cartão do sistema para ${esc(pgLabel(a))}"><option value="">Escolha</option>${S.cards.filter(c=>!c.pg).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}<option value="__new">+ Criar cartão novo</option></select></div>`).join(''):'';
 }
+function pgSkip(mv,names,cp){
+  const nd=norm(mv.desc),nc=norm(cp||'');
+  if(/rendiment/.test(nd))return 'rend';
+  if(/dinheiro (retirado|reservado)|cofrinho|pagamento de fatura/.test(nd))return 'int';
+  if(mv.kind==='fatura'&&mv.type==='in'&&/^pagamento/.test(nd))return 'int';
+  if(nc.length>5&&names.some(n=>nc===n||nc.includes(n)||n.includes(nc)))return 'own';
+  if(names.some(n=>nd.includes(n)&&/transfer|pix|ted|doc/.test(nd)))return 'own';
+  return '';
+}
 function pgIngest(d){
-  const have=new Set(S.rec.map(x=>x.id)),me=norm(S.myname||''),A=new Map(d.accounts.map(a=>[a.id,a]));
+  const have=new Set(S.rec.map(x=>x.id)),A=new Map(d.accounts.map(a=>[a.id,a])),st=pgLoad();
+  const names=[...new Set([S.myname,...(d.me||[]),...(st.me||[])].map(x=>norm(x||'')).filter(n=>n.length>3))];
   let add=0,dups=0,auto=0,nomap=0;
   d.transactions.forEach(t=>{
     const a=A.get(t.accountId);if(!a)return;
@@ -1536,13 +1573,15 @@ function pgIngest(d){
     if(!amount||!/^\d{4}-\d\d-\d\d$/.test(date))return;
     let desc=String(t.description||'(sem descrição)').replace(/\s+/g,' ').trim();
     if(t.totalInstallments>1&&!/\(\d+\/\d+\)\s*$/.test(desc))desc+=' ('+t.installmentNumber+'/'+t.totalInstallments+')';
-    const mv={id,pg:1,date,type,amount,desc,st:'pend',kind:a.card?'fatura':'conta',card:(a.card&&type==='out')?cid:undefined},nd=norm(desc);
-    if(a.card&&type==='in'&&/^pagamento/.test(nd))mv.st='ign';
-    if(/dinheiro (retirado|reservado)|cofrinho|pagamento de fatura/.test(nd)||(me.length>3&&nd.includes(me)&&/transfer|pix/.test(nd)))mv.st='ign';
-    if(mv.st==='ign')auto++;
-    mv.dup=S.tx.some(x=>x.type===type&&Math.abs((x.gross||x.amount)-amount)<.005&&Math.abs(new Date(x.date)-new Date(date))<=864e5);
+    const bd=String(t.billDue||'').slice(0,10);
+    const mv={id,pg:1,pgchk:1,date,type,amount,desc,st:'pend',kind:a.card?'fatura':'conta',card:(a.card&&type==='out')?cid:undefined};
+    if(t.cp)mv.cp=String(t.cp).slice(0,60);
+    if(a.card&&/^\d{4}-\d\d-\d\d$/.test(bd))mv.bd=bd;
+    if(pgSkip(mv,names,t.cp)){mv.st='ign';auto++}
+    mv.dup=S.tx.some(x=>x.type===type&&Math.abs((x.gross||x.amount)-amount)<.005&&Math.abs(new Date(x.pd||x.date)-new Date(date))<=864e5);
     if(mv.dup&&mv.st==='pend')dups++;
     S.rec.push(mv);have.add(id);add++});
+  S.rec.forEach(x=>{if(x.pg&&x.st==='pend'&&!x.pgchk){x.pgchk=1;if(pgSkip(x,names,x.cp)){x.st='ign';auto++}}});
   return{add,dups,auto,nomap};
 }
 async function pgSync(manual){
@@ -1553,21 +1592,25 @@ async function pgSync(manual){
   try{
     const tk=await FB.token();
     let r,d=null;
-    try{r=await fetch(PGBASE+'/api/pluggy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify({from})});d=await r.json()}catch(e){if(!r)throw new Error('net')}
+    try{r=await fetch(PGBASE+'/api/pluggy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify({from,items:S.pgItems?S.pgItems.map(i=>i.id):undefined})});d=await r.json()}catch(e){if(!r)throw new Error('net')}
     if(!r.ok||!d){
+      if(d&&d.error==='noitems'){if(!S.pgItems){S.pgItems=[];save()}pgShow();throw new Error('Nenhum banco cadastrado. Abra "Adicionar outro banco" e cole o itemId da conexão.')}
       const m=r.status===404?'A função /api/pluggy não foi encontrada. Suba a pasta api junto com o index.html.':r.status===401?'Esta conta não tem permissão para consultar o banco.':(d&&d.error==='config')?'Faltam variáveis na Vercel: '+(d.missing||[]).join(', ')+'.':'O Pluggy não respondeu agora'+(d&&d.detail?' ('+d.detail+')':'')+'.';
       throw new Error(m)}
     for(let i=0;i<20&&pulling;i++)await new Promise(z=>setTimeout(z,500));
+    if(!S.pgItems)S.pgItems=(d.items||[]).map(i=>({id:i.id,name:i.inst||'Banco'}));
+    else S.pgItems.forEach(i=>{const u=(d.items||[]).find(x=>x.id===i.id);if(u&&!i.name)i.name=u.inst});
     const res=pgIngest(d);
     const w=new Date(Date.now()-15*864e5),nf=isoD(w)>from?isoD(w):from;
-    pgSaveSt({from:nf,last:Date.now(),accs:d.accounts});
+    pgSaveSt({from:nf,last:Date.now(),accs:d.accounts,me:d.me||[]});
     save();render();renderRec();pgShow();
     pgMsg(res.add?`${res.add} movimentação(ões) nova(s)${res.dups?', '+res.dups+' parece(m) já lançada(s)':''}${res.auto?', '+res.auto+' interna(s) ignorada(s)':''}.`:'Nada novo por enquanto.');
-    if(res.nomap)pgMsg('Escolha acima o cartão de cada conta do banco para puxar as compras do cartão.',true);
+    if(d.errors&&d.errors.length){const nm=d.errors.map(x=>{const i=(S.pgItems||[]).find(y=>y.id===x.itemId);return (i&&i.name)||x.itemId.slice(0,8)});pgMsg('Não consegui ler: '+nm.join(', ')+'. Confira o itemId ou remova esse banco.',true)}
+    else if(res.nomap)pgMsg('Escolha acima o cartão de cada conta do banco para puxar as compras do cartão.',true);
   }catch(e){pgMsg(e&&e.message==='net'||/Failed to fetch|NetworkError/.test(String(e&&e.message))?'Sem conexão para consultar o banco agora.':(e&&e.message)||'Não consegui consultar o banco.',true)}
   pgBusy=false;$('pgsync').disabled=false;
 }
-window.pgAuto=function(){if(!cu||Date.now()-pgLastTry<6e5)return;pgLastTry=Date.now();pgSync(false)};
+window.pgAuto=function(){if(!cu||(S.pgItems&&!S.pgItems.length)||Date.now()-pgLastTry<6e5)return;pgLastTry=Date.now();pgSync(false)};
 $('pgsync').addEventListener('click',()=>{pgLastTry=Date.now();pgSync(true)});
 $('pgfrom').addEventListener('change',()=>{const st=pgLoad();st.from=$('pgfrom').value||st.from;pgSaveSt(st)});
 $('pgmap').addEventListener('change',e=>{
@@ -1576,6 +1619,16 @@ $('pgmap').addEventListener('change',e=>{
   if(e.target.value==='__new'){let n=(a.inst||a.name||'Cartão').slice(0,30);if(S.cards.some(c=>norm(c.name)===norm(n)))n=(n+' '+String(a.number||'').slice(-4)).trim().slice(0,30);S.cards.push({id:uid(),name:n,pg:id})}
   else{const c=S.cards.find(x=>String(x.id)===e.target.value);if(c)c.pg=id}
   save();fillCards();render();renderRec();pgShow();pgSync(true)});
+$('pgbk').addEventListener('click',e=>{
+  const id=e.target.dataset.pgdel;if(!id)return;const b=e.target;
+  if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Confirmar?';setTimeout(()=>{b.dataset.arm='';b.textContent='Remover'},3500);return}
+  S.pgItems=(S.pgItems||[]).filter(i=>i.id!==id);save();pgShow();pgMsg('Banco removido. As movimentações já importadas continuam na lista.')});
+$('pgadd').addEventListener('click',()=>{
+  const id=$('pgid').value.trim().toLowerCase(),nm=$('pgnm').value.trim().slice(0,30);
+  if(!/^[0-9a-f-]{36}$/.test(id)){pgMsg('O itemId parece incompleto: ele tem 36 caracteres, como 3f2a9c1e-8b47-4d6a-9e12-5c7d0a1b2f34.',true);return}
+  if(!S.pgItems){pgMsg('Faça a primeira sincronização antes de adicionar outro banco.',true);return}
+  if(S.pgItems.some(i=>i.id===id)){pgMsg('Esse banco já está na lista.',true);return}
+  S.pgItems.push({id,name:nm});save();$('pgid').value='';$('pgnm').value='';pgShow();pgLastTry=Date.now();pgSync(true)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&window.pgAuto)pgAuto()});
 pgShow();
 window.compReady=true;render();
