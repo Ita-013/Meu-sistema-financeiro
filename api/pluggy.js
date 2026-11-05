@@ -67,10 +67,10 @@ module.exports = async (req, res) => {
         const isCard = a.type === 'CREDIT' && a.subtype === 'CREDIT_CARD';
         if (!(a.type === 'BANK' || isCard)) continue;
         accounts.push({ id: a.id, itemId, inst, name: a.marketingName || a.name || '', number: a.number || '', card: isCard });
-        let page = 1, total = 1;
-        do {
-          const d = await pg('/transactions?accountId=' + a.id + '&from=' + from + '&to=' + to + '&pageSize=500&page=' + page, key);
-          total = d.totalPages || 1;
+        // API v2 (paginação por cursor): o campo "next" já traz a query da próxima página
+        let q = '?accountId=' + a.id + '&dateFrom=' + from + '&dateTo=' + to, n = 0;
+        while (q && n++ < 40) {
+          const d = await pg('/v2/transactions' + q, key);
           (d.results || []).forEach(t => {
             const m = t.creditCardMetadata || {}, pd = t.paymentData || {};
             transactions.push({
@@ -80,8 +80,8 @@ module.exports = async (req, res) => {
               method: pd.paymentMethod || ''
             });
           });
-          page++;
-        } while (page <= total && page <= 20);
+          q = d.next || null;
+        }
       }
     }
     res.status(200).json({ accounts, transactions, from, at: Date.now() });
