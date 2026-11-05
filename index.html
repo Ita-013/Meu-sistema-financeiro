@@ -275,7 +275,7 @@ html.noauth .au{display:flex}
   <div class="lbl" id="lbl">Sobrou no mês</div>
   <div class="big" id="bal">R$ 0,00</div>
   <div class="row"><span data-go="rcard" role="button" tabindex="0">Receitas <b id="inc"></b></span><span data-go="ocard" role="button" tabindex="0">Despesas <b id="exp"></b></span></div>
-  <div class="row"><span role="button" tabindex="0" data-ca="goc">A pagar <b id="cm"></b></span></div>
+  <div class="row"><span id="rcvb" role="button" tabindex="0">A receber <b id="rcv"></b></span><span role="button" tabindex="0" data-ca="goc">A pagar <b id="cm"></b></span></div>
 </section>
 
 <nav role="tablist" aria-label="Seções">
@@ -546,10 +546,10 @@ function render(){
   const tx=S.tx.filter(t=>t.date.slice(0,7)===m).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
   const inc=tx.filter(t=>t.type==='in').reduce((s,t)=>s+t.amount,0);
   const exp=tx.filter(t=>t.type==='out').reduce((s,t)=>s+t.amount,0);
-  const cm0=window.compReady?openCm():0,bal=inc-exp-cm0;
+  const cm0=window.compReady?openCm():0,rcv=window.compReady?recvOf(m):0,bal=inc-exp-cm0+rcv;
   $('lbl').textContent=bal<0?'Faltou no mês':'Sobrou no mês';
   $('bal').textContent=fmt(Math.abs(bal));$('bal').className='big'+(bal<0?' neg':'');
-  $('inc').textContent=fmt(inc);$('exp').textContent=fmt(exp);
+  $('inc').textContent=fmt(inc);$('exp').textContent=fmt(exp);$('rcv').textContent=fmt(rcv);
 
   const by={};tx.filter(t=>t.type==='out').forEach(t=>by[t.cat]=(by[t.cat]||0)+t.amount);
 
@@ -1571,6 +1571,15 @@ $('pok').addEventListener('click',()=>{
   const v=Math.round(parse($('pv').value)*100)/100,d=$('pd').value||today();if(!(v>0)){toast('Digite o valor pago.',true);return}
   const x=real(cPg),t={id:uid(),type:'out',amount:v,desc:x.n.slice(0,120),cat:x.c,date:d};S.tx.push(t);Object.assign(x,{st:'g',tx:t.id,pv:v});$('cpg').hidden=true;redo();
 });
+// a receber: planejado de cada linha de entrada menos o que já foi lançado (mínimo zero por linha); mês já encerrado não conta
+function recvOf(mm){
+  if(mm<today().slice(0,7))return 0;
+  let a=0;
+  CATS.in.forEach(c=>{const rv=S.tx.filter(t=>t.type==='in'&&t.cat===c&&t.date.slice(0,7)===mm).reduce((q,t)=>q+t.amount,0);a+=Math.max(0,plan('in',c,mm)-rv)});
+  return Math.round(a*100)/100;
+}
+$('rcvb').addEventListener('click',()=>document.querySelector('[data-t=plan]').click());
+$('rcvb').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}});
 function goc(){document.querySelector('[data-t=lan]').click();lview(true)}
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.ca==='goc'){e.preventDefault();goc()}});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ca]');if(!b)return;const a=b.dataset.ca,x=b.dataset.id?fnd(b.dataset.id):null;
