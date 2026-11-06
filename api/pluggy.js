@@ -1,22 +1,52 @@
-// Função serverless (Vercel): busca contas e movimentações no Pluggy (Open Finance).
+// Função serverless (Vercel): consulta contas e movimentações no Pluggy (Open Finance).
+// Cada usuário conecta o PRÓPRIO Pluggy (Client ID + Client Secret). O Secret é criptografado aqui
+// (AES-256-GCM, amarrado ao usuário) e devolvido ao app só como texto cifrado; nada fica guardado no servidor.
+//
 // Variáveis de ambiente (Vercel > Settings > Environment Variables):
-//   PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET  -> credenciais da aplicação no Pluggy Dashboard
-//   FIREBASE_API_KEY                        -> apiKey do app web do Firebase (a mesma do index.html)
-//   ALLOWED_EMAIL                           -> e-mail que pode usar esta função (o seu)
-//   PLUGGY_ITEM_IDS (opcional)              -> itemIds iniciais; depois você gerencia os bancos pelo app
+//   FIREBASE_API_KEY  -> apiKey do app web do Firebase (a mesma do index.html)
+//   PLUGGY_ENC_KEY    -> uma frase longa e secreta (use 30+ caracteres aleatórios) para criptografar os Secrets
+// Opcionais (só para o dono usar o próprio Pluggy sem conectar pelo app):
+//   PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, ALLOWED_EMAIL, PLUGGY_ITEM_IDS
+const crypto = require('crypto');
 const P = 'https://api.pluggy.ai';
-let cache = { key: '', exp: 0 };
+const keys = new Map();   // apiKey do Pluggy em cache (2h)
+const hits = new Map();   // limite de uso por usuário
 
-async function apiKey() {
-  if (cache.key && Date.now() < cache.exp) return cache.key;
+const encKey = () => crypto.createHash('sha256').update(String(process.env.PLUGGY_ENC_KEY)).digest();
+function seal(text, uid) {
+  const iv = crypto.randomBytes(12), c = crypto.createCipheriv('aes-256-gcm', encKey(), iv);
+  c.setAAD(Buffer.from(uid));
+  const ct = Buffer.concat([c.update(text, 'utf8'), c.final()]);
+  return Buffer.concat([iv, c.getAuthTag(), ct]).toString('base64');
+}
+function unseal(b64, uid) {
+  const b = Buffer.from(b64, 'base64');
+  const d = crypto.createDecipheriv('aes-256-gcm', encKey(), b.subarray(0, 12));
+  d.setAAD(Buffer.from(uid));
+  d.setAuthTag(b.subarray(12, 28));
+  return Buffer.concat([d.update(b.subarray(28)), d.final()]).toString('utf8');
+}
+function limited(uid, kind, max) {
+  const k = uid + ':' + kind, now = Date.now(), a = (hits.get(k) || []).filter(t => now - t < 10 * 60 * 1000);
+  if (a.length >= max) { hits.set(k, a); return true; }
+  a.push(now); hits.set(k, a);
+  if (hits.size > 5000) hits.clear();
+  return false;
+}
+
+async function apiKey(c) {
+  const h = crypto.createHash('sha256').update(c.id + '|' + c.secret).digest('hex'), hit = keys.get(h);
+  if (hit && Date.now() < hit.exp) return hit.key;
   const r = await fetch(P + '/auth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ clientId: process.env.PLUGGY_CLIENT_ID, clientSecret: process.env.PLUGGY_CLIENT_SECRET })
+    body: JSON.stringify({ clientId: c.id, clientSecret: c.secret })
   });
-  if (!r.ok) throw new Error('auth ' + r.status);
-  cache = { key: (await r.json()).apiKey, exp: Date.now() + 100 * 60 * 1000 };
-  return cache.key;
+  if (!r.ok) { const e = new Error('auth ' + r.status); e.auth = true; throw e; }
+  const key = (await r.json()).apiKey;
+  if (keys.size > 200) keys.clear();
+  keys.set(h, { key, exp: Date.now() + 100 * 60 * 1000 });
+  return key;
 }
 
 async function pg(path, key) {
@@ -33,10 +63,11 @@ async function whoami(idToken) {
   });
   if (!r.ok) return null;
   const u = ((await r.json()).users || [])[0];
-  return u ? { email: String(u.email || '').toLowerCase() } : null;
+  return u && u.localId ? { uid: u.localId, email: String(u.email || '').toLowerCase() } : null;
 }
 
 const top = m => { let b = '', n = 0; for (const [k, v] of m) if (v > n) { b = k; n = v; } return b; };
+const isId = s => /^[0-9a-f-]{36}$/i.test(s);
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -46,23 +77,47 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
 
-  const need = ['PLUGGY_CLIENT_ID', 'PLUGGY_CLIENT_SECRET', 'FIREBASE_API_KEY', 'ALLOWED_EMAIL'].filter(k => !process.env[k]);
+  const need = ['FIREBASE_API_KEY', 'PLUGGY_ENC_KEY'].filter(k => !process.env[k]);
   if (need.length) return res.status(500).json({ error: 'config', missing: need });
 
   const tok = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const me = tok ? await whoami(tok) : null;
-  if (!me || me.email !== process.env.ALLOWED_EMAIL.trim().toLowerCase()) return res.status(401).json({ error: 'unauthorized' });
+  const user = tok ? await whoami(tok) : null;
+  if (!user) return res.status(401).json({ error: 'unauthorized' });
+
+  let body = {};
+  try { body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {}); } catch (e) {}
+
+  // ---- conectar: valida o Client ID/Secret no Pluggy e devolve o Secret criptografado
+  if (body.action === 'connect') {
+    if (limited(user.uid, 'connect', 6)) return res.status(429).json({ error: 'rate' });
+    const id = String(body.clientId || '').trim(), secret = String(body.clientSecret || '').trim();
+    if (!isId(id) || secret.length < 16 || secret.length > 200) return res.status(400).json({ error: 'badcreds' });
+    try { await apiKey({ id, secret }); }
+    catch (e) { return res.status(401).json({ error: 'badcreds' }); }
+    return res.status(200).json({ ok: true, clientId: id, enc: seal(secret, user.uid) });
+  }
+
+  // ---- sincronizar
+  if (limited(user.uid, 'sync', 30)) return res.status(429).json({ error: 'rate' });
+  let creds = null;
+  if (body.cred && body.cred.id && body.cred.enc) {
+    try { creds = { id: String(body.cred.id), secret: unseal(String(body.cred.enc), user.uid) }; }
+    catch (e) { return res.status(401).json({ error: 'badcreds' }); }
+  } else if (process.env.PLUGGY_CLIENT_ID && process.env.PLUGGY_CLIENT_SECRET && process.env.ALLOWED_EMAIL &&
+             user.email === process.env.ALLOWED_EMAIL.trim().toLowerCase()) {
+    creds = { id: process.env.PLUGGY_CLIENT_ID, secret: process.env.PLUGGY_CLIENT_SECRET };
+  }
+  if (!creds) return res.status(400).json({ error: 'nocred' });
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     const from = /^\d{4}-\d{2}-\d{2}$/.test(body.from || '') ? body.from : new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
     const to = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
-    const isId = s => /^[0-9a-f-]{36}$/i.test(s);
-    let items = Array.isArray(body.items) ? body.items.map(s => String(s).trim()).filter(isId) : (process.env.PLUGGY_ITEM_IDS || '').split(',').map(s => s.trim()).filter(isId);
+    let items = Array.isArray(body.items) ? body.items.map(s => String(s).trim()).filter(isId)
+      : (!body.cred && process.env.PLUGGY_ITEM_IDS ? process.env.PLUGGY_ITEM_IDS.split(',').map(s => s.trim()).filter(isId) : []);
     if (!items.length) return res.status(400).json({ error: 'noitems' });
     items = [...new Set(items)].slice(0, 10);
 
-    const key = await apiKey();
+    const key = await apiKey(creds);
     const accounts = [], transactions = [], usedItems = [], errors = [], owners = [];
 
     for (const itemId of items) {
@@ -114,6 +169,7 @@ module.exports = async (req, res) => {
     }
     res.status(200).json({ accounts, transactions, items: usedItems, errors, me: [...new Set(owners)], from, at: Date.now() });
   } catch (e) {
+    if (e && e.auth) return res.status(401).json({ error: 'badcreds' });
     res.status(502).json({ error: 'pluggy', detail: String(e.message || e).slice(0, 200) });
   }
 };
