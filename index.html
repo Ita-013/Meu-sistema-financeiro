@@ -172,6 +172,34 @@ small{color:var(--mu);font-size:.82rem}
 #cats li.z{opacity:.55}
 button.cn{background:none;border:0;padding:6px 0;font:inherit;font-weight:600;color:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:36px}
 #cats .bar,#cats .sub,#icats .bar,#icats .sub,#fat .sub{cursor:pointer}
+/* blocos de orçamento e caixinhas */
+#cats li,#cats li:last-child{margin-bottom:10px}
+#cats li:last-child{margin-bottom:0}
+.bi{background:var(--bg);border:1px solid var(--ln);border-radius:14px;padding:12px}
+.bh{display:flex;align-items:center;gap:10px}
+.bem{flex:none;width:36px;height:36px;min-height:0;padding:0;border:0;border-radius:50%;background:var(--sf2);display:flex;align-items:center;justify-content:center;font-size:1.15rem;line-height:1;cursor:pointer}
+span.bem{cursor:default}
+#cats .bem input,#cxl .bem input{width:36px;height:36px;min-height:0;padding:0;border-radius:50%;text-align:center;font-family:var(--font-sans);font-size:1.1rem}
+.bh .cn,.bnm{flex:1;min-width:0}
+.bnm{font-weight:600}
+.bsd{font-family:var(--font-mono);font-weight:700;font-size:.92rem;white-space:nowrap}
+.bsd.in{color:var(--in)}.bsd.out{color:var(--out)}.bsd.mu{color:var(--mu);font-weight:600;font-size:.8rem}
+.bl{display:flex;gap:8px;align-items:center;margin-top:10px}
+.bb{flex:1;min-width:0;height:30px;border-radius:9px;background:var(--sf);border:1px solid var(--ln);display:flex;overflow:hidden;cursor:pointer}
+.ba{display:flex;align-items:center;justify-content:center;color:#fff;background:#047857;font-family:var(--font-mono);font-size:.8rem;font-weight:700;white-space:nowrap;transition:flex-basis .3s}
+.warn .ba{background:#B45309}.over .ba{background:#7F1D1D}.nb .ba{background:#475569}
+.ba.e{background:transparent;color:var(--mu)}
+.bd{flex:1;min-width:80px;display:flex;align-items:center;justify-content:center;color:var(--mu);font-family:var(--font-mono);font-size:.8rem;font-weight:600;white-space:nowrap;border-left:1px dashed #475569;background:repeating-linear-gradient(135deg,transparent 0 6px,rgba(148,163,184,.14) 6px 7px)}
+#cats .bd input,#cxl .bd input{width:100%;height:100%;min-height:0;border:0;border-radius:0;background:transparent;text-align:center;font-family:var(--font-mono);font-size:.8rem;font-weight:600;color:var(--ink);padding:0 4px;outline:none}
+.bp{flex:none;width:30px;height:30px;min-height:0;padding:0;border-radius:9px;border:1px solid var(--ln);background:var(--sf2);color:var(--mu);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.bsub{display:block;margin-top:8px}
+.top2{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--cur);border:1px solid rgba(16,185,129,.35);border-radius:14px;padding:14px;margin-bottom:12px}
+.top2.neg{background:rgba(244,63,94,.12);border-color:rgba(244,63,94,.35)}
+.top2 .l{font-size:.82rem;color:var(--mu);line-height:1.75;white-space:nowrap}
+.top2 .l b{font-family:var(--font-mono);font-weight:700;color:var(--ink)}
+.top2 .r{text-align:right;min-width:0}
+.top2 .r small{display:block;font-weight:600}
+.top2 .r b{display:block;font-family:var(--font-mono);font-size:clamp(1.15rem,6.2vw,1.45rem);font-weight:800;letter-spacing:-.04em;line-height:1.2;white-space:nowrap}
 .dt{margin-top:10px;padding:10px 12px;background:var(--bg);border:1px solid var(--ln);border-radius:10px}
 .dt .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:.85rem;color:var(--mu);flex-wrap:wrap}
 .dt .st button{margin-left:6px;min-height:32px;padding:0 10px;border:1px solid var(--ln);border-radius:8px;background:var(--sf);font-size:.82rem}
@@ -358,11 +386,9 @@ body.dragging{-webkit-user-select:none;user-select:none}
   <div class="card" id="vcard"><h2>Próximos vencimentos</h2><div id="vl"></div></div>
   <div class="card" id="ocard">
     <h2>Orçado x realizado<button class="inf" type="button" aria-label="Ajuda" data-tipid="ocn">i</button></h2>
-    <div class="sum2"><div><small>Orçado</small><b id="ot"></b></div><div><small>Realizado</small><b id="rt"></b></div></div>
-    <div class="resrow"><div><span>Resultado</span><small id="sdl"></small></div><b id="sd"></b></div>
-    <div id="tw"><div class="bar"><i id="tbar"></i></div></div>
+    <div class="top2" id="tp2"><div class="l"><div>Orçado <b id="ot"></b></div><div>Gasto <b id="rt"></b></div></div><div class="r"><small id="sdl"></small><b id="sd"></b></div></div>
     <span id="ocn" hidden></span>
-    <ul id="cats" style="margin-top:16px"></ul>
+    <ul id="cats"></ul>
   </div>
   <div class="card" id="rcard">
     <h2>Receitas<button class="inf" type="button" aria-label="Ajuda" data-tip="Toque no nome de uma categoria para ver os lançamentos dela. O previsto vem das entradas da aba Orçamentos. Os ressarcimentos não entram aqui: eles abatem a despesa que você pagou por outras pessoas. Valores que voltam de caixinhas também ficam de fora.">i</button></h2>
@@ -430,7 +456,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 <section id="cxs" role="tabpanel" hidden>
   <div class="card">
     <h2>Minhas caixinhas<button class="inf" type="button" aria-label="Ajuda" data-tip="Cada caixinha é uma meta. Ao guardar, o valor sai do caixa do mês e entra em &quot;Guardado em caixinhas&quot;; ao retirar, volta ao caixa. Nada disso conta como despesa ou receita nas linhas do orçamento.">i</button></h2>
-    <div class="sum3"><div><small>Guardado</small><b id="cxt"></b></div><div><small>Metas</small><b id="cxm"></b></div><div><small>Falta</small><b id="cxf"></b></div></div>
+    <div class="top2"><div class="l"><div>Metas <b id="cxm"></b></div><div>Falta <b id="cxf"></b></div></div><div class="r"><small>Guardado</small><b id="cxt" class="in"></b></div></div>
     <p id="cxmsg" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem"></p>
     <div id="cxl"></div>
     <button class="sm" id="cxnew" type="button" style="width:100%;margin-top:12px">+ Novo</button>
@@ -611,8 +637,13 @@ body.dragging{-webkit-user-select:none;user-select:none}
 <script>
 const CATS={out:[],in:[]};
 const DEF={out:['Moradia','Alimentação','Transporte','Saúde','Lazer','Educação','Outros'],in:['Salário','Extra','Outros']};
-let S={tx:[],bud:{},goal:{name:'',target:0,saved:0},sheet:[],rec:[],rules:{},myname:'',budm:{},cx:[],mig:0,cats:null,lastConv:null,cards:[],lastCard:null,cmig:0,comp:[],cfix:[],ord:{fx:[],vr:[]}};
+let S={tx:[],bud:{},goal:{name:'',target:0,saved:0},sheet:[],rec:[],rules:{},myname:'',budm:{},cx:[],mig:0,cats:null,lastConv:null,cards:[],lastCard:null,cmig:0,comp:[],cfix:[],ord:{fx:[],vr:[]},emo:{}};
 try{const r=localStorage.getItem('caixa-v1');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const EMO_DEF='🏷️',EMO_CX='💰';
+const PENCIL='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
+const nr=n=>fmt(n).replace(/^R\$[\s\u00a0]*/,'');
+const emoOf=c=>(S.emo&&S.emo[c])||EMO_DEF;
+const emoClean=v=>{v=String(v||'').trim();if(!v)return '';try{if(window.Intl&&Intl.Segmenter){const g=[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(v)];return g.length?g[0].segment.slice(0,16):''}}catch(e){}return Array.from(v)[0]||''};
 const save=()=>{if(window.leCheck)leCheck();try{S.ts=Date.now();localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}if(window.cloudPush)cloudPush()};
 const $=id=>document.getElementById(id);
 const fmt=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -626,8 +657,8 @@ $('m').value=m;$('d').value=today();
 let lastC='';
 function fillCats(){
   const t=document.querySelector('input[name=tp]:checked').value,cur=$('c').value;
-  let h=CATS[t].map(c=>`<option>${esc(c)}</option>`).join('');
-  if(t==='out'&&S.cx.length)h+='<optgroup label="Investimentos (caixinhas)">'+S.cx.map(x=>`<option value="cx:${x.id}">${esc(x.name)}</option>`).join('')+'</optgroup>';
+  let h=CATS[t].map(c=>`<option value="${esc(c)}">${emoOf(c)} ${esc(c)}</option>`).join('');
+  if(t==='out'&&S.cx.length)h+='<optgroup label="Investimentos (caixinhas)">'+S.cx.map(x=>`<option value="cx:${x.id}">${x.emo||EMO_CX} ${esc(x.name)}</option>`).join('')+'</optgroup>';
   h+='<option value="__new">+ Nova categoria…</option>';
   $('c').innerHTML=h;if([...$('c').options].some(o=>o.value===cur&&o.value!=='__new'))$('c').value=cur;lastC=$('c').value;
 }
@@ -655,21 +686,23 @@ function render(){
   const ob=lims.reduce((a,c)=>a+eff(c),0),rl=lims.reduce((a,c)=>a+(by[c]||0),0),sd=ob-rl,outside=exp-rl;
   const top=Object.entries(by).filter(x=>x[0]!=='Caixinhas').sort((a,b)=>b[1]-a[1])[0];
   $('ot').textContent=ob?fmt(ob):'—';$('rt').textContent=fmt(exp);
-  if(ob){$('sdl').textContent=sd<0?'estourou o orçado':'sobra do orçado';$('sd').textContent=(sd<0?'− ':'+ ')+fmt(Math.abs(sd));$('sd').style.color=sd<0?'var(--out)':'var(--in)'}
+  if(ob){$('sdl').textContent=sd<0?'estourou o orçado':'sobra do orçado';$('sd').textContent=(sd<0?'−':'+')+fmt(Math.abs(sd));$('sd').style.color=sd<0?'var(--out)':'var(--in)'}
   else{$('sdl').textContent='maior gasto';$('sd').textContent=top?top[0]:'—';$('sd').style.color=''}
-  $('tw').hidden=!ob;$('tw').className=ob&&rl>=ob?'over':ob&&rl>=ob*.8?'warn':'';
-  $('tbar').style.width=(ob?Math.min(100,rl/ob*100):0)+'%';
+  $('tp2').className='top2'+(ob&&sd<0?' neg':'');
   $('ocn').textContent=!exp&&!ob?'Sem despesas neste mês. Registre uma em Lançamentos.':!ob?'Mostrando o que você gastou em cada categoria. Para acompanhar quanto sobra, defina um valor em "Orçado". Toque no nome de uma categoria para ver os lançamentos dela.':'O resultado considera só as categorias com orçamento'+(outside>0.005?' ('+fmt(outside)+' foram gastos em categorias sem orçamento)':'')+'. O orçado é o mesmo da aba Orçamentos: o que você digita aqui atualiza a planilha. Ao preencher um mês vazio, o valor vale dali até dezembro; ao editar um valor já preenchido, muda só aquele mês. Toque no nome de uma categoria para ver os lançamentos dela.';
   if(S.cards.some(c=>c.cl&&c.dd))$('ocn').textContent+=' O realizado inclui as compras no cartão; no topo, a fatura só entra em Despesas depois de paga.';
   const gy=by['Caixinhas']||0,gp=S.sheet.filter(r=>r.cx&&S.cx.some(x=>x.id===r.cx)).reduce((a,r)=>a+(r.v[m]||0),0);
-  const capLi=(gy||gp)?`<li class="nb"><div class="rw"><span>Guardado em caixinhas</span><b>${fmt(gy)}</b></div><div class="rw sub"><small>${gp?'Planejado '+fmt(gp):'Veja na aba Caixinhas'}</small><small></small></div></li>`:'';
+  const capLi=(gy||gp)?`<li class="bi nb"><div class="bh"><span class="bem" aria-hidden="true">${EMO_CX}</span><span class="bnm">Guardado em caixinhas</span><b class="bsd">${fmt(gy)}</b></div><small class="bsub">${gp?'Planejado '+fmt(gp):'Veja na aba Caixinhas'}</small></li>`:'';
   $('cats').innerHTML=[...cs].sort((a,b)=>(by[b]||0)-(by[a]||0)).map(c=>{
-    const sp=by[c]||0,lim=eff(c),p=lim?sp/lim*100:0,cl=lim?(p>=100?'over':p>=80?'warn':''):'nb'+(sp?'':' z');
-    const bw=lim?Math.min(100,p):(exp?sp/exp*100:0);
-    const df=lim?(lim>=sp?'Sobra '+fmt(lim-sp):'Estourou '+fmt(sp-lim)):(sp?Math.round(sp/exp*100)+'% das despesas':'Sem gastos');
-    const open=openCat===c,det=open?detail(c):'';
-    const ctl=`<label>Orçado <input data-c="${esc(c)}" inputmode="decimal" value="${num(lim)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}"></label>`;
-    return `<li class="${cl}"><div class="rw"><button type="button" class="cn" data-d="${esc(c)}" aria-expanded="${open}">${esc(c)} <span aria-hidden="true">${open?'▾':'▸'}</span></button>${ctl}</div><div class="bar" data-d="${esc(c)}"><i style="width:${bw}%"></i></div><div class="rw sub" data-d="${esc(c)}"><small>Realizado ${fmt(sp)}</small><small>${df}</small></div>${det}</li>`}).join('')+capLi;
+    const sp=by[c]||0,lim=eff(c),over=lim>0&&sp>lim+0.005,p=lim?Math.min(100,sp/lim*100):0,cl=lim?(over?'over':sp/lim>=.8?'warn':''):'nb'+(sp?'':' z');
+    const open=openCat===c,det=open?detail(c):'',ed=editCat===c;
+    const inp=`<input data-c="${esc(c)}" inputmode="decimal" value="${num(lim)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}">`;
+    const sdv=!lim?'<span class="bsd mu">Sem orçamento</span>':over?`<b class="bsd out">−${fmt(sp-lim)}</b>`:Math.abs(lim-sp)<0.005?`<b class="bsd mu">${fmt(0)}</b>`:`<b class="bsd in">+${fmt(lim-sp)}</b>`;
+    const seg=!lim?`<div class="ba" style="flex:1">${fmt(sp)}</div><div class="bd" style="flex:0 0 ${ed?130:96}px;min-width:0">${ed?inp:'definir'}</div>`
+      :(over&&!ed)?`<div class="ba" style="flex:1">${fmt(sp)}</div>`
+      :`<div class="ba${sp?'':' e'}" style="flex:0 0 clamp(70px,${p.toFixed(1)}%,calc(100% - 80px))">${fmt(sp)}</div><div class="bd">${ed?inp:nr(lim)}</div>`;
+    const eb=editEmo===c?`<span class="bem"><input data-emo="${esc(c)}" maxlength="16" placeholder="🙂" aria-label="Emoji de ${esc(c)}"></span>`:`<button type="button" class="bem" data-em="${esc(c)}" aria-label="Escolher emoji de ${esc(c)}">${emoOf(c)}</button>`;
+    return `<li class="bi ${cl}"><div class="bh">${eb}<button type="button" class="cn" data-d="${esc(c)}" aria-expanded="${open}">${esc(c)} <span aria-hidden="true">${open?'▾':'▸'}</span></button>${sdv}</div><div class="bl"><div class="bb" data-d="${esc(c)}">${seg}</div><button type="button" class="bp" data-pe="${esc(c)}" aria-label="${lim?'Editar':'Definir'} orçado de ${esc(c)}">${PENCIL}</button></div>${det}</li>`}).join('')+capLi;
   const byI={};tx.filter(t=>t.type==='in').forEach(t=>byI[t.cat]=(byI[t.cat]||0)+t.amount);
   const ics=[...CATS.in,...Object.keys(byI).filter(c=>!CATS.in.includes(c)&&c!=='Caixinhas')],incN=inc-(byI['Caixinhas']||0);
   const pv=c=>S.sheet.filter(r=>r.k==='in'&&rowCat(r)===c).reduce((a,r)=>a+(r.v[m]||0),0);
@@ -738,12 +771,21 @@ $('list').addEventListener('click',e=>{
   S.tx=S.tx.filter(x=>String(x.id)!==id);save();render();renderCx();renderSheet();renderRec();
 });
 $('cats').addEventListener('change',e=>{
+  const ec=e.target.dataset.emo;
+  if(ec!==undefined){const v=emoClean(e.target.value);S.emo=S.emo||{};if(v)S.emo[ec]=v;else delete S.emo[ec];editEmo=null;save();render();fillCats();return}
   const c=e.target.dataset.c;if(!c)return;
   const v=parse(e.target.value),nv=v>0?Math.round(v*100)/100:0;
+  editCat=null;
   if(setPlan('out',c,m,nv))save();
   render();renderSheet();
 });
+$('cats').addEventListener('focusout',e=>{const d=e.target.dataset;if(!d)return;if(d.c!==undefined)editCat=null;if(d.emo!==undefined)editEmo=null});
 $('cats').addEventListener('click',e=>{
+  const pe=e.target.closest('[data-pe]');
+  if(pe){editCat=pe.dataset.pe;editEmo=null;render();const i=$('cats').querySelector('input[data-c]');if(i){i.focus();if(i.select)i.select()}return}
+  const em=e.target.closest('[data-em]');
+  if(em){editEmo=em.dataset.em;editCat=null;render();const i=$('cats').querySelector('input[data-emo]');if(i)i.focus();return}
+  if(e.target.closest('input'))return;
   const sb=e.target.closest('[data-sort]');
   if(sb){dsort=sb.dataset.sort;render();return}
   const d=e.target.closest('[data-d]');
@@ -762,7 +804,7 @@ function showBk(){const d=S.lastBackup,old=!d||(Date.now()-new Date(d+'T00:00:00
 const msg=(t,bad)=>{$('bkm').textContent=t;$('bkm').style.color=bad?'var(--out)':'var(--in)'};
 
 $('bk-dl').addEventListener('click',()=>{
-  const data={app:'meu-caixa',version:1,exportedAt:new Date().toISOString(),comp:S.comp,cfix:S.cfix,ord:S.ord,tx:S.tx,bud:S.bud,goal:S.goal,sheet:S.sheet,budm:S.budm,cx:S.cx,cats:S.cats,cards:S.cards};
+  const data={app:'meu-caixa',version:1,exportedAt:new Date().toISOString(),comp:S.comp,cfix:S.cfix,ord:S.ord,tx:S.tx,bud:S.bud,goal:S.goal,sheet:S.sheet,budm:S.budm,cx:S.cx,cats:S.cats,cards:S.cards,emo:S.emo};
   const json=JSON.stringify(data,null,2),fname='meu-caixa-backup-'+today()+'.json';
   if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){
     const plug=n=>{try{return (Capacitor.Plugins&&Capacitor.Plugins[n])||Capacitor.registerPlugin(n)}catch(e){return null}},FS=plug('Filesystem'),SH=plug('Share');
@@ -793,15 +835,16 @@ function importText(txt){
   const g=o.goal||{},goal={name:String(g.name||'').slice(0,60),target:Number(g.target)>0?Number(g.target):0,saved:Number(g.saved)>0?Number(g.saved):0};
   const sh=(Array.isArray(o.sheet)?o.sheet:[]).map((r,i)=>{const v={};Object.entries(r.v||{}).forEach(([k,x])=>{x=Number(x);if(/^\d{4}-\d{2}$/.test(k)&&x>0&&isFinite(x))v[k]=x});return{id:Number.isFinite(r.id)?r.id:Date.now()+i+1000,name:String(r.name||'').slice(0,60),v,cat:(typeof r.cat==='string'&&r.cat.length<=30)?r.cat:undefined,k:r.k==='in'?'in':undefined,p:r.p?1:undefined,cx:Number.isFinite(r.cx)?r.cx:undefined,sid:Number.isFinite(r.sid)?r.sid:undefined}});
   const bm={};Object.entries(o.budm||{}).forEach(([c,b])=>{if(!b||typeof b!=='object')return;const s2=(Array.isArray(b.s)?b.s:[]).filter(x=>Array.isArray(x)&&/^\d{4}-\d{2}$/.test(x[0])&&Number(x[1])>0).map(x=>[x[0],Number(x[1])]),o2={};Object.entries(b.o||{}).forEach(([k,x])=>{if(/^\d{4}-\d{2}$/.test(k)&&Number(x)>=0&&isFinite(Number(x)))o2[k]=Number(x)});if(s2.length||Object.keys(o2).length)bm[String(c).slice(0,40)]={s:s2,o:o2}});
-  const cxs=(Array.isArray(o.cx)?o.cx:[]).map((x,i)=>({id:Number.isFinite(x.id)?x.id:Date.now()+i+5000,name:String(x.name||'Caixinha').slice(0,40),target:Number(x.target)>0?Number(x.target):0,mv:(Array.isArray(x.mv)?x.mv:[]).map((v,q)=>({id:Number.isFinite(v.id)?v.id:Date.now()+q+9000,date:/^\d{4}-\d{2}-\d{2}$/.test(v.date)?v.date:today(),amt:Number(v.amt),note:v.note?String(v.note).slice(0,40):undefined,tx:Number.isFinite(v.tx)?v.tx:undefined})).filter(v=>isFinite(v.amt)&&v.amt!==0)}));
+  const cxs=(Array.isArray(o.cx)?o.cx:[]).map((x,i)=>({id:Number.isFinite(x.id)?x.id:Date.now()+i+5000,name:String(x.name||'Caixinha').slice(0,40),...(typeof x.emo==='string'&&x.emo?{emo:emoClean(x.emo)}:{}),target:Number(x.target)>0?Number(x.target):0,mv:(Array.isArray(x.mv)?x.mv:[]).map((v,q)=>({id:Number.isFinite(v.id)?v.id:Date.now()+q+9000,date:/^\d{4}-\d{2}-\d{2}$/.test(v.date)?v.date:today(),amt:Number(v.amt),note:v.note?String(v.note).slice(0,40):undefined,tx:Number.isFinite(v.tx)?v.tx:undefined})).filter(v=>isFinite(v.amt)&&v.amt!==0)}));
   const okc=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'&&x.trim()&&norm(x)!=='caixinhas').map(x=>x.trim().slice(0,30)):[];
   const cts=o.cats&&typeof o.cats==='object'?{out:okc(o.cats.out),in:okc(o.cats.in)}:{out:[],in:[]};
   const cds=(Array.isArray(o.cards)?o.cards:[]).filter(c=>c&&typeof c.name==='string'&&c.name.trim()).map((c,i)=>({id:Number.isFinite(c.id)?c.id:Date.now()+i+7000,name:c.name.trim().slice(0,30),...(typeof c.pg==='string'&&c.pg?{pg:c.pg.slice(0,80)}:{}),...(c.cl>=1&&c.cl<=31&&c.dd>=1&&c.dd<=31?{cl:c.cl|0,dd:c.dd|0}:{})}));
+  const emoIn={};if(o.emo&&typeof o.emo==='object')Object.entries(o.emo).forEach(([k,v])=>{const e=emoClean(v);if(e&&k.length<=30)emoIn[k]=e});
   const replace=document.querySelector('input[name=bm]:checked').value==='replace';
   let added,skipped=0;
   if(replace){
     
-    S.tx=ok;S.bud=bud;S.goal=goal;S.sheet=sh;S.budm=bm;S.cx=cxs;S.cards=cds;S.comp=Array.isArray(o.comp)?o.comp:[];S.cfix=Array.isArray(o.cfix)?o.cfix:[];S.ord=o.ord&&Array.isArray(o.ord.fx)&&Array.isArray(o.ord.vr)?o.ord:{fx:[],vr:[]};if(cts.out.length&&cts.in.length)S.cats={out:[...new Set(cts.out)],in:[...new Set(cts.in)]};added=ok.length;
+    S.emo=emoIn;S.tx=ok;S.bud=bud;S.goal=goal;S.sheet=sh;S.budm=bm;S.cx=cxs;S.cards=cds;S.comp=Array.isArray(o.comp)?o.comp:[];S.cfix=Array.isArray(o.cfix)?o.cfix:[];S.ord=o.ord&&Array.isArray(o.ord.fx)&&Array.isArray(o.ord.vr)?o.ord:{fx:[],vr:[]};if(cts.out.length&&cts.in.length)S.cats={out:[...new Set(cts.out)],in:[...new Set(cts.in)]};added=ok.length;
   }else{
     const ids=new Set(S.tx.map(t=>t.id));
     ok.forEach(t=>{if(ids.has(t.id))skipped++;else{S.tx.push(t);ids.add(t.id)}});
@@ -810,7 +853,7 @@ function importText(txt){
     ['out','in'].forEach(k=>cts[k].forEach(c=>{if(!S.cats[k].includes(c))S.cats[k].push(c)}));
     const cid=new Set(S.cx.map(x=>x.id));cxs.forEach(x=>{if(!cid.has(x.id))S.cx.push(x)});
     const sid=new Set(S.sheet.map(r=>r.id));sh.forEach(r=>{if(!sid.has(r.id))S.sheet.push(r)});
-    S.bud=Object.assign({},bud,S.bud);
+    S.bud=Object.assign({},bud,S.bud);S.emo=Object.assign({},emoIn,S.emo||{});
     Object.entries(bm).forEach(([c,b])=>{const cur=S.budm[c]=S.budm[c]||{s:[],o:{}};cur.s=cur.s||[];const have=new Set(cur.s.map(x=>x[0]));b.s.forEach(x=>{if(!have.has(x[0]))cur.s.push(x)});cur.o=Object.assign({},b.o,cur.o||{})});
     if(!(S.goal.target>0))S.goal=goal;
   }
@@ -829,7 +872,7 @@ $('bk-file').addEventListener('change',async e=>{
 });
 $('bk-txt-go').addEventListener('click',()=>importText($('bk-txt').value));
 $('bk-cp').addEventListener('click',async()=>{
-  const t=JSON.stringify({app:'meu-caixa',version:1,exportedAt:new Date().toISOString(),tx:S.tx,bud:S.bud,goal:S.goal,sheet:S.sheet,budm:S.budm,cx:S.cx,cats:S.cats,cards:S.cards});
+  const t=JSON.stringify({app:'meu-caixa',version:1,exportedAt:new Date().toISOString(),tx:S.tx,bud:S.bud,goal:S.goal,sheet:S.sheet,budm:S.budm,cx:S.cx,cats:S.cats,cards:S.cards,emo:S.emo});
   try{await navigator.clipboard.writeText(t);msg('Texto do backup copiado. Cole onde quiser guardar.')}
   catch(err){$('bk-txt').value=t;$('bk-txt').select();msg('Não consegui copiar sozinho. O texto apareceu na caixa abaixo: selecione tudo e copie.',true)}
 });
@@ -984,6 +1027,7 @@ function renameCat(kind,old,nw){
   if(CATS[kind].some(c=>c!==old&&norm(c)===norm(nw)))return 'Já existe uma linha com esse nome.';
   const ix=CATS[kind].indexOf(old);if(ix<0)return 'noop';
   CATS[kind][ix]=nw;
+  if(S.emo&&S.emo[old]){S.emo[nw]=S.emo[old];delete S.emo[old]}
   if(S.ord)['fx','vr'].forEach(g=>{const j=S.ord[g].indexOf(old);if(j>=0)S.ord[g][j]=nw});S.comp.forEach(x=>{if(x.c===old)x.c=nw});S.cfix.forEach(x=>{if(x.c===old)x.c=nw});
   S.tx.forEach(t=>{if(t.type===kind&&t.cat===old)t.cat=nw});
   S.sheet.forEach(r=>{if(nocx(r)&&(r.k==='in')===(kind==='in')){if(r.cat===old)r.cat=nw;if(r.name===old)r.name=nw}});
@@ -1328,7 +1372,7 @@ $('rc-all').addEventListener('click',e=>{const b=e.currentTarget,items=S.rec.fil
 
 $('rc-name').value=S.myname||'';$('rc-name').addEventListener('change',e=>{S.myname=e.target.value.trim();save()});
 
-let openCat=null,dsort='v';
+let openCat=null,dsort='v',editCat=null,editEmo=null;
 function bAt(c,k){const b=S.budm[c];if(b){if(b.o&&k in b.o)return b.o[k];const st=(b.s||[]).filter(x=>x[0]<=k).sort((a,z)=>z[0].localeCompare(a[0]))[0];if(st)return st[1]}return S.bud[c]||0}
 function detail(c,ty){
   ty=ty||'out';
@@ -1382,19 +1426,28 @@ parUI();
 let _u=Date.now();const uid=()=>(_u=Math.max(_u+1,Date.now()));
 function cxMove(x,amt,d,desc,pay,dep){const tid=uid(),mid=uid();S.tx.push({id:tid,type:dep?'out':'in',amount:amt,desc,cat:'Caixinhas',date:d,pay:pay||'Pix',cx:x.id,cxm:mid});x.mv.push({id:mid,date:d,amt:dep?amt:-amt,tx:tid})}
 const cxSaved=x=>x.mv.reduce((a,v)=>a+v.amt,0);
-let cxOpen=new Set();
+let cxOpen=new Set(),editCx=null,editCxEmo=null;
 const cxsay=(t,bad)=>{$('cxmsg').textContent=t;$('cxmsg').style.color=bad?'var(--out)':'var(--in)'};
 function renderCx(){
   const tot=S.cx.reduce((a,x)=>a+cxSaved(x),0),mt=S.cx.reduce((a,x)=>a+(x.target||0),0),fl=S.cx.reduce((a,x)=>a+(x.target>0?Math.max(0,x.target-cxSaved(x)):0),0);
   $('cxt').textContent=fmt(tot);$('cxm').textContent=mt?fmt(mt):'—';$('cxf').textContent=mt?fmt(fl):'—';
   $('cxl').innerHTML=S.cx.length?S.cx.map(x=>{
-    const sv=cxSaved(x),p=x.target>0?Math.min(100,sv/x.target*100):0;
+    const sv=cxSaved(x);
     const hist=x.mv.map((v,i)=>[v,i]).sort((a,b)=>b[0].date.localeCompare(a[0].date)||b[1]-a[1]).map(([v])=>`<div class="dr"><span>${v.note?esc(v.note):v.amt>0?'Guardado':'Retirado'}, ${v.date.split('-').reverse().join('/')}</span><b class="${v.amt>0?'in':'out'}">${v.amt>0?'+':'−'}${fmt(Math.abs(v.amt))}</b><button type="button" class="lnk" data-a="undo" data-mv="${v.id}">Desfazer</button></div>`).join('')||'<p class="empty" style="margin:6px 0 0">Nenhuma movimentação ainda.</p>';
-    return `<div class="cxi cxc" data-x="${x.id}"><div class="rw"><b class="cxn">${esc(x.name)}</b><b>${fmt(sv)}${x.target>0?' <small>de '+fmt(x.target)+'</small>':''}</b></div><div class="bar"><i style="width:${p}%"></i></div><small>${x.target>0?Math.round(sv/x.target*100)+'% da meta'+(sv<x.target?', faltam '+fmt(x.target-sv):', meta atingida'):'Sem meta definida'}</small><div class="g2" style="margin-top:10px"><input data-f="amt" inputmode="decimal" placeholder="Valor" aria-label="Valor para ${esc(x.name)}"><input data-f="dt" type="date" value="${today()}" aria-label="Data"></div><div class="bk"><button class="pri" type="button" data-a="dep">Guardar</button><button type="button" data-a="ret">Retirar</button></div><details class="adv" data-x="${x.id}"${cxOpen.has(x.id)?' open':''}><summary>Histórico e ajustes</summary>${hist}<div class="g2" style="margin-top:10px"><input data-f="nm" value="${esc(x.name)}" aria-label="Nome da caixinha"><input data-f="tg" inputmode="decimal" value="${num(x.target)}" placeholder="Meta" aria-label="Meta da caixinha"></div><button type="button" class="sm" data-a="del">Excluir caixinha</button></details></div>`}).join(''):'<p class="empty" style="margin:10px 0 0">Nenhuma caixinha ainda. Toque em "Novo" para criar a primeira.</p>';
+    const t=x.target||0,done=t>0&&sv>=t-0.005,ed=editCx===x.id,pp=t>0?Math.min(100,sv/t*100):0;
+    const inp=`<input data-f="tg" inputmode="decimal" value="${num(t)}" placeholder="Meta" aria-label="Meta da caixinha ${esc(x.name)}">`;
+    const sdv=t>0?(done?'<b class="bsd in">Meta atingida</b>':`<b class="bsd mu">faltam ${fmt(t-sv)}</b>`):'<span class="bsd mu">Sem meta</span>';
+    const seg=!t?`<div class="ba" style="flex:1">${fmt(sv)}</div><div class="bd" style="flex:0 0 ${ed?130:96}px;min-width:0">${ed?inp:'definir meta'}</div>`
+      :(done&&!ed)?`<div class="ba" style="flex:1">${fmt(sv)}</div>`
+      :`<div class="ba${sv?'':' e'}" style="flex:0 0 clamp(70px,${pp.toFixed(1)}%,calc(100% - 80px))">${fmt(sv)}</div><div class="bd">${ed?inp:nr(t)}</div>`;
+    const eb=editCxEmo===x.id?`<span class="bem"><input data-f="emo" maxlength="16" placeholder="🙂" aria-label="Emoji da caixinha ${esc(x.name)}"></span>`:`<button type="button" class="bem" data-a="em" aria-label="Escolher emoji de ${esc(x.name)}">${x.emo||EMO_CX}</button>`;
+    return `<div class="cxi cxc bi${t?'':' nb'}" data-x="${x.id}"><div class="bh">${eb}<b class="bnm cxn">${esc(x.name)}</b>${sdv}</div><div class="bl"><div class="bb">${seg}</div><button type="button" class="bp" data-a="pe" aria-label="${t?'Editar':'Definir'} meta de ${esc(x.name)}">${PENCIL}</button></div><div class="g2" style="margin-top:10px"><input data-f="amt" inputmode="decimal" placeholder="Valor" aria-label="Valor para ${esc(x.name)}"><input data-f="dt" type="date" value="${today()}" aria-label="Data"></div><div class="bk"><button class="pri" type="button" data-a="dep">Guardar</button><button type="button" data-a="ret">Retirar</button></div><details class="adv" data-x="${x.id}"${cxOpen.has(x.id)?' open':''}><summary>Histórico e ajustes</summary>${hist}<div class="g2" style="margin-top:10px"><input data-f="nm" value="${esc(x.name)}" aria-label="Nome da caixinha"></div><button type="button" class="sm" data-a="del">Excluir caixinha</button></details></div>`}).join(''):'<p class="empty" style="margin:10px 0 0">Nenhuma caixinha ainda. Toque em "Novo" para criar a primeira.</p>';
 }
 $('cxl').addEventListener('click',e=>{
-  const a=e.target.dataset.a,card=e.target.closest('.cxc');if(!a||!card)return;
+  const btn=e.target.closest('[data-a]'),a=btn&&btn.dataset.a,card=e.target.closest('.cxc');if(!a||!card)return;
   const x=S.cx.find(y=>String(y.id)===card.dataset.x);if(!x)return;
+  if(a==='pe'){editCx=x.id;editCxEmo=null;renderCx();const i=$('cxl').querySelector('.cxc[data-x="'+x.id+'"] input[data-f=tg]');if(i){i.focus();if(i.select)i.select()}return}
+  if(a==='em'){editCxEmo=x.id;editCx=null;renderCx();const i=$('cxl').querySelector('.cxc[data-x="'+x.id+'"] input[data-f=emo]');if(i)i.focus();return}
   if(a==='dep'||a==='ret'){
     const v=parse(card.querySelector('[data-f=amt]').value),d=card.querySelector('[data-f=dt]').value||today();
     if(!(v>0)){cxsay('Digite um valor maior que zero.',true);return}
@@ -1403,19 +1456,20 @@ $('cxl').addEventListener('click',e=>{
     cxMove(x,amt,d,(a==='dep'?'Guardar: ':'Retirar: ')+x.name,'Pix',a==='dep');
     save();render();renderCx();renderSheet();cxsay((a==='dep'?'Guardado ':'Retirado ')+fmt(amt)+' em "'+x.name+'". '+(a==='dep'?'Saiu do caixa de ':'Voltou ao caixa de ')+mname(d.slice(0,7))+'.');
   }else if(a==='undo'){
-    const mv=x.mv.find(v=>String(v.id)===e.target.dataset.mv);if(!mv)return;
+    const mv=x.mv.find(v=>String(v.id)===btn.dataset.mv);if(!mv)return;
     x.mv=x.mv.filter(v=>v!==mv);if(mv.tx)S.tx=S.tx.filter(t=>t.id!==mv.tx);save();render();renderCx();renderSheet();cxsay('Movimentação desfeita.');
   }else if(a==='del'){
-    const b=e.target;if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Toque de novo para excluir';setTimeout(()=>{b.dataset.arm='';b.textContent='Excluir caixinha'},3500);return}
+    const b=btn;if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Toque de novo para excluir';setTimeout(()=>{b.dataset.arm='';b.textContent='Excluir caixinha'},3500);return}
     S.cx=S.cx.filter(y=>y!==x);S.sheet=S.sheet.filter(r=>r.cx!==x.id);cxOpen.delete(x.id);save();renderCx();renderSheet();fillCats();cxsay('Caixinha excluída. Os lançamentos no caixa continuam.');
   }
 });
 $('cxl').addEventListener('change',e=>{
-  const card=e.target.closest('.cxc'),f=e.target.dataset.f;if(!card||(f!=='nm'&&f!=='tg'))return;
+  const card=e.target.closest('.cxc'),f=e.target.dataset.f;if(!card||(f!=='nm'&&f!=='tg'&&f!=='emo'))return;
   const x=S.cx.find(y=>String(y.id)===card.dataset.x);if(!x)return;
-  if(f==='nm')x.name=e.target.value.trim().slice(0,40)||x.name;else{const v=parse(e.target.value);x.target=v>0?Math.round(v*100)/100:0}
+  if(f==='nm')x.name=e.target.value.trim().slice(0,40)||x.name;else if(f==='emo'){const v=emoClean(e.target.value);if(v)x.emo=v;else delete x.emo;editCxEmo=null}else{const v=parse(e.target.value);x.target=v>0?Math.round(v*100)/100:0;editCx=null}
   S.sheet.forEach(r=>{if(r.cx===x.id)r.name=x.name});save();renderCx();renderSheet();fillCats();
 });
+$('cxl').addEventListener('focusout',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f==='tg')editCx=null;if(f==='emo')editCxEmo=null});
 $('cxl').addEventListener('toggle',e=>{const d=e.target;if(d.tagName==='DETAILS'&&d.dataset.x){const id=+d.dataset.x;if(d.open)cxOpen.add(id);else cxOpen.delete(id)}},true);
 $('cxnew').addEventListener('click',openCxNew);
 
@@ -1636,7 +1690,7 @@ updSec();if(document.documentElement.classList.contains('locked'))setTimeout(()=
 
 // ----- nuvem (Firebase): login e sincronização -----
 var leReady=false,leBase=null,cu=null,pushT=null,pulling=false,wiping=false,localOnly=false,lastPull=0,cstat='';
-const blankS=()=>({tx:[],bud:{},goal:{name:'',target:0,saved:0},sheet:[],rec:[],rules:{},myname:'',budm:{},cx:[],mig:0,cats:null,lastConv:null,cards:[],lastCard:null,cmig:0,comp:[],cfix:[],ord:{fx:[],vr:[]}});
+const blankS=()=>({tx:[],bud:{},goal:{name:'',target:0,saved:0},sheet:[],rec:[],rules:{},myname:'',budm:{},cx:[],mig:0,cats:null,lastConv:null,cards:[],lastCard:null,cmig:0,comp:[],cfix:[],ord:{fx:[],vr:[]},emo:{}});
 const emptyS=x=>!(x.tx&&x.tx.length)&&!Object.keys(x.bud||{}).length&&!(x.sheet&&x.sheet.length)&&!(x.cx&&x.cx.length)&&!(x.cards&&x.cards.length)&&!Object.keys(x.budm||{}).length&&!(x.goal&&x.goal.target);
 const canon=v=>JSON.stringify(v,(k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,y)=>(o[y]=x[y],o),{}):x);
 const core=()=>{const o=Object.assign({},S);delete o.ts;delete o.cts;delete o.sh;return o};
@@ -1864,7 +1918,7 @@ function etDel(all){
 function openEt(id){const t=S.tx.find(x=>String(x.id)===String(id));if(!t)return;
   if(t.cx||t.cat==='Caixinhas'){toast('Movimentos de caixinha são editados na aba Caixinhas.',true);return}
   etT=t;$('etv').value=num(t.amount);$('etv').disabled=!!t.res;$('etd').value=t.pd||t.date;etD0=$('etd').value;$('ets').value=t.desc;
-  $('etc').innerHTML=CATS[t.type].filter(c=>c!=='Caixinhas').map(c=>`<option>${esc(c)}</option>`).join('');$('etc').value=t.cat;
+  $('etc').innerHTML=CATS[t.type].filter(c=>c!=='Caixinhas').map(c=>`<option value="${esc(c)}">${emoOf(c)} ${esc(c)}</option>`).join('');$('etc').value=t.cat;
   $('etpw').hidden=t.type!=='out';$('etp').value=t.pay||'Pix';
   $('etk').innerHTML=S.cards.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(t.card)$('etk').value=t.card;etPay();
   $('eter').textContent=t.res?'Esta despesa tem ressarcimento: o valor não pode ser mudado aqui.':'';const pm=/\((\d+)\/(\d+)\)\s*$/.exec(t.desc||''),np=t.sid?S.tx.filter(x=>x.sid===t.sid).length:0;
