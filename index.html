@@ -88,7 +88,7 @@ small{color:var(--mu);font-size:.82rem}
 .bk button,.bk label{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:10px;border:1px solid var(--ln);background:var(--sf2);font-weight:600;cursor:pointer}
 .bk .pri{background:var(--in);color:#052E16;border-color:var(--in);font-weight:800}
 .bk .full{grid-column:1/-1}
-li[data-ig] .bk button,li[data-im] .bk button{width:100%}
+#rcl li[data-ig] .bk,#rcl li[data-im] .bk{grid-template-columns:1fr 1fr}
 .ipv{background:var(--bg);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;margin:0 0 10px}
 .ipv>b{display:block;margin-bottom:6px;font-size:.92rem}
 .ipr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:3px 0;font-size:.88rem}
@@ -474,9 +474,10 @@ body.dragging{-webkit-user-select:none;user-select:none}
   <div class="card">
     <div class="rw"><h2 id="rct" style="margin:0">Pendentes</h2><button id="rc-all" type="button" class="sm"></button></div>
     <small id="rcs"></small>
-    <div class="bk" style="margin-top:8px"><button id="rc-ig" type="button" class="sm" hidden></button></div>
+    <div class="bk" style="margin-top:8px"><button id="rc-dn" type="button" class="sm" hidden></button><button id="rc-ig" type="button" class="sm" hidden></button></div>
     <ul id="rcl" style="margin-top:8px"></ul>
     <ul id="rcig" hidden style="margin-top:12px;border-top:1px solid var(--ln);padding-top:8px"></ul>
+    <ul id="rcdn" hidden style="margin-top:12px;border-top:1px solid var(--ln);padding-top:8px"></ul>
   </div>
   <div class="card">
     <details id="rlsd" class="adv"><summary id="rlss">Memória de preenchimento</summary>
@@ -1101,7 +1102,7 @@ function recImport(t,kind){
   rmsg(`${add} movimentação(ões) nova(s)${old?', '+old+' já importada(s)':''}${dups?', '+dups+' parece(m) já lançada(s)':''}${auto?', '+auto+' interna(s) ignorada(s) automaticamente (reservas, cofrinho, fatura e transferências suas)':''}.`);
 }
 const recCardSel=(x,pay,s)=>{const cd=x.card||(s&&s.card);return pay==='Cartão'&&x.type==='out'&&S.cards.length?`<select data-f="card" aria-label="Cartão" style="margin-bottom:10px"><option value="">Escolha o cartão</option>${S.cards.map(c=>`<option value="${c.id}"${c.id===cd?' selected':''}>${esc(c.name)}</option>`).join('')}</select>`:''};
-let showIgn=false;
+let showIgn=false,showDn=false;
 // ----- parcelas do cartão na conciliação -----
 const instRe1=/\((\d{1,2})\/(\d{1,2})\)\s*$/,instRe2=/\bparc\w*\.?\s*(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})/i,igs={};
 const labM=k=>MES[+k.slice(5,7)-1]+'/'+k.slice(0,4),monthDiff=(a,b)=>(+a.slice(0,4)-+b.slice(0,4))*12+(+a.slice(5,7)-+b.slice(5,7));
@@ -1188,7 +1189,7 @@ function instApply(x,t){
     if(r&&r.v&&key in r.v)r.v[key]=Math.round((r.v[key]-t.amount+x.amount)*100)/100;
     t.amount=x.amount}
   if(I&&I.k===1&&x.date!==t.date&&!t.pd)t.pd=x.date;
-  t.rid=x.id;x.tx=t.id;x.st='done';delete x.why;delete x.nd}
+  t.rid=x.id;x.tx=t.id;x.lk=1;x.st='done';delete x.why;delete x.nd}
 $('rcl').addEventListener('change',e=>{
   const li=e.target.closest('li[data-ig]'),f=e.target.dataset.g;if(!li||!f)return;
   const st=igs[li.dataset.ig]=igs[li.dataset.ig]||{};
@@ -1201,6 +1202,13 @@ $('rcl').addEventListener('click',e=>{
   if(!cat){rmsg('Escolha uma categoria antes de lançar.',true);const cs=li.querySelector('[data-g=cat]');if(cs)cs.focus();return}
   const msg=instCommit(g,cat,st.nd||'',!!st.early,a==='bank');delete igs[g.key];
   save();render();renderSheet();renderRec();rmsg(msg)});
+// lançamento que o sistema achou como "já lançado": mesmo tipo, mesmo valor e data com até 1 dia de diferença
+const dmy=d=>String(d).split('-').reverse().join('/');
+function dupMatch(x,used){
+  const df=t=>Math.abs(new Date(t.pd||t.date)-new Date(x.date)),lk=t=>S.rec.some(r=>r.st==='done'&&r.tx===t.id&&r.id!==x.id)?1:0;
+  const c=S.tx.filter(t=>t.type===x.type&&!used.has(t.id)&&Math.abs((t.gross||t.amount)-x.amount)<.005&&df(t)<=864e5).sort((a,b)=>(lk(a)-lk(b))||(df(a)-df(b)));
+  return c.length?{t:c[0],linked:!!lk(c[0])}:null}
+const txLine=t=>`<div class="ipr"><span>${esc(t.desc)} · ${esc(t.cat||'')} · ${esc(t.pay||'')} · ${dmy(t.pd||t.date)}</span><b>${fmt(t.gross||t.amount)}</b></div>`;
 function renderRec(){
   recMaint();
   const pend=S.rec.filter(x=>x.st==='pend').sort((a,b)=>b.date.localeCompare(a.date)),ign=S.rec.filter(x=>x.st==='ign').length,done=S.rec.filter(x=>x.st==='done').length;
@@ -1208,14 +1216,23 @@ function renderRec(){
   $('rct').textContent='Pendentes: '+pend.length;$('rcs').textContent=done+' conciliada(s), '+ign+' ignorada(s).';
   const IS=instRender(pend),sug=pend.filter(x=>!x.dup&&!isInstRec(x)&&(x.cat||recSug(x).cat)).length;
   $('rc-all').textContent='Lançar sugeridas ('+sug+')';$('rc-all').disabled=!sug;$('rc-undo').hidden=!ign;
+  const usedD=new Set();
   $('rcl').innerHTML=pend.length?pend.map(x=>{
     if(IS.skip.has(x.id))return '';if(IS.html.has(x.id))return IS.html.get(x.id);
-    const s=recSug(x),cat=x.cat||s.cat||'',pay=x.pay||s.pay||recPay(x);
-    return `<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${(()=>{const du=recDue(x,pay);return du!==x.date?' · vence '+brd(du):''})()}${x.dup?'<span class="dupb">parece já lançado</span>':''}</small><input data-f="nd" maxlength="120" style="margin:8px 0 10px" placeholder="O que foi essa compra? (opcional)" value="${esc(x.nd||'')}" aria-label="Descrição do lançamento" autocomplete="off"><div class="g2"><select data-f="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select><select data-f="pay" aria-label="Forma de pagamento">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div>${recCardSel(x,pay,s)}<div class="bk"><button class="pri" data-a="ok" type="button">Lançar</button>${x.dup?'<button data-a="had" type="button">Já lancei</button>':''}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.</li>';
+    const s=recSug(x),cat=x.cat||s.cat||'',pay=x.pay||s.pay||recPay(x),dm=x.dup?dupMatch(x,usedD):null;if(dm)usedD.add(dm.t.id);
+    return `<li data-r="${esc(x.id)}"${dm?` data-im="${dm.t.id}"`:''}><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${(()=>{const du=recDue(x,pay);return du!==x.date?' · vence '+brd(du):''})()}${dm?'<span class="dupb">parece já lançado</span>':''}</small>${dm?`<div class="ipv" style="margin-top:8px"><b>O sistema achou este lançamento:</b>${txLine(dm.t)}${dm.linked?'<small>Ele já foi conciliado com outra movimentação do banco.</small>':''}</div>`:''}<input data-f="nd" maxlength="120" style="margin:8px 0 10px" placeholder="O que foi essa compra? (opcional)" value="${esc(x.nd||'')}" aria-label="Descrição do lançamento" autocomplete="off"><div class="g2"><select data-f="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select><select data-f="pay" aria-label="Forma de pagamento">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div>${recCardSel(x,pay,s)}<div class="bk">${dm?'<button class="pri full" data-a="had" type="button">Conciliar com esse lançamento</button><button data-a="ok" type="button">Lançar mesmo assim</button>':'<button class="pri" data-a="ok" type="button">Lançar</button>'}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.</li>';
   const igl=S.rec.filter(x=>x.st==='ign').sort((a,b)=>b.date.localeCompare(a.date));
   $('rc-ig').hidden=!igl.length;$('rc-ig').textContent=(showIgn?'Ocultar':'Mostrar')+' ignoradas ('+igl.length+')';
   $('rcig').hidden=!(showIgn&&igl.length);
   if(showIgn)$('rcig').innerHTML='<li class="empty" style="margin-bottom:6px">Ignoradas: não entram no seu controle. Toque para trazer de volta.</li>'+igl.slice(0,150).map(x=>`<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${RWHY[x.why]?' · '+RWHY[x.why]:''}</small><div class="bk"><button class="pri" data-a="rest" type="button">Mover para pendentes</button></div></li>`).join('');
+  const dnl=S.rec.filter(x=>x.st==='done').sort((a,b)=>b.date.localeCompare(a.date));
+  $('rc-dn').hidden=!dnl.length;$('rc-dn').textContent=(showDn?'Ocultar':'Mostrar')+' conciliadas ('+dnl.length+')';
+  $('rcdn').hidden=!(showDn&&dnl.length);
+  if(showDn)$('rcdn').innerHTML='<li class="empty" style="margin-bottom:6px">Conciliadas: cada movimentação do banco e o lançamento do sistema que ela representa.</li>'+dnl.slice(0,150).map(x=>{
+    const t=x.tx?S.tx.find(v=>v.id===x.tx):null;
+    return `<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${dmy(x.date)}${t?'':' · marcada como já lançada, sem vínculo'}</small>`+
+    (t?`<div class="ipv" style="margin-top:8px"><b>Lançamento no sistema</b>${txLine(t)}</div>`:'')+
+    (x.lk||!t?'<div class="bk"><button data-a="undo" type="button">Voltar para pendentes</button></div>':'<small style="display:block;margin-top:6px">Criado por esta conciliação. Para desfazer, exclua o lançamento na aba Lançamentos: a movimentação volta para as pendentes.</small>')+'</li>'}).join('');
   $('rlss').textContent='Memória de preenchimento ('+Object.keys(S.rules||{}).length+')';
   if($('rlsd').open)renderRules();
 }
@@ -1257,6 +1274,10 @@ $('rc-file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f
   e.target.value='';recImport(t,document.querySelector('input[name=rk]:checked').value)});
 $('rc-go').addEventListener('click',()=>recImport($('rc-txt').value,document.querySelector('input[name=rk]:checked').value));
 $('rc-ig').addEventListener('click',()=>{showIgn=!showIgn;renderRec()});
+$('rc-dn').addEventListener('click',()=>{showDn=!showDn;renderRec()});
+$('rcdn').addEventListener('click',e=>{if(e.target.dataset.a!=='undo')return;const li=e.target.closest('li'),x=S.rec.find(v=>v.id===li.dataset.r);if(!x)return;
+  const t=x.tx?S.tx.find(v=>v.id===x.tx):null;if(t&&t.rid===x.id)delete t.rid;
+  x.st='pend';delete x.tx;delete x.lk;x.pgchk=1;save();renderRec();rmsg('Voltou para as pendentes.')});
 $('rcig').addEventListener('click',e=>{if(e.target.dataset.a!=='rest')return;const li=e.target.closest('li'),x=S.rec.find(v=>v.id===li.dataset.r);if(!x)return;x.st='pend';delete x.why;x.pgchk=1;save();renderRec();rmsg('Voltou para as pendentes.')});
 $('rlsd').addEventListener('toggle',()=>{if($('rlsd').open)renderRules()});
 $('rll').addEventListener('change',e=>{const b=e.target.closest('[data-rk]'),f=e.target.dataset.rf;if(!b||!f)return;const r=S.rules[b.dataset.rk];if(!r)return;r[f]=e.target.value;if(f==='pay'&&e.target.value!=='Cartão')delete r.card;save();renderRec()});
@@ -1276,7 +1297,7 @@ $('rcl').addEventListener('click',e=>{
     if(pay==='Cartão'&&x.type==='out'&&S.cards.length&&!x.card){rmsg('Escolha o cartão.',true);if(ks)ks.focus();return}
     const di=li.querySelector('[data-f=nd]');if(di){const v=di.value.trim().slice(0,120);if(v)x.nd=v;else delete x.nd}
     const nm=x.nd||x.desc;recCommit(x,cat,pay);rmsg('Lançado: '+nm.slice(0,40)+'.')}
-  else if(a==='had'){x.st='done';rmsg('Marcada como já lançada.')}
+  else if(a==='had'){const t=S.tx.find(v=>String(v.id)===li.dataset.im);x.st='done';delete x.why;if(t){x.tx=t.id;x.lk=1;if(!t.rid)t.rid=x.id;rmsg('Conciliada com "'+t.desc.slice(0,30)+'".')}else rmsg('Marcada como já lançada.')}
   else if(a==='skip'){x.st='ign';x.why='manual';rmsg('Movimentação ignorada.')}
   else if(a==='imok'){const t=S.tx.find(v=>String(v.id)===li.dataset.im);if(!t){rmsg('Não encontrei o lançamento. Tente de novo.',true);return}instApply(x,t);rmsg('Parcela conciliada.')}
   else if(a==='imno'){x.nomatch=1;rmsg('Ok, vou tratar como uma compra nova.')}
