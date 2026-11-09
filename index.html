@@ -179,12 +179,18 @@ button.cn{background:none;border:0;padding:6px 0;font:inherit;font-weight:600;co
 .lnk{border:0;background:none;color:var(--mu);text-decoration:underline;padding:6px 0;min-height:32px;font-size:.82rem}
 .cxc .dr{grid-template-columns:1fr auto auto}
 .shm{margin:10px 0}
-.sh{position:relative;overflow-x:auto;margin:10px -16px 12px;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}
+.sh{position:relative;overflow:auto;max-height:calc(100vh - 200px);max-height:calc(100dvh - 200px);overscroll-behavior-x:contain;margin:10px -16px 12px;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}
 .sh table{border-collapse:collapse;font-size:.78rem;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .sh th,.sh td{border-bottom:1px solid var(--ln);border-right:1px solid var(--ln);padding:0;text-align:right;white-space:nowrap}
 .sh td.g,.sh th.g{border-left:2px solid var(--ln)}
 .sh thead th{background:var(--bg);font-family:var(--font-sans);padding:6px 4px;font-weight:700;color:var(--mu);font-size:.72rem}
 .sh thead th.sub{font-weight:600;font-size:.65rem;padding:3px 4px}
+.sh thead th{position:sticky;top:0;z-index:3;height:32px;box-sizing:border-box;box-shadow:inset 0 -1px 0 var(--ln)}
+.sh thead tr+tr th{top:32px;height:auto}
+.sh thead .nm{top:0;z-index:5}
+.sh thead th.m0{background-color:var(--bg);background-image:linear-gradient(var(--m0),var(--m0))}
+.sh thead th.m1{background-color:var(--bg);background-image:linear-gradient(var(--m1),var(--m1))}
+.sh thead th.cur{box-shadow:inset 0 0 0 999px var(--cur),inset 0 -1px 0 var(--ln)}
 .sh .nm{position:sticky;left:0;z-index:2;background:var(--sf);font-family:var(--font-sans);text-align:left;min-width:108px;max-width:108px;width:108px;overflow:hidden;text-overflow:ellipsis;padding:0 6px;font-weight:600}
 .sh thead .nm,.sh tfoot .nm,.sh tr.grp .nm{background:var(--bg)}
 .sh td.ro,.sh td.t{padding:0 5px;height:38px;min-width:50px}
@@ -896,7 +902,7 @@ function renderSheet(){
     if(t.cx)RC.set('cx|'+t.cx+'|'+mo,(RC.get('cx|'+t.cx+'|'+mo)||0)+(t.type==='out'?t.amount:-t.amount));
     else if(t.cat!=='Caixinhas'){const key=t.type+'|'+t.cat+'|'+mo;RC.set(key,(RC.get(key)||0)+t.amount)}});
   const cu=i=>mk(i)===m?' cur':'';
-  const h1='<tr><th class="nm" rowspan="2">Linha</th>'+MES.map((x,i)=>`<th class="g${mp(i)}${cu(i)}" colspan="2">${x}</th>`).join('')+'<th class="g" colspan="2">Total</th><th class="sub" rowspan="2"></th></tr>';
+  const h1='<tr><th class="nm" rowspan="2">Categorias</th>'+MES.map((x,i)=>`<th class="g${mp(i)}${cu(i)}" colspan="2">${x}</th>`).join('')+'<th class="g" colspan="2">Total</th><th class="sub" rowspan="2"></th></tr>';
   const h2='<tr>'+MES.map((_,i)=>`<th class="g sub${mp(i)}${cu(i)}">Real</th><th class="sub${mp(i)}${cu(i)}">Plan</th>`).join('')+'<th class="g sub">Real</th><th class="sub">Plan</th></tr>';
   const grp=(t,kd)=>`<tr class="grp"><td class="nm">${t}${kd?`<button type="button" class="addl" data-addkind="${kd}" aria-label="Adicionar linha de ${t.toLowerCase()}">+</button>`:''}</td><td colspan="27"></td></tr>`;
   const gsum=g=>fmt(S.sheet.filter(r=>nocx(r)&&r.k!=='in'&&outList(g).includes(rowCat(r))).reduce((a,r)=>a+(r.v[m]||0),0));
