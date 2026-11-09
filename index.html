@@ -801,7 +801,7 @@ function render(){
       :over?`<div class="ba" style="flex:1">${fmt(sp)}</div>`
       :`<div class="ba${sp?'':' e'}" style="flex:0 0 clamp(70px,${p.toFixed(1)}%,calc(100% - 80px))">${fmt(sp)}</div><div class="bd">${Math.abs(lim-sp)<0.005?nr(0):nr(lim-sp)}</div>`;
     const eb=editEmo===c?`<span class="bem"><input data-emo="${esc(c)}" maxlength="16" placeholder="🙂" aria-label="Emoji de ${esc(c)}"></span>`:`<button type="button" class="bem" data-em="${esc(c)}" aria-label="Escolher emoji de ${esc(c)}">${emoOf(c)}</button>`;
-    const bo=ed?`<span class="bo"><input data-c="${esc(c)}" inputmode="decimal" value="${num(lim)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}"></span>`
+    const bo=ed?`<span class="bo"><input data-c="${esc(c)}" inputmode="decimal" enterkeyhint="done" value="${num(lim)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}"><button type="button" class="bp" data-ok="1" aria-label="Confirmar valor" style="color:var(--in)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></button></span>`
       :`<span class="bo"><button type="button" class="bv" data-pe="${esc(c)}" aria-label="${lim?'Editar':'Definir'} orçado de ${esc(c)}">${lim?'de <b>'+fmt(lim)+'</b>':'definir orçado'}</button><button type="button" class="bp" data-pe="${esc(c)}" aria-label="${lim?'Editar':'Definir'} orçado de ${esc(c)}">${PENCIL}</button></span>`;
     return `<li class="bi ${cl}"><div class="bh">${eb}<button type="button" class="cn" data-d="${esc(c)}" aria-expanded="${open}">${esc(c)} <span aria-hidden="true">${open?'▾':'▸'}</span></button>${bo}</div><div class="bl"><div class="bb" data-d="${esc(c)}">${seg}</div></div>${over?`<div class="bov">estourou ${fmt(sp-lim)}</div>`:''}${det}</li>`}).join('')+capLi;
   const byI={};tx.filter(t=>t.type==='in').forEach(t=>byI[t.cat]=(byI[t.cat]||0)+t.amount);
@@ -878,6 +878,11 @@ $('list').addEventListener('click',e=>{
   if(n>1)askDel('Excluir '+t.desc+'?','Esta compra é parcelada em '+n+'x.',[{t:'Só esta parcela',fn:delOne},{t:'Excluir as '+n+' parcelas',fn:()=>{S.tx=S.tx.filter(x=>String(x.sid)!==sd);S.sheet=S.sheet.filter(r=>String(r.sid)!==sd);save();render();renderSheet();renderRec();toast('Todas as parcelas foram excluídas.')}}]);
   else askDel('Excluir '+t.desc+'?','Essa ação não pode ser desfeita.',[{t:'Excluir',fn:delOne}]);
 });
+// Enter (ou "Concluído" do teclado do celular) e o botão ✓ confirmam o valor: tirar o foco dispara o salvamento
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.keyCode===13)&&e.target&&e.target.matches&&e.target.matches('#cats input,#icats input,#sh input,#cxl input[data-f]')){e.preventDefault();e.target.blur()}});
+document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.matches&&t.matches('#cats input,#sh input,#cxl input[data-f]')&&!t.hasAttribute('enterkeyhint'))t.setAttribute('enterkeyhint','done')});
+document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('[data-ok]'))e.preventDefault()});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ok]');if(b){const i=b.parentElement.querySelector('input');if(i)i.blur()}});
 $('cats').addEventListener('change',e=>{
   const ec=e.target.dataset.emo;
   if(ec!==undefined){const v=emoClean(e.target.value);S.emo=S.emo||{};if(v)S.emo[ec]=v;else delete S.emo[ec];editEmo=null;save();render();fillCats();return}
