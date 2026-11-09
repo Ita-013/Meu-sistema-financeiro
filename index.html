@@ -230,6 +230,17 @@ span.bem{cursor:default}
 #cats .bd input,#cxl .bd input{width:100%;height:100%;min-height:0;border:0;border-radius:0;background:transparent;text-align:center;font-family:var(--font-mono);font-size:.8rem;font-weight:600;color:var(--ink);padding:0 4px;outline:none}
 .bp{flex:none;width:30px;height:30px;min-height:0;padding:0;border-radius:9px;border:1px solid var(--ln);background:var(--sf2);color:var(--mu);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .bsub{display:block;margin-top:8px}
+#ocard h2{display:flex;align-items:center;gap:8px}
+.oced{margin-left:auto;display:flex;gap:8px;align-items:center}
+.edb{min-height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--ln);background:var(--sf2);color:var(--ink);font-weight:700;font-size:.85rem;cursor:pointer}
+.oks,.oxs{width:36px;height:36px;min-height:0;padding:0;border-radius:10px;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.oks{background:var(--in);color:#052E16}.oxs{background:var(--out);color:#fff}
+.bname{flex:1;min-width:0;height:36px;min-height:0;padding:0 10px;font-weight:600;text-align:left}
+.edmode .bh{gap:8px}
+.edmode .bb{cursor:default}
+.edhint{font-size:.8rem;color:var(--mu);margin:0 0 10px}
+.svd{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translate(-50%,-16px);z-index:90;background:var(--in);color:#052E16;font-weight:800;font-size:.9rem;padding:8px 16px;border-radius:999px;display:flex;align-items:center;gap:6px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+.svd.on{opacity:1;transform:translate(-50%,0)}
 .trash{flex:none;width:38px;height:38px;min-height:0;padding:0;border-radius:10px;border:1px solid color-mix(in srgb,var(--out) 45%,transparent);background:transparent;color:var(--out);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .trash:active{background:color-mix(in srgb,var(--out) 15%,transparent)}
 .mhd{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
@@ -264,9 +275,10 @@ span.bem{cursor:default}
 .tp2c .bx{background:var(--tape-bx);border:1px solid var(--tape-ln);border-radius:12px;padding:10px 12px;min-width:0}
 .tp2c .bt{font-size:.8rem;font-weight:600;color:var(--tape-mu)}
 .tp2c .bx.in .bt,.tp2c .bx.in .bv{color:var(--in)}.tp2c .bx.out .bt,.tp2c .bx.out .bv{color:var(--out)}
-.tp2c .bv{display:block;font-family:var(--font-mono);font-weight:800;font-size:clamp(.95rem,4.6vw,1.15rem);margin:2px 0 8px;white-space:nowrap;cursor:pointer;text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;min-height:0;text-align:left}
+.tp2c .bv{display:block;font-family:var(--font-mono);font-weight:800;font-size:clamp(.8rem,4.2vw,1.1rem);margin:2px 0 8px;white-space:nowrap;cursor:pointer;text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;min-height:0;text-align:left}
 .tp2c .bv b{color:inherit;font-size:inherit}
-.tp2c .bs{display:flex;justify-content:space-between;align-items:baseline;gap:4px;border-top:1px solid var(--tape-ln);padding-top:7px;font-size:.72rem;color:var(--tape-mu);white-space:nowrap}
+.tp2c .bs{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 6px;border-top:1px solid var(--tape-ln);padding-top:7px;font-size:.72rem;color:var(--tape-mu)}
+.tp2c .bs b{white-space:nowrap;margin-left:auto}
 .tp2c .bs b{font-family:var(--font-mono);font-weight:700;color:var(--tape-ink);font-size:.74rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 #icats li,#icats li:last-child{margin-bottom:10px}
 #icats li:last-child{margin-bottom:0}
@@ -471,7 +483,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 </section>
   <div class="card" id="vcard"><h2>Próximos vencimentos</h2><div id="vl"></div></div>
   <div class="card" id="ocard">
-    <h2>Orçado x realizado<button class="inf" type="button" aria-label="Ajuda" data-tipid="ocn">i</button></h2>
+    <h2>Orçado x realizado<button class="inf" type="button" aria-label="Ajuda" data-tipid="ocn">i</button><span class="oced" id="oced"></span></h2>
     <div class="top2" id="tp2"><div class="hd2"><div><div class="lab2">Resultado</div><small id="sdl"></small></div><b id="sd"></b></div><div class="rw2"><span>Gasto</span><b id="rt"></b></div><div class="rw2"><span>Orçado</span><b id="ot"></b></div></div>
     <span id="ocn" hidden></span>
     <ul id="cats"></ul>
@@ -667,6 +679,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 
 </main>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="svd" class="svd" role="status" aria-live="polite"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Salvo</div>
 <div id="mdl" class="mdl" hidden role="dialog" aria-modal="true" aria-labelledby="mdt">
   <div class="mbox">
     <div class="mhd"><h3 id="mdt"></h3><button class="trash" id="mdx" type="button" hidden aria-label="Excluir cartão" title="Excluir cartão"></button></div>
@@ -744,7 +757,9 @@ const cardIcon=(c,sz)=>`<span class="pic cdx" style="background:${cardCol(c)};wi
 const nr=n=>fmt(n).replace(/^R\$[\s\u00a0]*/,'');
 const emoOf=(c,k)=>(S.emo&&S.emo[(k==='in'?'in|':'')+c])||EMO_DEF;
 const emoClean=v=>{v=String(v||'').trim();if(!v)return '';try{if(window.Intl&&Intl.Segmenter){const g=[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(v)];return g.length?g[0].segment.slice(0,16):''}}catch(e){}return Array.from(v)[0]||''};
-const save=()=>{if(window.leCheck)leCheck();try{S.ts=Date.now();localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}if(window.cloudPush)cloudPush()};
+let _sv=0,_t0=Date.now();
+const flashSaved=()=>{if(Date.now()-_t0<2500)return;const el=document.getElementById('svd');if(!el)return;el.classList.add('on');clearTimeout(_sv);_sv=setTimeout(()=>el.classList.remove('on'),1600)};
+const save=()=>{if(window.leCheck)leCheck();try{S.ts=Date.now();localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}if(window.cloudPush)cloudPush();flashSaved()};
 const $=id=>document.getElementById(id);
 const fmt=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -793,17 +808,18 @@ function render(){
   if(S.cards.some(c=>c.cl&&c.dd))$('ocn').textContent+=' O realizado inclui as compras no cartão; no topo, a fatura só entra em Despesas depois de paga.';
   const gy=by['Caixinhas']||0,gp=S.sheet.filter(r=>r.cx&&S.cx.some(x=>x.id===r.cx)).reduce((a,r)=>a+(r.v[m]||0),0);
   const capLi=(gy||gp)?`<li class="bi nb"><div class="bh"><span class="bem" aria-hidden="true">${EMO_CX}</span><span class="bnm">Guardado em caixinhas</span><b class="bsd">${fmt(gy)}</b></div><small class="bsub">${gp?'Planejado '+fmt(gp):'Veja na aba Caixinhas'}</small></li>`:'';
+  $('cats').className=editAll?'edmode':'';renderOced();
   $('cats').innerHTML=[...cs].sort((a,b)=>(by[b]||0)-(by[a]||0)).map(c=>{
     const sp=by[c]||0,lim=eff(c),over=lim>0&&sp>lim+0.005,p=lim?Math.min(100,sp/lim*100):0,cl=lim?(over?'over':sp/lim>=.8?'warn':''):'nb'+(sp?'':' z');
-    const open=openCat===c,det=open?detail(c):'',ed=editCat===c;
-    const inp=`<input data-c="${esc(c)}" inputmode="decimal" value="${num(lim)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}">`;
+    const ed=editAll,open=!ed&&openCat===c,det=open?detail(c):'',dr=ed?(odraft[c]||(odraft[c]={n:c,e:(S.emo&&S.emo[c])||'',v:num(lim)})):null;
     const seg=!lim?`<div class="ba" style="flex:1">${fmt(sp)}</div>`
       :over?`<div class="ba" style="flex:1">${fmt(sp)}</div>`
       :`<div class="ba${sp?'':' e'}" style="flex:0 0 clamp(70px,${p.toFixed(1)}%,calc(100% - 80px))">${fmt(sp)}</div><div class="bd">${Math.abs(lim-sp)<0.005?nr(0):nr(lim-sp)}</div>`;
-    const eb=editEmo===c?`<span class="bem"><input data-emo="${esc(c)}" maxlength="16" placeholder="🙂" aria-label="Emoji de ${esc(c)}"></span>`:`<button type="button" class="bem" data-em="${esc(c)}" aria-label="Escolher emoji de ${esc(c)}">${emoOf(c)}</button>`;
-    const bo=ed?`<span class="bo"><input data-c="${esc(c)}" inputmode="decimal" enterkeyhint="done" value="${num(lim)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}"><button type="button" class="bp" data-ok="1" aria-label="Confirmar valor" style="color:var(--in)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></button></span>`
-      :`<span class="bo"><button type="button" class="bv" data-pe="${esc(c)}" aria-label="${lim?'Editar':'Definir'} orçado de ${esc(c)}">${lim?'de <b>'+fmt(lim)+'</b>':'definir orçado'}</button><button type="button" class="bp" data-pe="${esc(c)}" aria-label="${lim?'Editar':'Definir'} orçado de ${esc(c)}">${PENCIL}</button></span>`;
-    return `<li class="bi ${cl}"><div class="bh">${eb}<button type="button" class="cn" data-d="${esc(c)}" aria-expanded="${open}">${esc(c)} <span aria-hidden="true">${open?'▾':'▸'}</span></button>${bo}</div><div class="bl"><div class="bb" data-d="${esc(c)}">${seg}</div></div>${over?`<div class="bov">estourou ${fmt(sp-lim)}</div>`:''}${det}</li>`}).join('')+capLi;
+    const eb=ed?`<span class="bem"><input data-de="${esc(c)}" value="${esc(dr.e)}" maxlength="16" placeholder="${EMO_DEF}" aria-label="Emoji de ${esc(c)}"></span>`:`<span class="bem" aria-hidden="true">${emoOf(c)}</span>`;
+    const nm=ed?`<input class="bname" data-dn="${esc(c)}" value="${esc(dr.n)}" maxlength="30" aria-label="Nome do orçamento ${esc(c)}">`:`<button type="button" class="cn" data-d="${esc(c)}" aria-expanded="${open}">${esc(c)} <span aria-hidden="true">${open?'▾':'▸'}</span></button>`;
+    const bo=ed?`<span class="bo"><input data-dv="${esc(c)}" inputmode="decimal" enterkeyhint="done" value="${esc(dr.v)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}"></span>`
+      :`<span class="bo">${lim?'de <b>'+fmt(lim)+'</b>':'sem orçamento'}</span>`;
+    return `<li class="bi ${cl}"><div class="bh">${eb}${nm}${bo}</div><div class="bl"><div class="bb"${ed?'':` data-d="${esc(c)}"`}>${seg}</div></div>${over?`<div class="bov">estourou ${fmt(sp-lim)}</div>`:''}${det}</li>`}).join('')+capLi;
   const byI={};tx.filter(t=>t.type==='in').forEach(t=>byI[t.cat]=(byI[t.cat]||0)+t.amount);
   const ics=[...CATS.in,...Object.keys(byI).filter(c=>!CATS.in.includes(c)&&c!=='Caixinhas')],incN=inc-(byI['Caixinhas']||0);
   const pv=c=>S.sheet.filter(r=>r.k==='in'&&rowCat(r)===c).reduce((a,r)=>a+(r.v[m]||0),0);
@@ -1511,7 +1527,41 @@ $('rc-all').addEventListener('click',e=>{const b=e.currentTarget,items=S.rec.fil
 
 $('rc-name').value=S.myname||'';$('rc-name').addEventListener('change',e=>{S.myname=e.target.value.trim();save()});
 
-let openCat=null,dsort='v',editCat=null,editEmo=null;
+let openCat=null,dsort='v',editCat=null,editEmo=null,editAll=false,odraft={};
+const OK_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>',X_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+function renderOced(){const el=$('oced');if(!el)return;el.innerHTML=editAll?`<button type="button" class="oks" data-oe="ok" aria-label="Salvar alterações" title="Salvar">${OK_SVG}</button><button type="button" class="oxs" data-oe="no" aria-label="Cancelar e desfazer" title="Cancelar">${X_SVG}</button>`:'<button type="button" class="edb" data-oe="start">Editar</button>'}
+function ocApply(){
+  const cl=x=>String(x||'').replace(/\s+/g,' ').trim().slice(0,30),cur=Object.keys(odraft);
+  const names=cur.map(c=>cl(odraft[c].n));
+  for(let i=0;i<cur.length;i++){
+    const c=cur[i],nw=names[i];
+    if(!nw){toast('Dê um nome a todos os orçamentos.',true);return}
+    if(nw===c)continue;
+    if(norm(nw)==='caixinhas'){toast('Esse nome é reservado para as caixinhas.',true);return}
+    if(cur.some((o,j)=>j!==i&&(o===nw||names[j]===nw||norm(o)===norm(nw)||norm(names[j])===norm(nw)))||CATS.out.some(o=>o!==c&&norm(o)===norm(nw))){toast('Já existe um orçamento chamado "'+nw+'".',true);return}
+  }
+  cur.forEach((c,i)=>{
+    const d=odraft[c];let fin=c;
+    if(names[i]!==c&&renameCat('out',c,names[i])==='ok')fin=names[i];
+    const em=emoClean(d.e);S.emo=S.emo||{};if(em)S.emo[fin]=em;else delete S.emo[fin];
+    const v=parse(d.v),nv=v>0?Math.round(v*100)/100:0;
+    setPlan('out',fin,m,nv);
+  });
+  editAll=false;odraft={};openCat=null;save();render();renderSheet();fillCats();renderRec();
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('[data-oe]');if(!b)return;
+  const a=b.dataset.oe;
+  if(a==='start'){editAll=true;odraft={};openCat=null;render()}
+  else if(a==='no'){editAll=false;odraft={};render()}
+  else if(a==='ok')ocApply();
+});
+document.addEventListener('input',e=>{
+  const t=e.target,d=t.dataset;if(!d||!editAll)return;
+  if(d.dn!==undefined&&odraft[d.dn])odraft[d.dn].n=t.value;
+  else if(d.dv!==undefined&&odraft[d.dv])odraft[d.dv].v=t.value;
+  else if(d.de!==undefined&&odraft[d.de]){const v=emoClean(t.value);odraft[d.de].e=v;if(t.value!==v)t.value=v}
+});
 function bAt(c,k){const b=S.budm[c];if(b){if(b.o&&k in b.o)return b.o[k];const st=(b.s||[]).filter(x=>x[0]<=k).sort((a,z)=>z[0].localeCompare(a[0]))[0];if(st)return st[1]}return S.bud[c]||0}
 function detail(c,ty){
   ty=ty||'out';
