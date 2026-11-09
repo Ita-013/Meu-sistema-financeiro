@@ -759,7 +759,15 @@ const emoOf=(c,k)=>(S.emo&&S.emo[(k==='in'?'in|':'')+c])||EMO_DEF;
 const emoClean=v=>{v=String(v||'').trim();if(!v)return '';try{if(window.Intl&&Intl.Segmenter){const g=[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(v)];return g.length?g[0].segment.slice(0,16):''}}catch(e){}return Array.from(v)[0]||''};
 let _sv=0,_t0=Date.now();
 const flashSaved=()=>{if(Date.now()-_t0<2500)return;const el=document.getElementById('svd');if(!el)return;el.classList.add('on');clearTimeout(_sv);_sv=setTimeout(()=>el.classList.remove('on'),1600)};
-const save=()=>{if(window.leCheck)leCheck();try{S.ts=Date.now();localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}if(window.cloudPush)cloudPush();flashSaved()};
+// compromisso pago está ligado a um lançamento (x.tx): se o lançamento sumir, por qualquer caminho, o compromisso volta para "A pagar"
+function reconcileComp(){
+  if(!S.comp||!S.comp.length)return false;
+  let ids=null,back=[];
+  S.comp.forEach(x=>{if(x.st==='g'&&x.tx){ids=ids||new Set(S.tx.map(t=>t.id));if(!ids.has(x.tx)){x.st='a';delete x.tx;delete x.pv;back.push(x.n)}}});
+  if(back.length&&typeof toast==='function')toast(back.length===1?'"'+back[0]+'" voltou para A pagar, porque o lançamento do pagamento foi excluído.':back.length+' compromissos voltaram para A pagar, porque os lançamentos dos pagamentos foram excluídos.');
+  return back.length>0;
+}
+const save=()=>{reconcileComp();if(window.leCheck)leCheck();try{S.ts=Date.now();localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}if(window.cloudPush)cloudPush();flashSaved()};
 const $=id=>document.getElementById(id);
 const fmt=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -2010,6 +2018,7 @@ function real(x){if(!x.virt)return x;const o=Object.assign({},x);delete o.virt;o
 function stt(x){if(x.st==='g')return['Pago','var(--in)'];if(x.st==='i')return['Ignorado','var(--mu)'];if(!x.d)return['A pagar','var(--am)'];const n=dd(x.d,today());return n<0?['Atrasada há '+(-n)+(n===-1?' dia':' dias'),'var(--out)']:n===0?['Vence hoje','var(--am)']:['Vence em '+n+(n===1?' dia':' dias'),'var(--am)']}
 window.openCm=()=>openOf(m,1).reduce((a,x)=>a+x.v,0);
 function renderComp(ob,rl){
+  if(reconcileComp())save();
   $('cm').textContent=fmt(openCm());
   const o=openOf(m,1).sort((a,b)=>(a.d||'9').localeCompare(b.d||'9')).slice(0,5);
   $('vl').innerHTML=o.length?o.map(x=>{const t=stt(x);return `<div class="cr" data-ca="edit" data-id="${esc(x.id)}"><div>${esc(x.n)}<small style="color:${t[1]}">${t[0]}</small></div><b>${fmt(x.v)}</b></div>`}).join(''):'<small>Nenhuma conta a pagar neste mês.</small>';
