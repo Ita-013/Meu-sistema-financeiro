@@ -767,7 +767,14 @@ function reconcileComp(){
   if(back.length&&typeof toast==='function')toast(back.length===1?'"'+back[0]+'" voltou para A pagar, porque o lançamento do pagamento foi excluído.':back.length+' compromissos voltaram para A pagar, porque os lançamentos dos pagamentos foram excluídos.');
   return back.length>0;
 }
-const save=()=>{reconcileComp();if(window.leCheck)leCheck();try{S.ts=Date.now();localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}if(window.cloudPush)cloudPush();flashSaved()};
+// A tela atualiza na hora; a conferência de "última alteração" e a gravação no aparelho rodam ~0,3 s depois (várias alterações seguidas viram uma gravação só)
+// e são forçadas ao sair do app, trocar de aba ou bloquear a tela.
+let _pw=0,_noSave=false;
+function persist(){clearTimeout(_pw);_pw=0;if(_noSave)return;if(window.leCheck)leCheck();try{localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}}
+const persistNow=()=>{if(_pw)persist()};
+addEventListener('pagehide',persistNow);addEventListener('beforeunload',persistNow);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)persistNow()});
+const save=()=>{reconcileComp();S.ts=Date.now();if(!_pw)_pw=setTimeout(persist,300);if(window.cloudPush)cloudPush();flashSaved()};
 const $=id=>document.getElementById(id);
 const fmt=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -1648,12 +1655,13 @@ function cxMove(x,amt,d,desc,pay,dep){const tid=uid(),mid=uid();S.tx.push({id:ti
 const cxSaved=x=>x.mv.reduce((a,v)=>a+v.amt,0);
 let cxOpen=new Set(),editCx=null,editCxEmo=null;
 const cxsay=(t,bad)=>{$('cxmsg').textContent=t;$('cxmsg').style.color=bad?'var(--out)':'var(--in)'};
+function cxHist(x){return x.mv.map((v,i)=>[v,i]).sort((a,b)=>b[0].date.localeCompare(a[0].date)||b[1]-a[1]).map(([v])=>`<div class="dr"><span>${v.note?esc(v.note):v.amt>0?'Guardado':'Retirado'}, ${v.date.split('-').reverse().join('/')}</span><b class="${v.amt>0?'in':'out'}">${v.amt>0?'+':'−'}${fmt(Math.abs(v.amt))}</b><button type="button" class="lnk" data-a="undo" data-mv="${v.id}">Desfazer</button></div>`).join('')||'<p class="empty" style="margin:6px 0 0">Nenhuma movimentação ainda.</p>'}
 function renderCx(){
   const tot=S.cx.reduce((a,x)=>a+cxSaved(x),0),mt=S.cx.reduce((a,x)=>a+(x.target||0),0),fl=S.cx.reduce((a,x)=>a+(x.target>0?Math.max(0,x.target-cxSaved(x)):0),0);
   $('cxt').textContent=fmt(tot);$('cxm').textContent=mt?fmt(mt):'—';$('cxf').textContent=mt?fmt(fl):'—';
   $('cxl').innerHTML=S.cx.length?S.cx.map(x=>{
     const sv=cxSaved(x);
-    const hist=x.mv.map((v,i)=>[v,i]).sort((a,b)=>b[0].date.localeCompare(a[0].date)||b[1]-a[1]).map(([v])=>`<div class="dr"><span>${v.note?esc(v.note):v.amt>0?'Guardado':'Retirado'}, ${v.date.split('-').reverse().join('/')}</span><b class="${v.amt>0?'in':'out'}">${v.amt>0?'+':'−'}${fmt(Math.abs(v.amt))}</b><button type="button" class="lnk" data-a="undo" data-mv="${v.id}">Desfazer</button></div>`).join('')||'<p class="empty" style="margin:6px 0 0">Nenhuma movimentação ainda.</p>';
+    const hist=`<div class="cxh">${cxOpen.has(x.id)?cxHist(x):''}</div>`;
     const t=x.target||0,done=t>0&&sv>=t-0.005,ed=editCx===x.id,pp=t>0?Math.min(100,sv/t*100):0;
     const inp=`<input data-f="tg" inputmode="decimal" value="${num(t)}" placeholder="Meta" aria-label="Meta da caixinha ${esc(x.name)}">`;
     const sdv=t>0?(done?'<b class="bsd in">Meta atingida</b>':`<b class="bsd mu">faltam ${fmt(t-sv)}</b>`):'<span class="bsd mu">Sem meta</span>';
@@ -1689,7 +1697,7 @@ $('cxl').addEventListener('change',e=>{
   S.sheet.forEach(r=>{if(r.cx===x.id)r.name=x.name});save();renderCx();renderSheet();fillCats();
 });
 $('cxl').addEventListener('focusout',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f==='tg')editCx=null;if(f==='emo')editCxEmo=null});
-$('cxl').addEventListener('toggle',e=>{const d=e.target;if(d.tagName==='DETAILS'&&d.dataset.x){const id=+d.dataset.x;if(d.open)cxOpen.add(id);else cxOpen.delete(id)}},true);
+$('cxl').addEventListener('toggle',e=>{const d=e.target;if(d.tagName==='DETAILS'&&d.dataset.x){const id=+d.dataset.x;if(d.open){cxOpen.add(id);const x=S.cx.find(y=>y.id===id),h=d.querySelector('.cxh');if(x&&h&&!h.firstChild)h.innerHTML=cxHist(x)}else cxOpen.delete(id)}},true);
 $('cxnew').addEventListener('click',openCxNew);
 
 // ----- ressarcimentos -----
@@ -1901,14 +1909,14 @@ $('lkb').addEventListener('click',tryUnlock);
 $('lkp').addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock()});
 $('pin-lock').addEventListener('click',lockNow);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)hid=Date.now();else if(hid&&getPin()&&Date.now()-hid>60000)lockNow()});
-function wipeAll(){try{localStorage.removeItem('caixa-v1');localStorage.removeItem(PINK)}catch(e){}location.reload()}
+function wipeAll(){_noSave=true;try{localStorage.removeItem('caixa-v1');localStorage.removeItem(PINK)}catch(e){}location.reload()}
 $('lkf').addEventListener('click',()=>{if(confirm('Isso remove a senha e os dados salvos neste aparelho. Os dados da nuvem não são apagados. Continuar?'))wipeAll()});
 $('wipe').addEventListener('click',async()=>{
   if(!confirm('Apagar TODOS os dados? Lançamentos, orçamentos, cartões e categorias'+(cu?', inclusive a cópia na nuvem.':' deste aparelho.')))return;
   if(!confirm('Tem certeza? Não dá para desfazer.'))return;
   wiping=true;clearTimeout(pushT);
   if(cu){try{await FB.del(cu.uid)}catch(e){wiping=false;toast('Não consegui apagar a cópia da nuvem. Tente de novo com internet.',true);return}}
-  try{localStorage.removeItem('caixa-v1')}catch(e){}location.reload();
+  _noSave=true;try{localStorage.removeItem('caixa-v1')}catch(e){}location.reload();
 });
 updSec();if(document.documentElement.classList.contains('locked'))setTimeout(()=>$('lkp').focus(),50);
 
@@ -1986,7 +1994,7 @@ $('au-out').addEventListener('click',async()=>{
   clearTimeout(pushT);await flush();
   if(isDirty()&&!confirm('Há alterações que ainda não foram enviadas para a nuvem e serão perdidas se você sair. Sair mesmo assim?'))return;
   try{await FB.signOut()}catch(e){}
-  try{localStorage.removeItem('caixa-v1')}catch(e){}location.reload();
+  _noSave=true;try{localStorage.removeItem('caixa-v1')}catch(e){}location.reload();
 });
 document.addEventListener('visibilitychange',()=>{if(!cu)return;if(document.hidden){if(S.sh!==undefined&&isDirty()){clearTimeout(pushT);flush()}}else if(Date.now()-lastPull>20000)pull()});
 addEventListener('online',()=>{if(cu){if(S.sh!==undefined&&isDirty())flush();else pull()}});
