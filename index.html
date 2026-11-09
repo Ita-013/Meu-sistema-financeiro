@@ -88,6 +88,11 @@ small{color:var(--mu);font-size:.82rem}
 .bk button,.bk label{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:10px;border:1px solid var(--ln);background:var(--sf2);font-weight:600;cursor:pointer}
 .bk .pri{background:var(--in);color:#052E16;border-color:var(--in);font-weight:800}
 .bk .full{grid-column:1/-1}
+.etf{margin-top:12px}.etf:first-of-type{margin-top:6px}
+.etf .fl small{font-weight:600}
+#etbox:focus{outline:none}
+#etallw[hidden],#etkw[hidden],#etpw[hidden]{display:none}
+#etalt{font-weight:500;font-size:.92rem;line-height:1.3}
 #rcl li[data-ig] .bk,#rcl li[data-im] .bk{grid-template-columns:1fr 1fr}
 .ipv{background:var(--bg);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;margin:0 0 10px}
 .ipv>b{display:block;margin-bottom:6px;font-size:.92rem}
@@ -278,13 +283,25 @@ body.dragging{-webkit-user-select:none;user-select:none}
   <div id="cpw"><label class="mi" style="display:block;margin:0 0 2px">Parcelas (1 = não parcelado)</label><input id="cpn" type="number" min="1" max="60" value="1"></div>
   <p id="cer" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
   <button class="go" id="cs" type="button">Salvar</button><div class="bk"><button id="cpcancel" type="button">Cancelar</button><button id="cdel" type="button" style="color:var(--out)">Excluir</button></div></div></div>
-<div class="mdl" id="etm" hidden><div class="mbox"><h3>Editar lançamento</h3>
-  <input id="etv" inputmode="decimal" aria-label="Valor"><input id="etd" type="date" style="margin-top:8px" aria-label="Data">
-  <input id="ets" placeholder="Descrição" aria-label="Descrição" style="margin-top:8px"><select id="etc" aria-label="Categoria" style="margin-top:8px"></select>
-  <select id="etp" aria-label="Forma de pagamento" style="margin-top:8px"><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select>
-  <select id="etk" aria-label="Cartão" style="margin-top:8px" hidden></select>
-  <p id="eter" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
-  <button class="go" id="etsv" type="button">Salvar</button><div class="bk"><button id="etcn" type="button">Cancelar</button></div></div></div>
+<div class="mdl" id="etm" hidden><div class="mbox" id="etbox" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="ett">
+  <h3 id="ett">Editar lançamento</h3>
+  <p class="mi" id="etsub" hidden></p>
+  <div class="etf"><label class="fl" for="etv"><small>Valor (R$)</small></label><input id="etv" inputmode="decimal"></div>
+  <div class="etf"><label class="fl" for="etd"><small id="etdl">Data</small></label><input id="etd" type="date"></div>
+  <div class="etf"><label class="fl" for="ets"><small>Descrição</small></label><input id="ets" placeholder="Ex.: Mercado" autocomplete="off"></div>
+  <div class="etf"><label class="fl" for="etc"><small>Categoria</small></label><select id="etc"></select></div>
+  <div class="etf" id="etpw"><label class="fl" for="etp"><small>Forma de pagamento</small></label><select id="etp"><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select></div>
+  <div class="etf" id="etkw" hidden><label class="fl" for="etk"><small>Cartão</small></label><select id="etk"></select></div>
+  <p class="mi" id="etinfo" hidden style="margin:8px 0 0"></p>
+  <div class="chkrow" id="etallw" hidden style="margin-top:12px"><label class="chk"><input type="checkbox" id="etall"><span id="etalt"></span></label></div>
+  <p id="eter" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:8px 0 0"></p>
+  <div class="bk"><button id="etcn" type="button">Cancelar</button><button class="pri" id="etsv" type="button">Salvar</button></div>
+  <div id="etdw" style="margin-top:14px;border-top:1px solid var(--ln);padding-top:12px">
+    <button id="etdb" type="button" class="lnk" style="color:var(--out);font-weight:600">Excluir lançamento</button>
+    <div id="etdc" hidden class="ipv" style="border-color:var(--out);margin:0"><b>Excluir este lançamento?</b><small id="etdt" style="display:block;margin:2px 0 10px">Essa ação não pode ser desfeita.</small>
+      <div class="bk" style="margin:0"><button id="etdn" type="button">Não, manter</button><button id="etdy" type="button" style="color:var(--out);border-color:var(--out)">Sim, excluir</button><button id="etdya" type="button" class="full" style="color:var(--out);border-color:var(--out)" hidden></button></div></div>
+  </div>
+</div></div>
 <div class="mdl" id="cpg" hidden><div class="mbox"><h3>Marcar como pago</h3><p class="mi" id="pgn"></p>
   <input id="pv" inputmode="decimal" aria-label="Valor pago"><input id="pd" type="date" style="margin-top:8px" aria-label="Data do pagamento">
   <button class="go" id="pok" type="button" style="margin-top:12px">Confirmar pagamento</button><div class="bk"><button id="pgcancel" type="button">Cancelar</button></div></div></div>
@@ -1828,22 +1845,46 @@ document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closes
 
 // ----- editar lançamentos -----
 let etT=null,etD0='';
-const etPay=()=>{const o=$('etp').value==='Cartão'&&etT.type==='out';$('etk').hidden=!o};
+const etPay=()=>{const o=$('etp').value==='Cartão'&&etT.type==='out';$('etkw').hidden=!o;$('etdl').textContent=o?'Data da compra':'Data';etInfo()};
+function etInfo(){
+  const el=$('etinfo'),card=+$('etk').value||0,d=$('etd').value;
+  if(!(etT&&etT.type==='out'&&$('etp').value==='Cartão'&&card)){el.hidden=true;return}
+  const c=S.cards.find(x=>x.id===card);el.hidden=false;
+  if(!c||!d){el.hidden=true;return}
+  if(!cardRules(card)){el.textContent='Esse cartão está sem fechamento e vencimento cadastrados, então o lançamento fica no mês da data.';return}
+  const du=invDue(card,d);el.textContent='Entra na fatura de '+labM(du.slice(0,7))+' do '+c.name+', que vence em '+dmy(du)+'.'}
+function etDel(all){
+  const t=etT;if(!t)return;
+  if(all&&t.sid){const sd=String(t.sid);S.tx=S.tx.filter(x=>String(x.sid)!==sd);S.sheet=S.sheet.filter(r=>String(r.sid)!==sd)}
+  else{
+    if(t.sid){const r=S.sheet.find(x=>String(x.sid)===String(t.sid)),k=t.date.slice(0,7);
+      if(r&&r.v&&k in r.v){r.v[k]=Math.round((r.v[k]-t.amount)*100)/100;if(r.v[k]<=.004)delete r.v[k];if(!Object.keys(r.v).length)S.sheet=S.sheet.filter(x=>x!==r)}}
+    S.tx=S.tx.filter(x=>x!==t)}
+  etT=null;$('etm').hidden=true;save();render();renderCx();renderSheet();renderRec();toast(all?'Todas as parcelas foram excluídas.':'Lançamento excluído.')}
 function openEt(id){const t=S.tx.find(x=>String(x.id)===String(id));if(!t)return;
   if(t.cx||t.cat==='Caixinhas'){toast('Movimentos de caixinha são editados na aba Caixinhas.',true);return}
   etT=t;$('etv').value=num(t.amount);$('etv').disabled=!!t.res;$('etd').value=t.pd||t.date;etD0=$('etd').value;$('ets').value=t.desc;
   $('etc').innerHTML=CATS[t.type].filter(c=>c!=='Caixinhas').map(c=>`<option>${esc(c)}</option>`).join('');$('etc').value=t.cat;
-  $('etp').hidden=t.type!=='out';$('etp').value=t.pay||'Pix';
+  $('etpw').hidden=t.type!=='out';$('etp').value=t.pay||'Pix';
   $('etk').innerHTML=S.cards.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(t.card)$('etk').value=t.card;etPay();
-  $('eter').textContent=t.res?'Esta despesa tem ressarcimento: o valor não pode ser mudado aqui.':'';$('etm').hidden=false;$('ets').focus()}
-$('etp').addEventListener('change',etPay);$('etcn').addEventListener('click',()=>$('etm').hidden=true);
+  $('eter').textContent=t.res?'Esta despesa tem ressarcimento: o valor não pode ser mudado aqui.':'';const pm=/\((\d+)\/(\d+)\)\s*$/.exec(t.desc||''),np=t.sid?S.tx.filter(x=>x.sid===t.sid).length:0;
+  $('ett').textContent=t.type==='out'?'Editar despesa':'Editar receita';
+  const sub=[t.sid&&pm?'Parcela '+pm[1]+'/'+pm[2]:'',t.prev?'prevista, ainda não veio do banco':''].filter(Boolean).join(' · ');
+  $('etsub').textContent=sub;$('etsub').hidden=!sub;
+  $('etall').checked=false;$('etallw').hidden=!(t.sid&&np>1);$('etalt').textContent='Aplicar descrição, categoria e pagamento às '+np+' parcelas';
+  $('etdc').hidden=true;$('etdb').hidden=false;
+  $('etm').hidden=false;$('etbox').scrollTop=0;$('etbox').focus()}
+$('etp').addEventListener('change',etPay);$('etd').addEventListener('change',etInfo);$('etk').addEventListener('change',etInfo);
+$('etdb').addEventListener('click',()=>{const t=etT,n=t&&t.sid?S.tx.filter(x=>x.sid===t.sid).length:0;$('etdb').hidden=true;$('etdc').hidden=false;$('etdy').textContent=n>1?'Só esta parcela':'Sim, excluir';$('etdya').hidden=!(n>1);$('etdya').textContent='Excluir as '+n+' parcelas';$('etdt').textContent=n>1?'Esta compra é parcelada em '+n+'x. Essa ação não pode ser desfeita.':'Essa ação não pode ser desfeita.'});
+$('etdn').addEventListener('click',()=>{$('etdc').hidden=true;$('etdb').hidden=false});
+$('etdy').addEventListener('click',()=>etDel(false));$('etdya').addEventListener('click',()=>etDel(true));$('etcn').addEventListener('click',()=>$('etm').hidden=true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('etm').hidden=true});
 document.addEventListener('click',e=>{const li=e.target.closest('#list li[data-ed],.dr[data-ed]');if(li&&!e.target.closest('button'))openEt(li.dataset.ed)});
 $('etsv').addEventListener('click',()=>{
   const t=etT,v=t.res?t.amount:Math.round(parse($('etv').value)*100)/100,d=$('etd').value,desc=$('ets').value.trim(),c=$('etc').value,pay=t.type==='out'?$('etp').value:t.pay,card=pay==='Cartão'&&t.type==='out'?(+$('etk').value||0):0;
   if(!(v>0))return $('eter').textContent='Digite um valor maior que zero.';if(!d)return $('eter').textContent='Escolha a data.';if(!desc)return $('eter').textContent='Digite a descrição.';
   if(t.type==='out'&&pay==='Cartão'&&!card)return $('eter').textContent='Escolha o cartão.';
-  const all=t.sid&&confirm('Esta compra é parcelada. Aplicar descrição, categoria e forma de pagamento a todas as parcelas?\n\nOK = todas as parcelas.\nCancelar = só esta parcela.');
+  const all=t.sid&&$('etall').checked;
   const oldCard=t.card,oldPay=t.pay,mt=desc.match(/^(.*) \(\d+\/\d+\)$/),base=mt?mt[1]:desc;
   const ap=x=>{x.cat=c;if(t.type==='out'){x.pay=pay;if(card)x.card=card;else delete x.card}};
   if(all){S.tx.filter(x=>x.sid===t.sid).forEach(x=>{const k=x.desc.match(/ \((\d+\/\d+)\)$/);x.desc=base+(k?' ('+k[1]+')':'');ap(x)})}
