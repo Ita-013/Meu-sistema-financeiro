@@ -122,8 +122,8 @@ module.exports = async (req, res) => {
 
     for (const itemId of items) {
       try {
-        let inst = '';
-        try { const it = await pg('/items/' + itemId, key); inst = (it.connector && it.connector.name) || ''; } catch (e) {}
+        let inst = '', istatus = '', iupd = '';
+        try { const it = await pg('/items/' + itemId, key); inst = (it.connector && it.connector.name) || ''; istatus = it.status || ''; iupd = it.lastUpdatedAt || ''; } catch (e) {}
         const accs = (await pg('/accounts?itemId=' + itemId, key)).results || [];
         const seen = new Map();
         for (const a of accs) {
@@ -162,7 +162,7 @@ module.exports = async (req, res) => {
           }
         }
         const o = top(seen); if (o) owners.push(o);
-        usedItems.push({ id: itemId, inst });
+        usedItems.push({ id: itemId, inst, status: istatus, updatedAt: iupd });
       } catch (e) {
         errors.push({ itemId, detail: String(e.message || e).slice(0, 120) });
       }
