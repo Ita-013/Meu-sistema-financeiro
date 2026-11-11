@@ -1940,14 +1940,14 @@ $('lkb').addEventListener('click',tryUnlock);
 $('lkp').addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock()});
 $('pin-lock').addEventListener('click',lockNow);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)hid=Date.now();else if(hid&&getPin()&&Date.now()-hid>60000)lockNow()});
-function wipeAll(){_noSave=true;try{localStorage.removeItem('caixa-v1');localStorage.removeItem(PINK)}catch(e){}location.reload()}
+function wipeAll(){_noSave=true;try{localStorage.removeItem('caixa-v1');localStorage.removeItem(PINK);localStorage.removeItem(PGK)}catch(e){}location.reload()}
 $('lkf').addEventListener('click',()=>{if(confirm('Isso remove a senha e os dados salvos neste aparelho. Os dados da nuvem não são apagados. Continuar?'))wipeAll()});
 $('wipe').addEventListener('click',async()=>{
   if(!confirm('Apagar TODOS os dados? Lançamentos, orçamentos, cartões e categorias'+(cu?', inclusive a cópia na nuvem.':' deste aparelho.')))return;
   if(!confirm('Tem certeza? Não dá para desfazer.'))return;
   wiping=true;clearTimeout(pushT);
   if(cu){try{await FB.del(cu.uid)}catch(e){wiping=false;toast('Não consegui apagar a cópia da nuvem. Tente de novo com internet.',true);return}}
-  _noSave=true;try{localStorage.removeItem('caixa-v1')}catch(e){}location.reload();
+  _noSave=true;try{localStorage.removeItem('caixa-v1');localStorage.removeItem(PGK)}catch(e){}location.reload();
 });
 updSec();if(document.documentElement.classList.contains('locked'))setTimeout(()=>$('lkp').focus(),50);
 
@@ -2024,12 +2024,14 @@ $('aup').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth('in')});
 $('au-out').addEventListener('click',async()=>{
   clearTimeout(pushT);await flush();
   if(isDirty()&&!confirm('Há alterações que ainda não foram enviadas para a nuvem e serão perdidas se você sair. Sair mesmo assim?'))return;
+  // descadastra o push deste aparelho (precisa do login ainda ativo; no máximo 4 s se estiver sem internet)
+  try{if(window.nfLogout)await Promise.race([window.nfLogout(),new Promise(z=>setTimeout(z,4000))])}catch(e){}
   try{await FB.signOut()}catch(e){}
-  _noSave=true;try{localStorage.removeItem('caixa-v1')}catch(e){}location.reload();
+  _noSave=true;try{localStorage.removeItem('caixa-v1');localStorage.removeItem(PGK)}catch(e){}location.reload();
 });
 document.addEventListener('visibilitychange',()=>{if(!cu)return;if(document.hidden){if(S.sh!==undefined&&isDirty()){clearTimeout(pushT);flush()}}else if(Date.now()-lastPull>20000)pull()});
 addEventListener('online',()=>{if(cu){if(S.sh!==undefined&&isDirty())flush();else pull()}});
-function startCloud(){FB.onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();checkRosa();if(u){await pull();if(window.pgAuto)pgAuto()}})}
+function startCloud(){FB.onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();checkRosa();if(u){await pull();if(window.pgAuto)pgAuto();if(typeof pgShow==='function')pgShow()}})}
 if(window.FB)startCloud();else addEventListener('fb-ready',startCloud,{once:true});
 updCloud();
 // ----- data da última alteração -----
@@ -2221,8 +2223,10 @@ $('etsv').addEventListener('click',()=>{
 
 // ----- Open Finance (Pluggy): movimentações e cartões direto na conciliação -----
 const PGK='caixa-pg',PGBASE=(/^https?:$/.test(location.protocol)&&!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()))?'':'https://meu-sistema-pink.vercel.app';
-const pgLoad=()=>{try{return JSON.parse(localStorage.getItem(PGK))||{}}catch(e){return{}}};
-const pgSaveSt=o=>{try{localStorage.setItem(PGK,JSON.stringify(o))}catch(e){}};
+// estado do Open Finance deste aparelho (contas do banco, última consulta). Fica marcado com o uid de quem o criou e só vale para
+// essa conta: assim, entrar com outra conta no mesmo navegador não mostra os dados da anterior (sem login, só vale o que não tem dono)
+const pgLoad=()=>{try{const o=JSON.parse(localStorage.getItem(PGK))||{};return(cu?o.u===cu.uid:!o.u)?o:{}}catch(e){return{}}};
+const pgSaveSt=o=>{try{localStorage.setItem(PGK,JSON.stringify(Object.assign({},o,{u:cu?cu.uid:''})))}catch(e){}};
 const isoD=dt=>new Date(dt.getTime()-dt.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const pgMsg=(t,bad)=>{const el=$('pgm');el.textContent=t;el.style.color=bad?'var(--out)':'var(--mu)'};
 const pgLabel=a=>[a.inst,a.name||(a.card?'Cartão':'Conta'),a.number?'•'+String(a.number).slice(-4):''].filter(Boolean).join(' ');
@@ -2367,6 +2371,8 @@ window.compReady=true;render();
   let cfg={on:false,time:'09:00',last:'',lastAt:0,fail:0};
   try{Object.assign(cfg,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
   const sv=()=>{try{localStorage.setItem(K,JSON.stringify(cfg))}catch(e){}};
+  // o push deste aparelho está cadastrado para a conta que está logada agora (o cadastro guarda o uid da conta)
+  const pushMine=()=>!!cfg.pushOn&&!!cu&&cfg.pushUid===cu.uid;
   const perm=()=>sup?Notification.permission:'unsupported';
   const lst=a=>a.slice(0,3).map(x=>x.n+' ('+fmt(x.v)+')').join(', ')+(a.length>3?' e mais '+(a.length-3):'');
   // atrasadas = em aberto com vencimento antes de hoje (meses anteriores + este mês); mesmas regras do Resumo, faturas incluídas
@@ -2388,11 +2394,11 @@ window.compReady=true;render();
     el.style.color='var(--mu)';
     if(p==='unsupported')el.textContent='Este navegador (ou este endereço) não permite notificações. Abra o sistema pelo endereço https no Chrome.';
     else if(p==='denied'){el.style.color='var(--out)';el.textContent='As notificações estão bloqueadas para este site. No Chrome, toque no ícone ao lado do endereço, abra as configurações do site e permita Notificações.'}
-    else if(cfg.on&&cfg.pushOn)el.textContent='Ativadas. O servidor avisa todo dia, por volta das 9h, o que vence hoje, o que está atrasado e as movimentações novas para conciliar, mesmo com o app fechado.';
+    else if(cfg.on&&pushMine())el.textContent='Ativadas. O servidor avisa todo dia, por volta das 9h, o que vence hoje, o que está atrasado e as movimentações novas para conciliar, mesmo com o app fechado.';
     else if(cfg.on){const l=msg();el.textContent='Ativadas. Sem push do servidor neste aparelho'+(cfg.pushWhy?' ('+cfg.pushWhy+')':'')+': você será avisado todo dia às '+cfg.time+', quando abrir o app, se houver algo vencendo, atrasado ou para conciliar'+(l.length?'.':'. Hoje não há nada disso.')}
     else el.textContent='Desativadas.';
     const sw=await swState(),la=cfg.lastAt?new Date(cfg.lastAt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'nenhuma ainda';
-    $('nfd').textContent='Permissão: '+({granted:'concedida',denied:'bloqueada',default:'não pedida',unsupported:'sem suporte'}[p]||p)+' · Service worker: '+sw+' · Push: '+(cfg.pushOn?'ativo':'inativo')+' · Última enviada: '+la;
+    $('nfd').textContent='Permissão: '+({granted:'concedida',denied:'bloqueada',default:'não pedida',unsupported:'sem suporte'}[p]||p)+' · Service worker: '+sw+' · Push: '+(pushMine()?'ativo':'inativo')+' · Última enviada: '+la;
     $('nfr').textContent=srvTxt;
     if(cfg.on&&window.FB&&FB.token&&cu&&Date.now()-srvAt>3e5)srvStatus()}
   // último envio do servidor (cron das 9h), lido de /api/push: mostra se rodou, quantos aparelhos recebeu e por que não enviou
@@ -2452,6 +2458,8 @@ window.compReady=true;render();
     return{ok:r.ok,st:r.status,d}}
   async function pushRegister(force){
     if(!cfg.on||perm()!=='granted'||!window.FB||!FB.push||!cu||!('serviceWorker' in navigator))return;
+    // cadastro feito por outra conta (ou antes de o app guardar de quem era): vale como não cadastrado, e refaz já
+    if(cfg.pushOn&&cfg.pushUid!==cu.uid){cfg.pushOn=false;cfg.pushTok='';cfg.pushTry=0}
     if(!force&&(cfg.pushOn&&Date.now()-(cfg.pushAt||0)<216e5||Date.now()-(cfg.pushTry||0)<6e5))return;
     cfg.pushTry=Date.now();
     try{
@@ -2462,12 +2470,14 @@ window.compReady=true;render();
       if(!token)throw new Error('este navegador não suporta push');
       const r=await pushApi({action:'register',token});
       if(!r.ok)throw new Error(r.d&&r.d.error?r.d.error:'servidor '+r.st);
-      cfg.pushOn=true;cfg.pushAt=Date.now();cfg.pushTok=token;cfg.pushWhy='';
+      cfg.pushOn=true;cfg.pushAt=Date.now();cfg.pushTok=token;cfg.pushWhy='';cfg.pushUid=cu.uid;
     }catch(e){cfg.pushOn=false;cfg.pushWhy=String(e&&e.message||e).slice(0,70)}
     sv();status()}
   async function pushOff(){
-    const tok=cfg.pushTok;cfg.pushOn=false;cfg.pushTok='';sv();status();
+    const tok=cfg.pushTok;cfg.pushOn=false;cfg.pushTok='';cfg.pushUid='';sv();status();
     if(!tok||!window.FB||!cu)return;try{await pushApi({action:'unregister',token:tok})}catch(e){}}
+  // ao sair da conta: descadastra o push desta conta neste aparelho e zera o que era dela (último aviso, status do servidor)
+  window.nfLogout=async()=>{cfg.last='';cfg.lastAt=0;srvTxt='';srvAt=Date.now();sv();await pushOff()};
   $('nfon').addEventListener('change',async e=>{
     if(!e.target.checked){cfg.on=false;sv();status();pushOff();return}
     if(!sup){status();return}
@@ -2479,7 +2489,7 @@ window.compReady=true;render();
   $('nftm').addEventListener('change',e=>{if(!e.target.value)return;cfg.time=e.target.value;cfg.last='';cfg.fail=0;sv();status();check()});
   $('nftest').addEventListener('click',async()=>{
     if(perm()!=='granted')return status();
-    if(cfg.pushOn){ // teste de ponta a ponta: o servidor envia um push para este aparelho
+    if(pushMine()){ // teste de ponta a ponta: o servidor envia um push para este aparelho
       try{const r=await pushApi({action:'test'});const ok=r.ok&&r.d&&r.d.sent>0;
         toast(ok?'Push de teste enviado pelo servidor. Deve chegar em alguns segundos, mesmo com o app fechado.':'O servidor não conseguiu enviar o teste'+(r.d&&r.d.error?' ('+r.d.error+')':' ('+r.st+')')+'.',!ok)}
       catch(e){toast('Sem conexão para testar o push agora.',true)}

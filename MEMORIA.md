@@ -29,3 +29,7 @@ Atualizado em 11/11/2026. Espelha a memória do Claude e serve para colar nas in
 - "Novo compromisso" só na aba Lançamentos; painel do topo só na aba Resumo.
 - Tema padrão escuro. Tema rosa liberado por e-mail, só no código, preservado nas atualizações.
 - Resumo: fatura do cartão entra no A pagar, não nas Despesas.
+- Pop-up não foca campo sozinho ao abrir (o teclado do celular não pode abrir sem eu tocar).
+
+## Dados por conta
+- Tudo que o app guarda no navegador (localStorage) e que vem de uma conta (Open Finance, push, etc.) deve levar o uid da conta ou ser apagado ao sair. Nunca mostrar dado de uma conta em outra no mesmo aparelho. Testar com duas contas no mesmo navegador.

@@ -53,6 +53,13 @@ module.exports = async (req, res) => {
       if (!okToken(body.token)) return res.status(400).json({ error: 'badtoken' });
       tokens = tokens.filter(t => t !== body.token).concat(body.token).slice(-5);   // até 5 aparelhos, os mais recentes
       await g.setPush(user.uid, tokens);
+      // um aparelho só recebe o push de uma conta: tira este token das outras (ex.: quem usou o aparelho antes e saiu sem internet)
+      try {
+        for (const d of await g.fsList('push')) {
+          const t = Array.isArray(d.tokens) ? d.tokens : [];
+          if (d.id !== user.uid && t.includes(body.token)) await g.setPush(d.id, t.filter(x => x !== body.token));
+        }
+      } catch (e) {}
       return res.status(200).json({ ok: true, devices: tokens.length });
     }
 
