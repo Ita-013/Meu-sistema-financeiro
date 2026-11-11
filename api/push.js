@@ -56,6 +56,10 @@ module.exports = async (req, res) => {
       return res.status(200).json({ ok: true, devices: tokens.length });
     }
 
+    if (body.action === 'status') {   // o que o envio diário (cron) fez por último, gravado por api/daily.js
+      return res.status(200).json({ ok: true, devices: tokens.length, lastRun: (doc && doc.lastRun) || 0, lastResult: (doc && doc.lastResult) || '' });
+    }
+
     if (body.action === 'unregister') {
       if (!okToken(body.token)) return res.status(400).json({ error: 'badtoken' });
       await g.setPush(user.uid, tokens.filter(t => t !== body.token));

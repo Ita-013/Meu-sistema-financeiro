@@ -660,6 +660,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <button class="sm" id="nftest" type="button" style="width:100%;margin-top:10px">Enviar notificação de teste</button>
     <p id="nfs" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem;color:var(--mu)"></p>
     <small id="nfd" style="display:block;margin-top:6px"></small>
+    <small id="nfr" style="display:block;margin-top:6px"></small>
   </div>
   <div class="card" id="backup">
     <h2>Backup dos dados<button class="inf" type="button" aria-label="Ajuda" data-tip="Seus dados ficam só neste aparelho. Baixe um backup de vez em quando e guarde o arquivo onde preferir.">i</button></h2>
@@ -2390,7 +2391,20 @@ window.compReady=true;render();
     else if(cfg.on){const l=msg();el.textContent='Ativadas. Sem push do servidor neste aparelho'+(cfg.pushWhy?' ('+cfg.pushWhy+')':'')+': você será avisado todo dia às '+cfg.time+', quando abrir o app, se houver algo vencendo, atrasado ou para conciliar'+(l.length?'.':'. Hoje não há nada disso.')}
     else el.textContent='Desativadas.';
     const sw=await swState(),la=cfg.lastAt?new Date(cfg.lastAt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'nenhuma ainda';
-    $('nfd').textContent='Permissão: '+({granted:'concedida',denied:'bloqueada',default:'não pedida',unsupported:'sem suporte'}[p]||p)+' · Service worker: '+sw+' · Push: '+(cfg.pushOn?'ativo':'inativo')+' · Última enviada: '+la}
+    $('nfd').textContent='Permissão: '+({granted:'concedida',denied:'bloqueada',default:'não pedida',unsupported:'sem suporte'}[p]||p)+' · Service worker: '+sw+' · Push: '+(cfg.pushOn?'ativo':'inativo')+' · Última enviada: '+la;
+    $('nfr').textContent=srvTxt;
+    if(cfg.on&&window.FB&&FB.token&&cu&&Date.now()-srvAt>3e5)srvStatus()}
+  // último envio do servidor (cron das 9h), lido de /api/push: mostra se rodou, quantos aparelhos recebeu e por que não enviou
+  let srvTxt='',srvAt=0;
+  async function srvStatus(){
+    srvAt=Date.now();
+    try{
+      const r=await pushApi({action:'status'});
+      if(!r.ok||!r.d)throw new Error('servidor '+r.st);
+      const d=r.d,w=d.lastRun?new Date(d.lastRun).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+      srvTxt='Servidor: '+(d.devices||0)+' aparelho(s) cadastrado(s) · '+(w?'último envio '+w+' ('+d.lastResult+')':'o envio diário ainda não rodou para você')
+    }catch(e){srvTxt='Servidor: não consegui consultar o último envio agora.'}
+    const el=$('nfr');if(el)el.textContent=srvTxt}
   // tenta mostrar; no celular o Chrome só aceita pelo service worker
   async function show(title,body,tag){
     const o={body,tag,icon:'icon-192.png',badge:'icon-192.png'};let why='';

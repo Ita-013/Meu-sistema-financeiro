@@ -1,5 +1,5 @@
 # Meu Caixa — memória e contexto do projeto
-Atualizado em 11/11/2026 (main no commit 254bd22). Regras fixas ficam em MEMORIA.md. Arquivo para revisão; a fonte da verdade do código é o GitHub (branch main).
+Atualizado em 11/11/2026 (main no commit 328de0e + registro do último envio, ainda não commitado). Regras fixas ficam em MEMORIA.md. Arquivo para revisão; a fonte da verdade do código é o GitHub (branch main).
 
 ## O que é
 Sistema de finanças pessoais em página web interativa, arquivo único `index.html`.
@@ -26,6 +26,7 @@ Ver MEMORIA.md (fonte única; não repetir aqui).
 4. Conciliação: movimentação de saída que bate com um compromisso em aberto (mesmo valor, ou nome parecido + valor até 20% próximo, vencimento até 40 dias) sugere o compromisso; botão "Lançar e marcar como pago". "Lançar sugeridas" NÃO inclui as que têm compromisso sugerido (confirmação individual).
 5. Bug introduzido e corrigido: a sugestão chamava `occ()` antes de `cdt` existir no carregamento (erro "Cannot access 'cdt' before initialization"), quebrando cliques (Compromissos e categorias do Resumo) para quem tem cartões/recorrentes. Correção: `cpCands` só roda com `window.compReady`.
 6. Caixinhas redesenhadas (11/11/2026): código em renderCx (estado cxExp/cxEd/cxDr); removidos o lápis por caixinha e o campo Nome dentro de Histórico.
+7. Registro do último envio (11/11/2026): o push das 9h não chegou e a Vercel Hobby guarda log só ~1h, então o `daily` agora grava em `push/{uid}` os campos `lastRun` e `lastResult` (enviado, sem aparelho, nada a avisar, erro do FCM; função `setRun` em `lib/google.js`), e também escreve no log. `api/push.js` ganhou a ação `status`, e a aba ⚙ mostra "Servidor: N aparelho(s) · último envio ..." (`srvStatus` no `index.html`, `#nfr`). Só o aviso local (app aberto) foi confirmado funcionando; falta confirmar o push com o app fechado.
 Lição: testar com dados completos (cartões, recorrentes, pagos, parcelas), não só com dados mínimos.
 
 ## Índice do index.html (funções e linhas aproximadas; confirme com `grep -n "function nome"`)
@@ -48,7 +49,7 @@ Verificar: Vercel → Settings → Cron Jobs mostra `/api/daily`. Se o push não
 `index.html` (app inteiro) · `sw.js` (service worker + push) · `vercel.json` (cron) · `api/pluggy.js`, `api/daily.js`, `api/push.js` · `lib/google.js`, `lib/plan.js` (cálculo de atrasadas/vencimentos no servidor, espelha o do app), `lib/bank.js` · `manifest.webmanifest` e ícones · `pluggy.js` na raiz (antigo; o index.html ainda carrega e gera um erro inofensivo "module is not defined" no console; candidato a remoção)
 
 ## Pendências e ideias
-- Confirmar que o push das 9h chegou (primeiro teste: 12/11 de manhã).
+- Push das 9h sem chegar (11/11): depois de subir o registro do último envio, clicar em Run do cron e ler a linha "Servidor" na aba ⚙ para ver o motivo (sem aparelho, FCM, nada a avisar). Testar também o botão de teste com o app fechado e a bateria do navegador sem restrição.
 - Instruções do projeto: incluir a regra dos títulos e corrigir o tema padrão descrito (instruções dizem preto/vermelho; o código usa azul-marinho `#090D16` com verde `#10B981` e vermelho `#F43F5E`).
 - Remover `pluggy.js` da raiz e a tag `<script src="pluggy.js">`.
 - Transformar em app instalável (APK Android).

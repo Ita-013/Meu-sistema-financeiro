@@ -23,27 +23,40 @@ module.exports = async (req, res) => {
     const docs = await g.fsList('push');
     for (const d of docs) {
       const tokens = Array.isArray(d.tokens) ? d.tokens.filter(x => typeof x === 'string' && x) : [];
-      if (!tokens.length) continue;
-      out.users++;
-      try {
-        const u = await g.fsGet('users/' + d.id);
-        if (!u || !u.data) { out.skipped++; continue; }
-        const S = JSON.parse(u.data);
-        const r = compute(S, t);
-        const b = await novas(S, d.id, t);
-        const l = linhas(r, b.n || 0, !!(b.err || b.partial));
-        if (!l.length) { out.skipped++; continue; }   // nada a avisar hoje
-        const msg = { title: 'Meu caixa', body: l.join('\n'), tag: 'caixa-diario', day: t };
-        const dead = [];
-        for (const tk of tokens) {
-          const s = await g.fcmSend(tk, msg);
-          if (s.ok) out.sent++; else { out.failed++; if (s.dead) dead.push(tk); }
+      let why = '';   // o que aconteceu com este usuário; fica gravado em push/{uid} para o app mostrar
+      if (!tokens.length) why = 'sem aparelho cadastrado';
+      else {
+        out.users++;
+        try {
+          const u = await g.fsGet('users/' + d.id);
+          if (!u || !u.data) { out.skipped++; why = 'sem dados do app'; }
+          else {
+            const S = JSON.parse(u.data);
+            const r = compute(S, t);
+            const b = await novas(S, d.id, t);
+            const l = linhas(r, b.n || 0, !!(b.err || b.partial));
+            if (!l.length) { out.skipped++; why = 'nada a avisar hoje'; }   // nada atrasado, vencendo ou para conciliar
+            else {
+              const msg = { title: 'Meu caixa', body: l.join('\n'), tag: 'caixa-diario', day: t };
+              const dead = [], codes = [];
+              let ok = 0;
+              for (const tk of tokens) {
+                const s = await g.fcmSend(tk, msg);
+                if (s.ok) { out.sent++; ok++; } else { out.failed++; codes.push(s.code || s.status); if (s.dead) dead.push(tk); }
+              }
+              if (dead.length) await g.setPush(d.id, tokens.filter(x => !dead.includes(x)));
+              why = ok + ' de ' + tokens.length + ' aparelho(s) enviado(s)' + (codes.length ? ' · erro FCM: ' + [...new Set(codes)].join(', ') : '') + (dead.length ? ' · removido(s) ' + dead.length + ' inválido(s)' : '');
+            }
+          }
+        } catch (e) {
+          out.failed++;   // um usuário com problema não impede os outros
+          why = 'erro: ' + String(e && e.message || e).slice(0, 120);
         }
-        if (dead.length) await g.setPush(d.id, tokens.filter(x => !dead.includes(x)));
-      } catch (e) {
-        out.failed++;   // um usuário com problema não impede os outros
       }
+      console.log('[daily] ' + t + ' ' + d.id.slice(0, 6) + ' ' + why);   // aparece no log da Vercel (guarda ~1h no plano Hobby)
+      try { await g.setRun(d.id, t + ' · ' + why); } catch (e) {}   // o registro que fica: o app lê por /api/push (action status)
     }
+    console.log('[daily] resumo ' + JSON.stringify(out));
     res.status(200).json(out);
   } catch (e) {
     const m = String(e && e.message || e);
