@@ -426,6 +426,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
   <label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input id="crp" type="checkbox" style="width:auto;min-height:0"> Repetir todo mês</label>
   <div id="cpw"><label class="mi" style="display:block;margin:0 0 2px">Parcelas (1 = não parcelado)</label><input id="cpn" type="number" min="1" max="60" value="1"></div>
   <p id="cer" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
+  <button class="sm" id="cpay" type="button" data-ca="pay" hidden style="width:100%;margin-bottom:8px">Marcar como pago</button>
   <button class="go" id="cs" type="button">Salvar</button><div class="bk"><button id="cpcancel" type="button" class="full">Cancelar</button></div></div></div>
 <div class="mdl" id="etm" hidden><div class="mbox" id="etbox" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="ett">
   <h3 id="ett">Editar lançamento</h3>
@@ -1158,8 +1159,8 @@ function toast(t,bad){const el=$('toast');el.textContent=t;el.className='toast o
 $('toast').addEventListener('click',()=>$('toast').classList.remove('on'));
 const shmsg=(t,bad)=>toast(t,bad);
 let mdKind='out',mdMode='line',mdCb=null,mdCancel=null;
-function openLine(kind,cb,onCancel){$('mdcr').hidden=true;mdMode='line';mdKind=kind;mdCb=cb||null;mdCancel=onCancel||null;$('mdt').textContent=kind==='in'?'Nova linha de entrada':'Nova linha de saída';$('mdn').placeholder='Nome da linha';$('mdnl').textContent='Nome da linha';$('mdgw').hidden=true;$('mdx').hidden=true;$('mdok').textContent='Adicionar';$('mdn').value='';$('mde').textContent='';$('mdl').hidden=false;setTimeout(()=>$('mdn').focus(),30)}
-function openCxNew(){$('mdcr').hidden=true;mdMode='cx';mdCb=null;mdCancel=null;$('mdt').textContent='Nova caixinha';$('mdn').placeholder='Ex.: Viagem';$('mdnl').textContent='Nome da caixinha';$('mdgw').hidden=false;$('mdx').hidden=true;$('mdg').value='';$('mdok').textContent='Criar';$('mdn').value='';$('mde').textContent='';$('mdl').hidden=false;setTimeout(()=>$('mdn').focus(),30)}
+function openLine(kind,cb,onCancel){$('mdcr').hidden=true;mdMode='line';mdKind=kind;mdCb=cb||null;mdCancel=onCancel||null;$('mdt').textContent=kind==='in'?'Nova linha de entrada':'Nova linha de saída';$('mdn').placeholder='Nome da linha';$('mdnl').textContent='Nome da linha';$('mdgw').hidden=true;$('mdx').hidden=true;$('mdok').textContent='Adicionar';$('mdn').value='';$('mde').textContent='';$('mdl').hidden=false}
+function openCxNew(){$('mdcr').hidden=true;mdMode='cx';mdCb=null;mdCancel=null;$('mdt').textContent='Nova caixinha';$('mdn').placeholder='Ex.: Viagem';$('mdnl').textContent='Nome da caixinha';$('mdgw').hidden=false;$('mdx').hidden=true;$('mdg').value='';$('mdok').textContent='Criar';$('mdn').value='';$('mde').textContent='';$('mdl').hidden=false}
 let mdCard=null;
 function openCard(id,cb,onCancel){
   mdMode='card';mdCard=id||null;mdCb=cb||null;mdCancel=onCancel||null;
@@ -1167,7 +1168,7 @@ function openCard(id,cb,onCancel){
   $('mdt').textContent=c?'Editar cartão':'Novo cartão';$('mdn').placeholder='Ex.: Nubank';$('mdnl').textContent='Nome do cartão';$('mdgw').hidden=true;
   $('mdok').textContent=c?'Salvar':'Criar';$('mdn').value=c?c.name:'';$('mde').textContent='';
   $('mdcr').hidden=false;$('mdcl').value=c&&c.cl?c.cl:'';$('mdcd').value=c&&c.dd?c.dd:'';$('mdx').hidden=!c;$('mdx').innerHTML=TRASH;
-  $('mdl').hidden=false;setTimeout(()=>{$('mdn').focus();$('mdn').select()},30);
+  $('mdl').hidden=false;
 }
 function closeLine(ok){if($('mdl').hidden)return;$('mdl').hidden=true;$('mdcr').hidden=true;if(!ok&&mdCancel)mdCancel();mdCb=null;mdCancel=null}
 function confirmLine(){
@@ -1748,7 +1749,7 @@ function paintRes(){
 function openRes(id){
   const t=S.tx.find(x=>String(x.id)===String(id));if(!t)return;rsId=t.id;
   $('rst').textContent='Ressarcimento: '+t.desc;$('rse').textContent='';$('rsv').value='';$('rsw').value='';$('rsd').value=today();
-  paintRes();$('rsm').hidden=false;setTimeout(()=>$('rsv').focus(),30);
+  paintRes();$('rsm').hidden=false;
 }
 $('rsok').addEventListener('click',()=>{
   const t=S.tx.find(x=>x.id===rsId);if(!t)return;const v=parse($('rsv').value),i=rsInfo(t);
@@ -2059,7 +2060,7 @@ function renderComp(ob,rl){
   if(reconcileComp())save();
   $('cm').textContent=fmt(openCm());
   const o=openOf(m,1).sort((a,b)=>(a.d||'9').localeCompare(b.d||'9')).slice(0,5);
-  $('vl').innerHTML=o.length?o.map(x=>{const t=stt(x);return `<div class="cr" data-ca="edit" data-id="${esc(x.id)}"><div>${esc(x.n)}<small style="color:${t[1]}">${t[0]}</small></div><b>${fmt(x.v)}</b></div>`}).join(''):'<small>Nenhuma conta a pagar neste mês.</small>';
+  $('vl').innerHTML=o.length?o.map(x=>{const t=stt(x);return `<div class="cr" data-ca="edit" data-id="${esc(x.id)}"><div style="flex:1;min-width:0">${esc(x.n)}<small style="color:${t[1]}">${t[0]}</small></div><b>${fmt(x.v)}</b><button type="button" class="pgb" data-ca="${x.fat?'fpay':'pay'}" data-id="${esc(x.id)}">Pagar</button></div>`}).join(''):'<small>Nenhuma conta a pagar neste mês.</small>';
   if(!$('cpv').hidden)renderCpv();
 }
 function crow(x){const t=stt(x),b=x.fat?`<div class="ca">${x.st==='a'?`<button class="go" data-ca="fpay" data-id="${esc(x.id)}" type="button" style="min-height:36px">Marcar como paga</button>`:`<button class="sm" data-ca="fundo" data-id="${esc(x.id)}" type="button">Desfazer</button>`}</div>`:x.st==='a'?`<div class="ca"><button class="go" data-ca="pay" data-id="${esc(x.id)}" type="button" style="min-height:36px">Marcar como pago</button><button class="sm" data-ca="ign" data-id="${esc(x.id)}" type="button">Ignorar</button></div>`:x.st==='i'?`<div class="ca"><button class="sm" data-ca="undo" data-id="${esc(x.id)}" type="button">Desfazer</button></div>`:'';
@@ -2075,7 +2076,7 @@ $('lsa').addEventListener('click',()=>lview(false));$('lsb').addEventListener('c
 let cEd=null,cPg=null;
 const cmsg=t=>$('cer').textContent=t,redo=()=>{save();render();renderCpv()};
 function openForm(x){cEd=x||null;$('cmt').textContent=x?'Editar compromisso':'Novo compromisso';$('cc').innerHTML=CATS.out.filter(c=>c!=='Caixinhas').map(c=>`<option>${esc(c)}</option>`).join('');
-  $('cn').value=x?x.n:'';$('cv').value=x?num(x.v):'';if(x)$('cc').value=x.c;$('cdt').value=x?x.d:'';$('crp').checked=!!(x&&x.rep);$('crp').disabled=!!x;$('cpn').value=1;$('cpw').hidden=!!x;$('cdel').hidden=!x;cmsg('');$('cpm').hidden=false;$('cn').focus()}
+  $('cn').value=x?x.n:'';$('cv').value=x?num(x.v):'';if(x)$('cc').value=x.c;$('cdt').value=x?x.d:'';$('crp').checked=!!(x&&x.rep);$('crp').disabled=!!x;$('cpn').value=1;$('cpw').hidden=!!x;$('cdel').hidden=!x;$('cpay').hidden=!(x&&x.st==='a'&&!x.fat);if(x)$('cpay').dataset.id=x.id;cmsg('');$('cpm').hidden=false}
 $('cpcancel').addEventListener('click',()=>$('cpm').hidden=true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('cpm').hidden=true;$('cpg').hidden=true}});
 $('cs').addEventListener('click',()=>{
@@ -2106,7 +2107,7 @@ $('cdel').addEventListener('click',()=>{
 $('pgcancel').addEventListener('click',()=>$('cpg').hidden=true);
 $('pok').addEventListener('click',()=>{
   const v=Math.round(parse($('pv').value)*100)/100,d=$('pd').value||today();if(!(v>0)){toast('Digite o valor pago.',true);return}
-  const x=real(cPg),t={id:uid(),type:'out',amount:v,desc:x.n.slice(0,120),cat:x.c,date:d};S.tx.push(t);Object.assign(x,{st:'g',tx:t.id,pv:v});$('cpg').hidden=true;redo();
+  const x=real(cPg),t={id:uid(),type:'out',amount:v,desc:x.n.slice(0,120),cat:x.c,date:d};S.tx.push(t);Object.assign(x,{st:'g',tx:t.id,pv:v});$('cpg').hidden=true;$('cpm').hidden=true;redo();
 });
 // a receber: planejado de cada linha de entrada menos o que já foi lançado (mínimo zero por linha); mês já encerrado não conta
 function recvOf(mm){
