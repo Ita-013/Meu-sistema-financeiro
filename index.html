@@ -120,7 +120,7 @@ small{color:var(--mu);font-size:.82rem}
 .bk .pri{background:var(--in);color:var(--on-in);border-color:var(--in);font-weight:800}
 .bk .full{grid-column:1/-1}
 .etf{margin-top:12px}.etf:first-of-type{margin-top:6px}
-.etf .fl small{font-weight:600}
+.etf .fl small{font-weight:600}.g2>.etf{margin-top:0}
 #etbox:focus{outline:none}
 #etallw[hidden],#etkw[hidden],#etpw[hidden]{display:none}
 #etalt{font-weight:500;font-size:.92rem;line-height:1.3}
@@ -369,7 +369,7 @@ span.bem{cursor:default}
 .dl .dr{min-height:58px;box-sizing:border-box;align-content:center}
 .cxi{background:var(--bg);border:1px solid var(--ln);border-radius:12px;padding:12px;margin-top:12px}
 .rpb{display:grid;grid-template-columns:1fr auto;gap:2px 10px;width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border:1px solid var(--ln);border-radius:10px;background:var(--bg)}
-.cardrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-bottom:10px}
+.cardrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin-bottom:10px}
 .cardrow[hidden]{display:none}
 .cardrow select{min-width:0}
 .cardrow .sm:disabled{opacity:.4}
@@ -416,9 +416,10 @@ body.dragging{-webkit-user-select:none;user-select:none}
   </div>
 </div>
 <div class="mdl" id="cpm" hidden><div class="mbox"><div class="mhd"><h3 id="cmt">Novo compromisso</h3><button id="cdel" type="button" hidden></button></div>
-  <input id="cn" placeholder="Nome (ex.: Luz)" aria-label="Nome"><input id="cv" inputmode="decimal" placeholder="Valor" aria-label="Valor" style="margin-top:8px">
-  <select id="cc" aria-label="Categoria" style="margin-top:8px"></select>
-  <label class="mi" style="display:block;margin:8px 0 2px" id="cdl">Vencimento</label><input id="cdt" type="date">
+  <div class="etf"><label class="fl" for="cn"><small>Nome</small></label><input id="cn" placeholder="Ex.: Luz"></div>
+  <div class="etf" style="margin-top:8px"><label class="fl" for="cv"><small>Valor (R$)</small></label><input id="cv" inputmode="decimal" placeholder="0,00"></div>
+  <div class="etf" style="margin-top:8px"><label class="fl" for="cc"><small>Categoria</small></label><select id="cc"></select></div>
+  <label class="mi" style="display:block;margin:8px 0 2px" id="cdl" for="cdt">Vencimento (opcional)</label><input id="cdt" type="date">
   <label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input id="crp" type="checkbox" style="width:auto;min-height:0"> Repetir todo mês</label>
   <div id="cpw"><label class="mi" style="display:block;margin:0 0 2px">Parcelas (1 = não parcelado)</label><input id="cpn" type="number" min="1" max="60" value="1"></div>
   <p id="cer" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
@@ -443,7 +444,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
   </div>
 </div></div>
 <div class="mdl" id="cpg" hidden><div class="mbox"><h3>Marcar como pago</h3><p class="mi" id="pgn"></p>
-  <input id="pv" inputmode="decimal" aria-label="Valor pago"><input id="pd" type="date" style="margin-top:8px" aria-label="Data do pagamento">
+  <div class="etf"><label class="fl" for="pv"><small>Valor pago (R$)</small></label><input id="pv" inputmode="decimal"></div><div class="etf" style="margin-top:8px"><label class="fl" for="pd"><small>Data do pagamento</small></label><input id="pd" type="date"></div>
   <button class="go" id="pok" type="button" style="margin-top:12px">Confirmar pagamento</button><div class="bk"><button id="pgcancel" type="button">Cancelar</button></div></div></div>
 <div id="lk" class="lk" role="dialog" aria-modal="true" aria-labelledby="lkt">
   <div class="mbox">
@@ -505,17 +506,18 @@ body.dragging{-webkit-user-select:none;user-select:none}
   <div id="cpv" hidden></div>
   <div class="card" id="f">
     <h2>Novo lançamento</h2>
+    <small class="fl">Tipo</small>
     <div class="seg" role="radiogroup" aria-label="Tipo">
       <label><input type="radio" name="tp" value="out" checked>Despesa</label>
       <label><input type="radio" name="tp" value="in">Receita</label>
     </div>
     <div class="g2">
-      <input id="v" inputmode="decimal" placeholder="Valor (25,90)" aria-label="Valor">
-      <input id="d" type="date" aria-label="Data">
+      <div class="etf"><label class="fl" for="v"><small id="vlb">Valor (R$)</small></label><input id="v" inputmode="decimal" placeholder="25,90"></div>
+      <div class="etf"><label class="fl" for="d"><small>Data</small></label><input id="d" type="date"></div>
     </div>
     <div class="g2">
-      <input id="ds" placeholder="Descrição" aria-label="Descrição">
-      <select id="c" aria-label="Categoria"></select>
+      <div class="etf"><label class="fl" for="ds"><small>Descrição</small></label><input id="ds" placeholder="Ex.: Mercado"></div>
+      <div class="etf"><label class="fl" for="c"><small>Categoria</small></label><select id="c"></select></div>
     </div>
     <small class="fl">Forma de pagamento</small>
     <div class="seg s3" role="radiogroup" aria-label="Forma de pagamento">
@@ -524,14 +526,14 @@ body.dragging{-webkit-user-select:none;user-select:none}
       <label><input type="radio" name="pg" value="Cartão">Cartão</label>
     </div>
     <div id="cardrow" class="cardrow" hidden>
-      <select id="cardsel" aria-label="Cartão"></select>
+      <div class="etf" style="margin-top:0"><label class="fl" for="cardsel"><small>Cartão</small></label><select id="cardsel"></select></div>
       <button id="cardedit" class="sm" type="button">Editar</button>
     </div>
     <div id="par" hidden>
       <div class="chkrow"><label class="chk"><input type="checkbox" id="pcx">Compra parcelada</label><button class="inf" type="button" aria-label="Ajuda" data-tip="Informe o valor total da compra: ele é dividido pelo total de parcelas. A data do lançamento é a da parcela atual. Se você está na parcela 3 de 6, as parcelas 1 e 2 vão para os meses anteriores e as demais para os meses seguintes. Tudo também vai para a aba Orçamentos.">i</button></div>
       <div class="g2" id="pcf" hidden>
-        <input id="pk" inputmode="numeric" placeholder="Parcela atual (ex.: 1)" aria-label="Parcela atual">
-        <input id="pn2" inputmode="numeric" placeholder="Total de parcelas (ex.: 6)" aria-label="Total de parcelas">
+        <div class="etf"><label class="fl" for="pk"><small>Parcela atual</small></label><input id="pk" inputmode="numeric" placeholder="Ex.: 1"></div>
+        <div class="etf"><label class="fl" for="pn2"><small>Total de parcelas</small></label><input id="pn2" inputmode="numeric" placeholder="Ex.: 6"></div>
       </div>
       <small id="pprev" style="display:block;margin-top:4px;color:var(--in)"></small>
     </div>
@@ -576,16 +578,16 @@ body.dragging{-webkit-user-select:none;user-select:none}
         <li>Cole os dois abaixo e toque em <b>Conectar meu Pluggy</b>.</li>
         <li>No dashboard, confira <b>Dados Financeiros → Customização → Conectores → MeuPluggy</b> ligado. Depois, em <b>Aplicações → Demo → Conectar Conta</b>, escolha <b>MeuPluggy</b> (uma vez por banco) e copie cada <b>itemId</b> para adicionar em "Adicionar outro banco".</li>
       </ol>
-      <input id="pgcid" placeholder="Client ID (ex.: 8004ce98-...)" aria-label="Client ID do Pluggy" autocomplete="off" autocapitalize="off" spellcheck="false">
-      <input id="pgcsec" type="password" placeholder="Client Secret" aria-label="Client Secret do Pluggy" autocomplete="new-password" autocapitalize="off" spellcheck="false" style="margin-top:8px">
+      <div class="etf"><label class="fl" for="pgcid"><small>Client ID</small></label><input id="pgcid" placeholder="Ex.: 8004ce98-..." autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <div class="etf" style="margin-top:8px"><label class="fl" for="pgcsec"><small>Client Secret</small></label><input id="pgcsec" type="password" placeholder="Cole o Client Secret" autocomplete="new-password" autocapitalize="off" spellcheck="false"></div>
       <button class="go" id="pgconn" type="button" style="margin-top:8px">Conectar meu Pluggy</button>
       <small style="display:block;margin:8px 0 0">O Client Secret é guardado criptografado e nunca aparece de novo no app. Só você consulta os seus bancos.</small>
       <button class="sm" id="pgdisc" type="button" hidden style="margin-top:10px;width:100%">Desconectar meu Pluggy</button>
     </details>
     <details class="adv"><summary>Adicionar outro banco</summary>
       <small style="display:block;margin:6px 0">Conecte o banco no Meu Pluggy e copie o itemId na página Demo do Pluggy Dashboard (Connected Items).</small>
-      <input id="pgid" placeholder="itemId da conexão (36 caracteres)" aria-label="itemId" autocomplete="off">
-      <input id="pgnm" placeholder="Apelido do banco (ex.: Nubank)" aria-label="Apelido do banco" style="margin-top:8px">
+      <div class="etf"><label class="fl" for="pgid"><small>itemId da conexão</small></label><input id="pgid" placeholder="36 caracteres" autocomplete="off"></div>
+      <div class="etf" style="margin-top:8px"><label class="fl" for="pgnm"><small>Apelido do banco</small></label><input id="pgnm" placeholder="Ex.: Nubank"></div>
       <button class="go" id="pgadd" type="button" style="margin-top:8px">Adicionar banco</button>
     </details>
     <label class="fl" for="pgfrom" style="margin-top:10px"><small>Buscar movimentações a partir de</small></label>
@@ -600,19 +602,20 @@ body.dragging{-webkit-user-select:none;user-select:none}
       <label><input type="radio" name="rk" value="fatura">Fatura do cartão</label>
     </div>
     <div id="rccard" class="cardrow" hidden style="margin-top:8px">
-      <select id="rc-card" aria-label="Cartão desta fatura"></select>
+      <div class="etf" style="margin-top:0"><label class="fl" for="rc-card"><small>Cartão desta fatura</small></label><select id="rc-card"></select></div>
       <button id="rc-cardedit" class="sm" type="button">Editar</button>
     </div>
-    <input id="rc-name" placeholder="Seu nome (opcional, para ignorar transferências entre suas contas)" aria-label="Seu nome" style="margin-top:8px">
+    <div class="etf" style="margin-top:8px"><label class="fl" for="rc-name"><small>Seu nome (opcional)</small></label><input id="rc-name" placeholder="Para ignorar transferências entre suas contas"></div>
     <div class="bk"><label for="rc-file">Escolher arquivo</label><input id="rc-file" type="file" class="sr"><button id="rc-undo" type="button" hidden>Restaurar ignoradas</button></div>
     <details class="adv"><summary>Ou cole o texto do extrato</summary>
-      <textarea id="rc-txt" rows="4" placeholder="Cole aqui o conteúdo do arquivo" aria-label="Texto do extrato"></textarea>
+      <div class="etf"><label class="fl" for="rc-txt"><small>Texto do extrato</small></label><textarea id="rc-txt" rows="4" placeholder="Cole aqui o conteúdo do arquivo"></textarea></div>
       <button class="go" id="rc-go" type="button" style="margin-top:8px">Importar texto</button>
     </details>
     <p id="rcm" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem"></p>
   </div>
   <div class="card">
     <div class="rw"><h2 id="rct" style="margin:0">Pendentes</h2><button id="rc-all" type="button" class="sm"></button></div>
+    <small id="rc-allnote" style="display:block;margin-top:4px"></small>
     <small id="rcs"></small>
     <div class="bk" style="margin-top:8px"><button id="rc-dn" type="button" class="sm" hidden></button><button id="rc-ig" type="button" class="sm" hidden></button></div>
     <ul id="rcl" style="margin-top:8px"></ul>
@@ -624,8 +627,8 @@ body.dragging{-webkit-user-select:none;user-select:none}
       <small style="display:block;margin:6px 0 10px">Quando a descrição de uma movimentação começa com o texto abaixo, a categoria e a forma de pagamento já vêm preenchidas. O sistema aprende sozinho cada vez que você lança; aqui você corrige, apaga ou adiciona regras.</small>
       <div id="rll"></div>
       <small style="display:block;margin:12px 0 4px">Adicionar regra</small>
-      <input id="rl-k" placeholder="Parte da descrição (ex.: mercadinho sao luiz)" aria-label="Parte da descrição" autocomplete="off">
-      <div class="g2" style="margin-top:8px"><select id="rl-c" aria-label="Categoria"></select><select id="rl-p" aria-label="Forma de pagamento"><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select></div>
+      <div class="etf"><label class="fl" for="rl-k"><small>Parte da descrição</small></label><input id="rl-k" placeholder="Ex.: mercadinho sao luiz" autocomplete="off"></div>
+      <div class="g2" style="margin-top:8px"><div class="etf"><label class="fl" for="rl-c"><small>Categoria</small></label><select id="rl-c"></select></div><div class="etf"><label class="fl" for="rl-p"><small>Forma de pagamento</small></label><select id="rl-p"><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select></div></div>
       <button class="go" id="rl-add" type="button" style="margin-top:8px">Salvar regra</button>
     </details>
   </div>
@@ -694,8 +697,8 @@ body.dragging{-webkit-user-select:none;user-select:none}
   <div class="mbox">
     <h3 id="rst"></h3>
     <p id="rsi" class="mi"></p>
-    <div class="g2"><input id="rsv" inputmode="decimal" placeholder="Valor que voltou" aria-label="Valor que voltou"><input id="rsd" type="date" aria-label="Data"></div>
-    <input id="rsw" list="rsn" placeholder="Quem devolveu (opcional)" aria-label="Quem devolveu" style="margin-top:10px">
+    <div class="g2"><div class="etf"><label class="fl" for="rsv"><small>Valor que voltou (R$)</small></label><input id="rsv" inputmode="decimal" placeholder="0,00"></div><div class="etf"><label class="fl" for="rsd"><small>Data</small></label><input id="rsd" type="date"></div></div>
+    <div class="etf" style="margin-top:10px"><label class="fl" for="rsw"><small>Quem devolveu (opcional)</small></label><input id="rsw" list="rsn" placeholder="Nome"></div>
     <datalist id="rsn"></datalist>
     <p id="rse" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
     <div class="bk"><button class="pri" id="rsok" type="button">Registrar</button><button id="rsc" type="button">Fechar</button></div>
@@ -1333,7 +1336,21 @@ function recImport(t,kind){
   save();renderRec();
   rmsg(`${add} movimentação(ões) nova(s)${old?', '+old+' já importada(s)':''}${dups?', '+dups+' parece(m) já lançada(s)':''}${auto?', '+auto+' interna(s) ignorada(s) automaticamente (reservas, cofrinho, fatura e transferências suas)':''}.`);
 }
-const recCardSel=(x,pay,s)=>{const cd=x.card||(s&&s.card);return pay==='Cartão'&&x.type==='out'&&S.cards.length?`<select data-f="card" aria-label="Cartão" style="margin-bottom:10px"><option value="">Escolha o cartão</option>${S.cards.map(c=>`<option value="${c.id}"${c.id===cd?' selected':''}>${esc(c.name)}</option>`).join('')}</select>`:''};
+const recCardSel=(x,pay,s)=>{const cd=x.card||(s&&s.card);return pay==='Cartão'&&x.type==='out'&&S.cards.length?`<div class="etf" style="margin:0 0 10px"><label class="fl"><small>Cartão</small></label><select data-f="card"><option value="">Escolha o cartão</option>${S.cards.map(c=>`<option value="${c.id}"${c.id===cd?' selected':''}>${esc(c.name)}</option>`).join('')}</select></div>`:''};
+// compromisso que o lançamento do banco provavelmente quitou: mesmo valor ou nome parecido, vencimento até 40 dias do movimento
+function cpCands(x){if(x.type!=='out')return[];const m=x.date.slice(0,7),seen=new Set(),L=[];
+  [addM(m,-1),m,addM(m,1)].forEach(mm=>occ(mm).forEach(c=>{if(c.fat||c.st!=='a'||seen.has(c.id))return;seen.add(c.id);L.push(c)}));return L}
+function cpSug(x){const nd=norm(x.desc);let best=null,bs=0;
+  cpCands(x).forEach(c=>{const eq=Math.abs(c.v-x.amount)<.01,nm=norm(c.n).split(/\s+/).some(w=>w.length>=3&&nd.includes(w)),near=Math.abs(c.v-x.amount)<=Math.max(c.v,1)*.2;
+    if(!(eq||(nm&&near)))return;const dd=c.d?Math.abs((Date.parse(c.d)-Date.parse(x.date))/864e5):15;if(dd>40)return;
+    const sc=(eq?2:0)+(nm?2:0)-dd/100;if(sc>bs){bs=sc;best=c}});return best}
+// escolha do usuário (x.cp: id, ou '' para "nenhum") vence a sugestão
+const cpOf=x=>{if(x.cp===undefined)return cpSug(x);if(!x.cp)return null;const c=fnd(x.cp);return c&&c.st==='a'&&!c.fat?c:null};
+const bulkOk=x=>x.st==='pend'&&!x.dup&&!isInstRec(x)&&(x.cat||recSug(x).cat)&&!cpOf(x);
+function cpBlock(x){const L=cpCands(x);if(!L.length)return'';const cur=cpOf(x),cid=cur?cur.id:'';
+  const lb=c=>esc(c.n)+(c.d?' · vence '+c.d.split('-').reverse().slice(0,2).join('/'):'')+' · '+fmt(c.v);
+  const diff=cur&&Math.abs(cur.v-x.amount)>=.01?`<small style="display:block;margin-top:4px">Banco: ${fmt(x.amount)}. O compromisso será marcado como pago com o valor do banco.</small>`:'';
+  return `<div class="etf" style="margin:8px 0 10px"><label class="fl"><small>Compromisso que esta movimentação pagou (opcional)</small></label><select data-f="cp"><option value="">Nenhum, só lançar</option>${L.map(c=>`<option value="${esc(c.id)}"${c.id===cid?' selected':''}>${lb(c)}</option>`).join('')}</select>${diff}</div>`}
 let showIgn=false,showDn=false;
 // ----- parcelas do cartão na conciliação -----
 const instRe1=/\((\d{1,2})\/(\d{1,2})\)\s*$/,instRe2=/\bparc\w*\.?\s*(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})/i,igs={};
@@ -1377,8 +1394,8 @@ function instGroupLi(g){
   const rows=instRows(g,early),tot=rows.reduce((a,r)=>a+r.amt,0),bankN=rows.filter(r=>r.o).length,antN=instRows(g,true).filter(r=>r.kind==='ant'),ex=instPlanTx(g.card,g.n,g.B);
   const base=nd||instClean(first.nd||first.desc),cd=S.cards.find(c=>c.id===g.card),arr=g.items.map(o=>o.I.k).sort((a,b)=>a-b),pl=rows.length===1?'parcela':'parcelas';
   return `<li data-ig="${esc(g.key)}"><div class="rw"><span class="rd">${esc(base)}</span><b class="out">−${fmt(first.amount)}</b></div><small>Compra parcelada em ${g.n}x · ${esc(cd?cd.name:'')} · o banco enviou ${arr.length>1?'as parcelas '+arr.map(k=>k+'/'+g.n).join(', '):'a parcela '+arr[0]+'/'+g.n}</small>`+
-  `<input data-g="nd" maxlength="100" style="margin:8px 0 10px" placeholder="O que foi essa compra? (opcional)" value="${esc(nd)}" aria-label="Descrição da compra" autocomplete="off">`+
-  `<select data-g="cat" aria-label="Categoria" style="margin-bottom:10px"><option value="">Escolha a categoria</option>${CATS.out.filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select>`+
+  `<div class="etf" style="margin:8px 0 10px"><label class="fl"><small>Descrição (opcional)</small></label><input data-g="nd" maxlength="100" placeholder="O que foi essa compra?" value="${esc(nd)}" autocomplete="off"></div>`+
+  `<div class="etf" style="margin:0 0 10px"><label class="fl"><small>Categoria</small></label><select data-g="cat"><option value="">Escolha a categoria</option>${CATS.out.filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select></div>`+
   `<div class="ipv"><b>Ao lançar, serão criadas ${rows.length} ${pl}:</b>${instPreview(rows,g.n)}<div class="ipr"><small>Total</small><b>${fmt(tot)}</b></div><small>${ex&&ex.sid?'As parcelas entram na linha de Orçamentos que essa compra já tem.':'Também cria a linha "Parcelas: '+esc(base.slice(0,30))+'" na aba Orçamentos.'}</small></div>`+
   (antN.length?`<div class="chkrow"><label class="chk"><input type="checkbox" data-g="early"${early?' checked':''}>Incluir também as parcelas anteriores (${antN[0].i}/${g.n}${antN.length>1?' a '+antN[antN.length-1].i+'/'+g.n:''})</label></div>`:'')+
   `<div class="bk"><button class="pri full" data-ga="all" type="button">Lançar ${rows.length} ${pl}</button>${rows.length>bankN?`<button data-ga="bank" type="button">Só ${bankN===1?'a do banco':'as '+bankN+' do banco'}</button>`:''}<button data-ga="skip" type="button">Ignorar</button></div></li>`}
@@ -1446,13 +1463,13 @@ function renderRec(){
   const pend=S.rec.filter(x=>x.st==='pend').sort((a,b)=>b.date.localeCompare(a.date)),ign=S.rec.filter(x=>x.st==='ign').length,done=S.rec.filter(x=>x.st==='done').length;
   {const rb=document.querySelector('nav [data-t=rec]');rb.textContent='⚙'+(pend.length?' '+pend.length:'');rb.setAttribute('aria-label','Conciliação e configurações'+(pend.length?', '+pend.length+' pendentes':''))}
   $('rct').textContent='Pendentes: '+pend.length;$('rcs').textContent=done+' conciliada(s), '+ign+' ignorada(s).';
-  const IS=instRender(pend),sug=pend.filter(x=>!x.dup&&!isInstRec(x)&&(x.cat||recSug(x).cat)).length;
-  $('rc-all').textContent='Lançar sugeridas ('+sug+')';$('rc-all').disabled=!sug;$('rc-undo').hidden=!ign;
+  const IS=instRender(pend),sug=pend.filter(bulkOk).length,sugCp=pend.filter(x=>!x.dup&&!isInstRec(x)&&cpOf(x)).length;
+  $('rc-all').textContent='Lançar sugeridas ('+sug+')';$('rc-all').disabled=!sug;$('rc-allnote').textContent=sugCp?sugCp+' com compromisso sugerido: confirme uma a uma abaixo.':'';$('rc-undo').hidden=!ign;
   const usedD=new Set();
   $('rcl').innerHTML=pend.length?pend.map(x=>{
     if(IS.skip.has(x.id))return '';if(IS.html.has(x.id))return IS.html.get(x.id);
-    const s=recSug(x),cat=x.cat||s.cat||'',pay=x.pay||s.pay||recPay(x),dm=x.dup?dupMatch(x,usedD):null;if(dm)usedD.add(dm.t.id);
-    return `<li data-r="${esc(x.id)}"${dm?` data-im="${dm.t.id}"`:''}><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${(()=>{const du=recDue(x,pay);return du!==x.date?' · vence '+brd(du):''})()}${dm?'<span class="dupb">parece já lançado</span>':''}</small>${dm?`<div class="ipv" style="margin-top:8px"><b>O sistema achou este lançamento:</b>${txLine(dm.t)}${dm.linked?'<small>Ele já foi conciliado com outra movimentação do banco.</small>':''}</div>`:''}<input data-f="nd" maxlength="120" style="margin:8px 0 10px" placeholder="O que foi essa compra? (opcional)" value="${esc(x.nd||'')}" aria-label="Descrição do lançamento" autocomplete="off"><div class="g2"><select data-f="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select><select data-f="pay" aria-label="Forma de pagamento">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div>${recCardSel(x,pay,s)}<div class="bk">${dm?'<button class="pri full" data-a="had" type="button">Conciliar com esse lançamento</button><button data-a="ok" type="button">Lançar mesmo assim</button>':'<button class="pri" data-a="ok" type="button">Lançar</button>'}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.</li>';
+    const s=recSug(x),pay=x.pay||s.pay||recPay(x),dm=x.dup?dupMatch(x,usedD):null;if(dm)usedD.add(dm.t.id);const cpl=dm?null:cpOf(x),cat=x.cat||(cpl&&cpl.c)||s.cat||'';
+    return `<li data-r="${esc(x.id)}"${dm?` data-im="${dm.t.id}"`:''}><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${(()=>{const du=recDue(x,pay);return du!==x.date?' · vence '+brd(du):''})()}${dm?'<span class="dupb">parece já lançado</span>':''}</small>${dm?`<div class="ipv" style="margin-top:8px"><b>O sistema achou este lançamento:</b>${txLine(dm.t)}${dm.linked?'<small>Ele já foi conciliado com outra movimentação do banco.</small>':''}</div>`:''}<div class="etf" style="margin:8px 0 10px"><label class="fl"><small>Descrição (opcional)</small></label><input data-f="nd" maxlength="120" placeholder="O que foi essa compra?" value="${esc(x.nd||'')}" autocomplete="off"></div>${dm?'':cpBlock(x)}<div class="g2"><div class="etf"><label class="fl"><small>Categoria</small></label><select data-f="cat"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select></div><div class="etf"><label class="fl"><small>Forma de pagamento</small></label><select data-f="pay">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div></div>${recCardSel(x,pay,s)}<div class="bk">${dm?'<button class="pri full" data-a="had" type="button">Conciliar com esse lançamento</button><button data-a="ok" type="button">Lançar mesmo assim</button>':(cpl?'<button class="pri full" data-a="ok" type="button">Lançar e marcar como pago</button>':'<button class="pri" data-a="ok" type="button">Lançar</button>')}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.</li>';
   const igl=S.rec.filter(x=>x.st==='ign').sort((a,b)=>b.date.localeCompare(a.date));
   $('rc-ig').hidden=!igl.length;$('rc-ig').textContent=(showIgn?'Ocultar':'Mostrar')+' ignoradas ('+igl.length+')';
   $('rcig').hidden=!(showIgn&&igl.length);
@@ -1519,7 +1536,7 @@ $('rll').addEventListener('click',e=>{const k=e.target.dataset.rdel;if(!k)return
 $('rl-add').addEventListener('click',()=>{const t=$('rl-k').value,k=rkey(t);if(!k){rmsg('Digite pelo menos uma palavra com 3 letras ou mais.',true);return}
   learnRule(t,$('rl-c').value,$('rl-p').value);$('rl-k').value='';save();renderRec();rmsg('Regra salva: "'+k+'".')});
 $('rc-undo').addEventListener('click',()=>{S.rec.forEach(x=>{if(x.st==='ign')x.st='pend'});save();renderRec()});
-$('rcl').addEventListener('change',e=>{const li=e.target.closest('li'),f=e.target.dataset.f;if(!li||!f)return;const x=S.rec.find(v=>v.id===li.dataset.r);if(x){x[f]=f==='card'?(+e.target.value||undefined):e.target.value;save();if(f==='pay')renderRec()}});
+$('rcl').addEventListener('change',e=>{const li=e.target.closest('li'),f=e.target.dataset.f;if(!li||!f)return;const x=S.rec.find(v=>v.id===li.dataset.r);if(x){x[f]=f==='card'?(+e.target.value||undefined):e.target.value;save();if(f==='pay'||f==='cp')renderRec()}});
 $('rcl').addEventListener('click',e=>{
   const a=e.target.dataset.a,li=e.target.closest('li');if(!a||!li)return;
   const x=S.rec.find(v=>v.id===li.dataset.r);if(!x)return;
@@ -1528,14 +1545,16 @@ $('rcl').addEventListener('click',e=>{
     const ks=li.querySelector('[data-f=card]');if(ks)x.card=+ks.value||undefined;
     if(pay==='Cartão'&&x.type==='out'&&S.cards.length&&!x.card){rmsg('Escolha o cartão.',true);if(ks)ks.focus();return}
     const di=li.querySelector('[data-f=nd]');if(di){const v=di.value.trim().slice(0,120);if(v)x.nd=v;else delete x.nd}
-    const nm=x.nd||x.desc;recCommit(x,cat,pay);rmsg('Lançado: '+nm.slice(0,40)+'.')}
+    const cp=cpOf(x);if(cp&&!x.nd)x.nd=cp.n;
+    const nm=x.nd||x.desc;recCommit(x,cat,pay);delete x.cp;
+    if(cp){const y=real(cp);Object.assign(y,{st:'g',tx:x.tx,pv:x.amount});rmsg('Lançado e "'+cp.n.slice(0,30)+'" marcado como pago.')}else rmsg('Lançado: '+nm.slice(0,40)+'.')}
   else if(a==='had'){const t=S.tx.find(v=>String(v.id)===li.dataset.im);x.st='done';delete x.why;if(t){x.tx=t.id;x.lk=1;if(!t.rid)t.rid=x.id;rmsg('Conciliada com "'+t.desc.slice(0,30)+'".')}else rmsg('Marcada como já lançada.')}
   else if(a==='skip'){x.st='ign';x.why='manual';rmsg('Movimentação ignorada.')}
   else if(a==='imok'){const t=S.tx.find(v=>String(v.id)===li.dataset.im);if(!t){rmsg('Não encontrei o lançamento. Tente de novo.',true);return}instApply(x,t);rmsg('Parcela conciliada.')}
   else if(a==='imno'){x.nomatch=1;rmsg('Ok, vou tratar como uma compra nova.')}
   else if(a==='rs'){openRp(x);return}
   save();render();renderRec()});
-$('rc-all').addEventListener('click',e=>{const b=e.currentTarget,items=S.rec.filter(x=>x.st==='pend'&&!x.dup&&!isInstRec(x)&&(x.cat||recSug(x).cat));
+$('rc-all').addEventListener('click',e=>{const b=e.currentTarget,items=S.rec.filter(bulkOk);
   if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Confirmar '+items.length+'?';setTimeout(()=>{b.dataset.arm='';renderRec()},3500);return}
   b.dataset.arm='';items.forEach(x=>{const s=recSug(x);if(!x.card&&s.card&&S.cards.some(c=>c.id===s.card))x.card=s.card;recCommit(x,x.cat||s.cat,x.pay||s.pay||recPay(x))});
   save();render();renderRec();rmsg(items.length+' lançamento(s) feito(s).')});
@@ -1636,7 +1655,7 @@ document.querySelectorAll('.tape [data-go]').forEach(x=>{
 });
 function parUI(){
   const out=document.querySelector('input[name=tp]:checked').value==='out',card=document.querySelector('input[name=pg]:checked').value==='Cartão';
-  $('par').hidden=!(out&&card);const on=!$('par').hidden&&$('pcx').checked;$('pcf').hidden=!on;$('v').placeholder=on?'Valor total da compra':'Valor (25,90)';$('cardrow').hidden=!(out&&card);if(!$('cardrow').hidden)fillCards();parPrev();
+  $('par').hidden=!(out&&card);const on=!$('par').hidden&&$('pcx').checked;$('pcf').hidden=!on;$('vlb').textContent=on?'Valor total da compra (R$)':'Valor (R$)';$('cardrow').hidden=!(out&&card);if(!$('cardrow').hidden)fillCards();parPrev();
 }
 function parPrev(){
   const el=$('pprev');if(!el)return;
@@ -1669,7 +1688,7 @@ function renderCx(){
       :(done&&!ed)?`<div class="ba" style="flex:1">${fmt(sv)}</div>`
       :`<div class="ba${sv?'':' e'}" style="flex:0 0 clamp(70px,${pp.toFixed(1)}%,calc(100% - 80px))">${fmt(sv)}</div><div class="bd">${ed?inp:nr(t)}</div>`;
     const eb=editCxEmo===x.id?`<span class="bem"><input data-f="emo" maxlength="16" placeholder="🙂" aria-label="Emoji da caixinha ${esc(x.name)}"></span>`:`<button type="button" class="bem" data-a="em" aria-label="Escolher emoji de ${esc(x.name)}">${x.emo||EMO_CX}</button>`;
-    return `<div class="cxi cxc bi${t?'':' nb'}" data-x="${x.id}"><div class="bh">${eb}<b class="bnm cxn">${esc(x.name)}</b>${sdv}</div><div class="bl"><div class="bb">${seg}</div><button type="button" class="bp" data-a="pe" aria-label="${t?'Editar':'Definir'} meta de ${esc(x.name)}">${PENCIL}</button></div><div class="g2" style="margin-top:10px"><input data-f="amt" inputmode="decimal" placeholder="Valor" aria-label="Valor para ${esc(x.name)}"><input data-f="dt" type="date" value="${today()}" aria-label="Data"></div><div class="bk"><button class="pri" type="button" data-a="dep">Guardar</button><button type="button" data-a="ret">Retirar</button></div><details class="adv" data-x="${x.id}"${cxOpen.has(x.id)?' open':''}><summary>Histórico e ajustes</summary>${hist}<div class="g2" style="margin-top:10px"><input data-f="nm" value="${esc(x.name)}" aria-label="Nome da caixinha"></div><button type="button" class="trash" data-a="del" aria-label="Excluir caixinha" title="Excluir caixinha">${TRASH}</button></details></div>`}).join(''):'<p class="empty" style="margin:10px 0 0">Nenhuma caixinha ainda. Toque em "Novo" para criar a primeira.</p>';
+    return `<div class="cxi cxc bi${t?'':' nb'}" data-x="${x.id}"><div class="bh">${eb}<b class="bnm cxn">${esc(x.name)}</b>${sdv}</div>${ed?'<small class="fl" style="margin-top:6px">Meta (R$)</small>':''}${editCxEmo===x.id?'<small class="fl" style="margin-top:6px">Emoji da caixinha</small>':''}<div class="bl"><div class="bb">${seg}</div><button type="button" class="bp" data-a="pe" aria-label="${t?'Editar':'Definir'} meta de ${esc(x.name)}">${PENCIL}</button></div><div class="g2" style="margin-top:10px"><div class="etf"><small class="fl">Valor (R$)</small><input data-f="amt" inputmode="decimal" placeholder="0,00" aria-label="Valor para ${esc(x.name)}"></div><div class="etf"><small class="fl">Data</small><input data-f="dt" type="date" value="${today()}" aria-label="Data"></div></div><div class="bk"><button class="pri" type="button" data-a="dep">Guardar</button><button type="button" data-a="ret">Retirar</button></div><details class="adv" data-x="${x.id}"${cxOpen.has(x.id)?' open':''}><summary>Histórico e ajustes</summary>${hist}<div class="etf" style="margin-top:10px"><small class="fl">Nome da caixinha</small><input data-f="nm" value="${esc(x.name)}" aria-label="Nome da caixinha"></div><button type="button" class="trash" data-a="del" aria-label="Excluir caixinha" title="Excluir caixinha">${TRASH}</button></details></div>`}).join(''):'<p class="empty" style="margin:10px 0 0">Nenhuma caixinha ainda. Toque em "Novo" para criar a primeira.</p>';
 }
 $('cxl').addEventListener('click',e=>{
   const btn=e.target.closest('[data-a]'),a=btn&&btn.dataset.a,card=e.target.closest('.cxc');if(!a||!card)return;
