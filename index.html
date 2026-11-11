@@ -650,9 +650,9 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <button class="sm" id="wipe" type="button" style="width:100%">Apagar todos os dados</button>
   </div>
   <div class="card" id="nfcard">
-    <h2>Notificações<button class="inf" type="button" aria-label="Ajuda" data-tip="Avisos do navegador no dia do vencimento dos compromissos e quando houver movimentações para conciliar. O aviso é mostrado quando o Chrome está aberto, no horário escolhido (ou na primeira vez que o sistema for aberto depois dele).">i</button></h2>
+    <h2>Notificações<button class="inf" type="button" aria-label="Ajuda" data-tip="Aviso diário, por volta das 9h (horário de Brasília), com o que vence hoje, o que está atrasado e as movimentações novas para conciliar. Com o push ativo ele chega mesmo com o app fechado. O horário abaixo só vale como plano B, quando este aparelho não está com o push ativo: nesse caso o aviso aparece quando o app for aberto depois dele.">i</button></h2>
     <div class="opt" style="margin-bottom:10px"><label><input type="checkbox" id="nfon">Ativar notificações neste navegador</label></div>
-    <label class="fl" for="nftm"><small>Horário do aviso</small></label>
+    <label class="fl" for="nftm"><small>Horário do aviso sem push (plano B)</small></label>
     <input id="nftm" type="time" value="09:00" aria-label="Horário da notificação">
     <button class="sm" id="nftest" type="button" style="width:100%;margin-top:10px">Enviar notificação de teste</button>
     <p id="nfs" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem;color:var(--mu)"></p>
@@ -2215,11 +2215,17 @@ const isoD=dt=>new Date(dt.getTime()-dt.getTimezoneOffset()*6e4).toISOString().s
 const pgMsg=(t,bad)=>{const el=$('pgm');el.textContent=t;el.style.color=bad?'var(--out)':'var(--mu)'};
 const pgLabel=a=>[a.inst,a.name||(a.card?'Cartão':'Conta'),a.number?'•'+String(a.number).slice(-4):''].filter(Boolean).join(' ');
 let pgBusy=false,pgLastTry=0;
+// quando o PRÓPRIO Pluggy atualizou cada banco (a consulta só devolve o que o Pluggy já tem); fora de "UPDATED" avisa em vermelho
+function pgUpd(st,id){
+  const u=(st.upd||{})[id];if(!u)return'';
+  const at=u.a?new Date(u.a):null,ok=!u.s||u.s==='UPDATED',
+    when=at&&!isNaN(at)?at.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+  return `<small style="display:block;color:${ok?'var(--mu)':'var(--out)'}">Pluggy: ${ok?'':'atenção ('+esc(u.s)+')'+(when?' · ':'')}${when?(ok?'atualizado em ':'última atualização ')+when:(ok?'em dia':'')}</small>`}
 function pgShow(){
   const st=pgLoad();$('pgfrom').value=st.from||isoD(new Date(new Date().getFullYear(),new Date().getMonth(),1));
   $('pgs').textContent=st.last?'Última consulta: '+new Date(st.last).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Ainda não consultou o banco neste aparelho.';
   $('pgcs').textContent=S.pgCred?'Pluggy conectado: Client ID '+String(S.pgCred.id).slice(0,8)+'…. Cole novas credenciais para trocar.':'Ainda não conectado. Siga os passos abaixo para ligar o seu Pluggy.';$('pgdisc').hidden=!S.pgCred;
-  const bk=S.pgItems||[];$('pgbk').innerHTML=bk.length?'<small style="display:block;margin:10px 0 4px">Bancos conectados</small>'+bk.map(i=>`<div class="rw" style="gap:8px;margin-bottom:6px"><span>${esc(i.name||'Banco')} <small>${esc(i.id.slice(0,8))}…</small></span><button class="sm" type="button" data-pgdel="${esc(i.id)}">Remover</button></div>`).join(''):'';
+  const bk=S.pgItems||[];$('pgbk').innerHTML=bk.length?'<small style="display:block;margin:10px 0 4px">Bancos conectados</small>'+bk.map(i=>`<div class="rw" style="gap:8px;margin-bottom:6px"><span>${esc(i.name||'Banco')} <small>${esc(i.id.slice(0,8))}…</small>${pgUpd(st,i.id)}</span><button class="sm" type="button" data-pgdel="${esc(i.id)}">Remover</button></div>`).join(''):'';
   const un=(st.accs||[]).filter(a=>a.card&&!S.cards.some(c=>c.pg===a.id));
   $('pgmap').innerHTML=un.length?'<small style="display:block;margin:8px 0 4px">Escolha a qual cartão do sistema cada cartão do banco corresponde:</small>'+un.map(a=>`<div class="g2" style="align-items:center"><span>${esc(pgLabel(a))}</span><select data-pgacc="${esc(a.id)}" aria-label="Cartão do sistema para ${esc(pgLabel(a))}"><option value="">Escolha</option>${S.cards.filter(c=>!c.pg).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}<option value="__new">+ Criar cartão novo</option></select></div>`).join(''):'';
 }
@@ -2284,10 +2290,12 @@ async function pgSync(manual){
     if(!S.pgItems)S.pgItems=(d.items||[]).map(i=>({id:i.id,name:i.inst||'Banco'}));
     else S.pgItems.forEach(i=>{const u=(d.items||[]).find(x=>x.id===i.id);if(u&&!i.name)i.name=u.inst});
     const res=pgIngest(d);
-    const w=new Date(Date.now()-15*864e5),nf=isoD(w)>from?isoD(w):from;
-    pgSaveSt({from:nf,last:Date.now(),accs:d.accounts,me:d.me||[]});
+    const w=new Date(Date.now()-15*864e5),nf=isoD(w)>from?isoD(w):from,bad=!!(d.errors&&d.errors.length),upd=Object.assign({},st.upd||{});
+    (d.items||[]).forEach(i=>{if(i.status||i.updatedAt)upd[i.id]={s:i.status||'',a:i.updatedAt||''}});
+    // só vale como "consultou hoje" se todos os bancos foram lidos; com erro, tenta de novo na próxima abertura (respeitando a pausa de 10 min)
+    pgSaveSt(bad?Object.assign({},st,{upd,accs:(d.accounts||[]).length?d.accounts:st.accs,me:(d.me&&d.me.length)?d.me:st.me}):{from:nf,last:Date.now(),accs:d.accounts,me:d.me||[],upd});
     save();render();renderRec();pgShow();
-    if(!manual&&res.add)toast(res.add+(res.add===1?' movimentação nova do banco para conciliar.':' movimentações novas do banco para conciliar.'));
+    if(!manual&&res.add){toast(res.add+(res.add===1?' movimentação nova do banco para conciliar.':' movimentações novas do banco para conciliar.'));if(window.nfMore)nfMore(res.add)}
     pgMsg(res.add?`${res.add} movimentação(ões) nova(s)${res.dups?', '+res.dups+' parece(m) já lançada(s)':''}${res.auto?', '+res.auto+' interna(s) ignorada(s)':''}.`:'Nada novo por enquanto.');
     if(d.errors&&d.errors.length){const nm=d.errors.map(x=>{const i=(S.pgItems||[]).find(y=>y.id===x.itemId);return (i&&i.name)||x.itemId.slice(0,8)});pgMsg('Não consegui ler: '+nm.join(', ')+'. Confira o itemId ou remova esse banco.',true)}
     else if(res.nomap)pgMsg('Escolha acima o cartão de cada conta do banco para puxar as compras do cartão.',true);
@@ -2297,7 +2305,7 @@ async function pgSync(manual){
 window.pgAuto=function(){
   if(!cu||!(S.pgCred||(S.pgItems&&S.pgItems.length))||Date.now()-pgLastTry<6e5)return;
   const l=pgLoad().last;if(l&&isoD(new Date(l))===today())return; // já consultou hoje
-  pgLastTry=Date.now();pgSync(false)};
+  pgLastTry=Date.now();window.pgPending=pgSync(false).finally(()=>{if(window.nfCheck)nfCheck()})};
 $('pgfrom').addEventListener('change',()=>{const st=pgLoad();st.from=$('pgfrom').value||st.from;pgSaveSt(st);if(cu&&(S.pgCred||(S.pgItems&&S.pgItems.length))){pgLastTry=Date.now();pgSync(true)}});
 $('pgmap').addEventListener('change',e=>{
   const id=e.target.dataset.pgacc;if(!id||!e.target.value)return;
@@ -2348,9 +2356,14 @@ window.compReady=true;render();
   try{Object.assign(cfg,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
   const sv=()=>{try{localStorage.setItem(K,JSON.stringify(cfg))}catch(e){}};
   const perm=()=>sup?Notification.permission:'unsupported';
+  const lst=a=>a.slice(0,3).map(x=>x.n+' ('+fmt(x.v)+')').join(', ')+(a.length>3?' e mais '+(a.length-3):'');
+  // atrasadas = em aberto com vencimento antes de hoje (meses anteriores + este mês); mesmas regras do Resumo, faturas incluídas
   function msg(){
-    const t=today(),due=occ(t.slice(0,7)).filter(x=>x.st==='a'&&x.d===t),pend=(S.rec||[]).filter(x=>x.st==='pend').length,l=[];
-    if(due.length)l.push('Vence hoje: '+due.slice(0,3).map(x=>x.n+' ('+fmt(x.v)+')').join(', ')+(due.length>3?' e mais '+(due.length-3):''));
+    const t=today(),cur=t.slice(0,7),seen=new Set(),
+      late=[...lateOld(1),...occ(cur).filter(isLate)].filter(x=>!seen.has(x.id)&&seen.add(x.id)),
+      due=occ(cur).filter(x=>x.st==='a'&&x.d===t),pend=(S.rec||[]).filter(x=>x.st==='pend').length,l=[];
+    if(late.length)l.push((late.length===1?'Atrasada: ':'Atrasadas ('+late.length+'): ')+lst(late));
+    if(due.length)l.push('Vence hoje: '+lst(due));
     if(pend)l.push(pend+(pend===1?' movimentação para conciliar':' movimentações para conciliar'));
     return l}
   async function swState(){
@@ -2363,10 +2376,11 @@ window.compReady=true;render();
     el.style.color='var(--mu)';
     if(p==='unsupported')el.textContent='Este navegador (ou este endereço) não permite notificações. Abra o sistema pelo endereço https no Chrome.';
     else if(p==='denied'){el.style.color='var(--out)';el.textContent='As notificações estão bloqueadas para este site. No Chrome, toque no ícone ao lado do endereço, abra as configurações do site e permita Notificações.'}
-    else if(cfg.on){const l=msg();el.textContent='Ativadas. Você será avisado todo dia às '+cfg.time+(l.length?'.':', se houver compromisso vencendo ou item para conciliar. Hoje não há nada disso.')}
+    else if(cfg.on&&cfg.pushOn)el.textContent='Ativadas. O servidor avisa todo dia, por volta das 9h, o que vence hoje, o que está atrasado e as movimentações novas para conciliar, mesmo com o app fechado.';
+    else if(cfg.on){const l=msg();el.textContent='Ativadas. Sem push do servidor neste aparelho'+(cfg.pushWhy?' ('+cfg.pushWhy+')':'')+': você será avisado todo dia às '+cfg.time+', quando abrir o app, se houver algo vencendo, atrasado ou para conciliar'+(l.length?'.':'. Hoje não há nada disso.')}
     else el.textContent='Desativadas.';
     const sw=await swState(),la=cfg.lastAt?new Date(cfg.lastAt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'nenhuma ainda';
-    $('nfd').textContent='Permissão: '+({granted:'concedida',denied:'bloqueada',default:'não pedida',unsupported:'sem suporte'}[p]||p)+' · Service worker: '+sw+' · Última enviada: '+la}
+    $('nfd').textContent='Permissão: '+({granted:'concedida',denied:'bloqueada',default:'não pedida',unsupported:'sem suporte'}[p]||p)+' · Service worker: '+sw+' · Push: '+(cfg.pushOn?'ativo':'inativo')+' · Última enviada: '+la}
   // tenta mostrar; no celular o Chrome só aceita pelo service worker
   async function show(title,body,tag){
     const o={body,tag,icon:'icon-192.png',badge:'icon-192.png'};let why='';
@@ -2379,25 +2393,72 @@ window.compReady=true;render();
       if(!r.showNotification)return{ok:false,why:why||'sem showNotification'};
       await r.showNotification(title,o);return{ok:true}
     }catch(e){return{ok:false,why:String(e&&e.message||e)}}}
+  // o service worker anota o dia do último push recebido do servidor; assim este aparelho não repete o aviso local
+  async function pushHoje(){try{const c=await caches.open('caixa-push'),r=await c.match('/__push-last');return r?await r.text():''}catch(e){return''}}
+  const T0=Date.now(),pgOn=()=>!!(S.pgCred||(S.pgItems&&S.pgItems.length)),pgFresh=()=>{const l=pgLoad().last;return !!l&&isoD(new Date(l))===today()};
   async function check(){
+    pushRegister(false);
     if(!cfg.on||perm()!=='granted'||!window.compReady||check.busy)return;
     const t=today(),d=new Date(),hm=pad(d.getHours())+':'+pad(d.getMinutes());
     if(cfg.last===t||hm<cfg.time||Date.now()-(cfg.fail||0)<6e5)return;
-    const l=msg();if(!l.length)return;
-    check.busy=1;const r=await show('Meu caixa',l.join('\n'),'caixa-diario');check.busy=0;
-    if(r.ok){cfg.last=t;cfg.lastAt=Date.now();cfg.fail=0}else cfg.fail=Date.now();
+    // logo após abrir, o banco ainda não foi consultado: espera a consulta do dia (até ~30 s) para o aviso já incluir as movimentações novas
+    if(pgOn()&&!pgFresh()&&!window.pgPending&&Date.now()-T0<3e4)return;
+    check.busy=1;
+    try{
+      if(await pushHoje()===t){cfg.last=t;sv();return}
+      if(window.pgPending)await Promise.race([window.pgPending,new Promise(z=>setTimeout(z,8000))]);
+      const l=msg();if(!l.length)return;
+      const r=await show('Meu caixa',l.join('\n'),'caixa-diario');
+      if(r.ok){cfg.last=t;cfg.lastAt=Date.now();cfg.fail=0}else cfg.fail=Date.now();
+      sv();status();
+    }finally{check.busy=0}}
+  window.nfCheck=check;
+  // movimentações que chegam do banco depois do aviso do dia geram um segundo aviso (um só aviso por consulta)
+  window.nfMore=async n=>{
+    const t=today();if(!cfg.on||perm()!=='granted'||cfg.last!==t||await pushHoje()===t)return;
+    const r=await show('Meu caixa',n+(n===1?' movimentação nova para conciliar':' movimentações novas para conciliar'),'caixa-mov');
+    if(r.ok){cfg.lastAt=Date.now();sv();status()}};
+  // push do servidor (Firebase Cloud Messaging): registra este aparelho para receber o aviso diário com o app fechado
+  const VAPID='BFTpSAn3VGN1j_wQ0712jT5UNX7AS-S1yTaE1AbBCNNiUUTCTV6rrivsqg0MWBBnV5zjejhUGRxnCyqfL3uW6oU';
+  async function pushApi(body){
+    const tk=await FB.token();
+    const r=await fetch(PGBASE+'/api/push',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify(body)});
+    let d={};try{d=await r.json()}catch(e){}
+    return{ok:r.ok,st:r.status,d}}
+  async function pushRegister(force){
+    if(!cfg.on||perm()!=='granted'||!window.FB||!FB.push||!cu||!('serviceWorker' in navigator))return;
+    if(!force&&(cfg.pushOn&&Date.now()-(cfg.pushAt||0)<216e5||Date.now()-(cfg.pushTry||0)<6e5))return;
+    cfg.pushTry=Date.now();
+    try{
+      let reg=await navigator.serviceWorker.getRegistration();
+      if(!reg)reg=await navigator.serviceWorker.register('sw.js');
+      if(!reg.active)reg=await Promise.race([navigator.serviceWorker.ready,new Promise(z=>setTimeout(()=>z(null),6000))])||reg;
+      const token=await FB.push(reg,VAPID);
+      if(!token)throw new Error('este navegador não suporta push');
+      const r=await pushApi({action:'register',token});
+      if(!r.ok)throw new Error(r.d&&r.d.error?r.d.error:'servidor '+r.st);
+      cfg.pushOn=true;cfg.pushAt=Date.now();cfg.pushTok=token;cfg.pushWhy='';
+    }catch(e){cfg.pushOn=false;cfg.pushWhy=String(e&&e.message||e).slice(0,70)}
     sv();status()}
+  async function pushOff(){
+    const tok=cfg.pushTok;cfg.pushOn=false;cfg.pushTok='';sv();status();
+    if(!tok||!window.FB||!cu)return;try{await pushApi({action:'unregister',token:tok})}catch(e){}}
   $('nfon').addEventListener('change',async e=>{
-    if(!e.target.checked){cfg.on=false;sv();status();return}
+    if(!e.target.checked){cfg.on=false;sv();status();pushOff();return}
     if(!sup){status();return}
     let p=Notification.permission;
     if(p==='default'){try{p=await Notification.requestPermission()}catch(x){p=Notification.permission}}
     cfg.on=p==='granted';if(cfg.on){cfg.last='';cfg.fail=0}sv();status();
-    if(cfg.on){toast('Notificações ativadas.');check()}
+    if(cfg.on){toast('Notificações ativadas.');pushRegister(true);check()}
   });
   $('nftm').addEventListener('change',e=>{if(!e.target.value)return;cfg.time=e.target.value;cfg.last='';cfg.fail=0;sv();status();check()});
   $('nftest').addEventListener('click',async()=>{
     if(perm()!=='granted')return status();
+    if(cfg.pushOn){ // teste de ponta a ponta: o servidor envia um push para este aparelho
+      try{const r=await pushApi({action:'test'});const ok=r.ok&&r.d&&r.d.sent>0;
+        toast(ok?'Push de teste enviado pelo servidor. Deve chegar em alguns segundos, mesmo com o app fechado.':'O servidor não conseguiu enviar o teste'+(r.d&&r.d.error?' ('+r.d.error+')':' ('+r.st+')')+'.',!ok)}
+      catch(e){toast('Sem conexão para testar o push agora.',true)}
+      status();return}
     const l=msg(),r=await show('Meu caixa',l.length?l.join('\n'):'Teste: está tudo certo. Hoje nada vence e nada espera conciliação.','caixa-teste');
     toast(r.ok?'Notificação enviada. Se não apareceu, confira as notificações do Chrome e do celular (modo Não perturbe).':'Não consegui mostrar a notificação: '+r.why,!r.ok);
     status()});
@@ -2423,7 +2484,9 @@ import{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmail
 import{getFirestore,doc,getDoc,setDoc,deleteDoc}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyCyL7rDgS58XejYjJ_vEdA97z72n4GJoWI",authDomain:"sistema-financeiro-59729.firebaseapp.com",projectId:"sistema-financeiro-59729",storageBucket:"sistema-financeiro-59729.firebasestorage.app",messagingSenderId:"701039353095",appId:"1:701039353095:web:865803023ae3fc9d0879a2"});
 const auth=getAuth(app),db=getFirestore(app),ref=u=>doc(db,"users",u);
-window.FB={onAuthStateChanged:f=>onAuthStateChanged(auth,f),signIn:(e,p)=>signInWithEmailAndPassword(auth,e,p),signUp:(e,p)=>createUserWithEmailAndPassword(auth,e,p),reset:e=>sendPasswordResetEmail(auth,e),signOut:()=>signOut(auth),token:()=>auth.currentUser?auth.currentUser.getIdToken():Promise.resolve(null),get:u=>getDoc(ref(u)),set:(u,d)=>setDoc(ref(u),d),del:u=>deleteDoc(ref(u))};
+window.FB={onAuthStateChanged:f=>onAuthStateChanged(auth,f),signIn:(e,p)=>signInWithEmailAndPassword(auth,e,p),signUp:(e,p)=>createUserWithEmailAndPassword(auth,e,p),reset:e=>sendPasswordResetEmail(auth,e),signOut:()=>signOut(auth),token:()=>auth.currentUser?auth.currentUser.getIdToken():Promise.resolve(null),get:u=>getDoc(ref(u)),set:(u,d)=>setDoc(ref(u),d),del:u=>deleteDoc(ref(u)),
+// push: carregado só quando pedido (import dinâmico), para uma falha nessa biblioteca nunca afetar o login nem os dados
+push:async(reg,key)=>{const m=await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js");if(!(await m.isSupported()))return null;return m.getToken(m.getMessaging(app),{vapidKey:key,serviceWorkerRegistration:reg})}};
 window.dispatchEvent(new Event("fb-ready"));
 </script>
 <script>

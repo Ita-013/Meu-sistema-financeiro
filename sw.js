@@ -1,8 +1,9 @@
 /* Meu caixa: service worker
    - deixa o app instalável e abrir sem internet (só os arquivos do próprio site)
-   - permite notificações no Chrome do celular
+   - mostra as notificações (locais e as de push enviadas pelo servidor, mesmo com o app fechado)
    - nunca guarda respostas da /api/ nem de outros domínios (Firebase, Pluggy) */
-const VERSAO = 'meu-caixa-v1';
+const VERSAO = 'meu-caixa-v2';
+const PUSH = 'caixa-push';   // guarda só o dia do último push recebido (o app lê para não repetir o aviso)
 const ARQUIVOS = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -12,7 +13,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(ks => Promise.all(ks.filter(k => k !== VERSAO).map(k => caches.delete(k))))
+      .then(ks => Promise.all(ks.filter(k => k !== VERSAO && k !== PUSH).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -27,6 +28,19 @@ self.addEventListener('fetch', e => {
       return res;
     }).catch(() => caches.match(req).then(r => r || (req.mode === 'navigate' ? caches.match('index.html') : undefined)))
   );
+});
+
+// push do servidor (FCM, mensagem só de dados: título, texto e o dia). Sempre mostra uma notificação,
+// porque o Chrome exige isso para cada push recebido.
+self.addEventListener('push', e => {
+  let p = {};
+  try { p = e.data ? e.data.json() : {}; } catch (x) {}
+  const d = p.data || p.notification || p;
+  const titulo = d.title || 'Meu caixa', corpo = d.body || '';
+  e.waitUntil(Promise.all([
+    self.registration.showNotification(titulo, { body: corpo, tag: d.tag || 'caixa-diario', icon: 'icon-192.png', badge: 'icon-192.png' }),
+    d.day ? caches.open(PUSH).then(c => c.put('/__push-last', new Response(String(d.day)))) : null
+  ]));
 });
 
 // tocar na notificação abre (ou traz para frente) o app
