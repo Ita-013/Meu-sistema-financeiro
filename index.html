@@ -1338,7 +1338,7 @@ function recImport(t,kind){
 }
 const recCardSel=(x,pay,s)=>{const cd=x.card||(s&&s.card);return pay==='Cartão'&&x.type==='out'&&S.cards.length?`<div class="etf" style="margin:0 0 10px"><label class="fl"><small>Cartão</small></label><select data-f="card"><option value="">Escolha o cartão</option>${S.cards.map(c=>`<option value="${c.id}"${c.id===cd?' selected':''}>${esc(c.name)}</option>`).join('')}</select></div>`:''};
 // compromisso que o lançamento do banco provavelmente quitou: mesmo valor ou nome parecido, vencimento até 40 dias do movimento
-function cpCands(x){if(x.type!=='out')return[];const m=x.date.slice(0,7),seen=new Set(),L=[];
+function cpCands(x){if(x.type!=='out'||!window.compReady)return[];const m=x.date.slice(0,7),seen=new Set(),L=[];
   [addM(m,-1),m,addM(m,1)].forEach(mm=>occ(mm).forEach(c=>{if(c.fat||c.st!=='a'||seen.has(c.id))return;seen.add(c.id);L.push(c)}));return L}
 function cpSug(x){const nd=norm(x.desc);let best=null,bs=0;
   cpCands(x).forEach(c=>{const eq=Math.abs(c.v-x.amount)<.01,nm=norm(c.n).split(/\s+/).some(w=>w.length>=3&&nd.includes(w)),near=Math.abs(c.v-x.amount)<=Math.max(c.v,1)*.2;
