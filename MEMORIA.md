@@ -30,6 +30,8 @@ Atualizado em 11/11/2026. Espelha a memória do Claude e serve para colar nas in
 - Tema padrão escuro. Tema rosa liberado por e-mail, só no código, preservado nas atualizações.
 - Resumo: fatura do cartão entra no A pagar, não nas Despesas.
 - Pop-up não foca campo sozinho ao abrir (o teclado do celular não pode abrir sem eu tocar).
+- Campos de valor (R$): só números, com máscara de moeda (digita só dígitos, entram pela direita: 2590 vira 25,90) e sempre 2 casas decimais; teclado numérico. Vale para todo campo de valor novo (`MONEY` no index.html). Exceção: células da planilha de Orçamentos (aceitam negativo).
+- Rótulo da data em lançamento: "Data do pagamento"; em compra no cartão, "Data da compra".
 
 ## Dados por conta
 - Tudo que o app guarda no navegador (localStorage) e que vem de uma conta (Open Finance, push, etc.) deve levar o uid da conta ou ser apagado ao sair. Nunca mostrar dado de uma conta em outra no mesmo aparelho. Testar com duas contas no mesmo navegador.

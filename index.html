@@ -113,6 +113,7 @@ small{color:var(--mu);font-size:.82rem}
 .seg label:has(input:focus-visible){outline:2px solid var(--in);outline-offset:2px}
 .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
 .g2>*{min-width:0}
+.g2[hidden]{display:none}
 .go{width:100%;min-height:48px;border:0;border-radius:10px;background:var(--bt);color:var(--btx);font-weight:800;box-shadow:0 4px 14px var(--go-glow)}
 .go:active{transform:translateY(1px)}
 .bk{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 8px}
@@ -426,7 +427,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 </div>
 <div class="mdl" id="cpm" hidden><div class="mbox"><div class="mhd"><h3 id="cmt">Novo compromisso</h3><button id="cdel" type="button" hidden></button></div>
   <div class="etf"><label class="fl" for="cn"><small>Nome</small></label><input id="cn" placeholder="Ex.: Luz"></div>
-  <div class="etf" style="margin-top:8px"><label class="fl" for="cv"><small>Valor (R$)</small></label><input id="cv" inputmode="decimal" placeholder="0,00"></div>
+  <div class="etf" style="margin-top:8px"><label class="fl" for="cv"><small>Valor (R$)</small></label><input id="cv" inputmode="numeric" placeholder="0,00"></div>
   <div class="etf" style="margin-top:8px"><label class="fl" for="cc"><small>Categoria</small></label><select id="cc"></select></div>
   <label class="mi" style="display:block;margin:8px 0 2px" id="cdl" for="cdt">Vencimento (opcional)</label><input id="cdt" type="date">
   <label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input id="crp" type="checkbox" style="width:auto;min-height:0"> Repetir todo mês</label>
@@ -437,8 +438,8 @@ body.dragging{-webkit-user-select:none;user-select:none}
 <div class="mdl" id="etm" hidden><div class="mbox" id="etbox" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="ett">
   <h3 id="ett">Editar lançamento</h3>
   <p class="mi" id="etsub" hidden></p>
-  <div class="etf"><label class="fl" for="etv"><small>Valor (R$)</small></label><input id="etv" inputmode="decimal"></div>
-  <div class="etf"><label class="fl" for="etd"><small id="etdl">Data</small></label><input id="etd" type="date"></div>
+  <div class="etf"><label class="fl" for="etv"><small>Valor (R$)</small></label><input id="etv" inputmode="numeric"></div>
+  <div class="etf"><label class="fl" for="etd"><small id="etdl">Data do pagamento</small></label><input id="etd" type="date"></div>
   <div class="etf"><label class="fl" for="ets"><small>Descrição</small></label><input id="ets" placeholder="Ex.: Mercado" autocomplete="off"></div>
   <div class="etf"><label class="fl" for="etc"><small>Categoria</small></label><select id="etc"></select></div>
   <div class="etf" id="etpw"><label class="fl" for="etp"><small>Forma de pagamento</small></label><select id="etp"><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select></div>
@@ -454,7 +455,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
   </div>
 </div></div>
 <div class="mdl" id="cpg" hidden><div class="mbox"><h3>Marcar como pago</h3><p class="mi" id="pgn"></p>
-  <div class="etf"><label class="fl" for="pv"><small>Valor pago (R$)</small></label><input id="pv" inputmode="decimal"></div><div class="etf" style="margin-top:8px"><label class="fl" for="pd"><small>Data do pagamento</small></label><input id="pd" type="date"></div>
+  <div class="etf"><label class="fl" for="pv"><small>Valor pago (R$)</small></label><input id="pv" inputmode="numeric"></div><div class="etf" style="margin-top:8px"><label class="fl" for="pd"><small>Data do pagamento</small></label><input id="pd" type="date"></div>
   <button class="go" id="pok" type="button" style="margin-top:12px">Confirmar pagamento</button><div class="bk"><button id="pgcancel" type="button">Cancelar</button></div></div></div>
 <div id="lk" class="lk" role="dialog" aria-modal="true" aria-labelledby="lkt">
   <div class="mbox">
@@ -522,8 +523,8 @@ body.dragging{-webkit-user-select:none;user-select:none}
       <label><input type="radio" name="tp" value="in">Receita</label>
     </div>
     <div class="g2">
-      <div class="etf"><label class="fl" for="v"><small id="vlb">Valor (R$)</small></label><input id="v" inputmode="decimal" placeholder="25,90"></div>
-      <div class="etf"><label class="fl" for="d"><small>Data</small></label><input id="d" type="date"></div>
+      <div class="etf"><label class="fl" for="v"><small id="vlb">Valor (R$)</small></label><input id="v" inputmode="numeric" placeholder="25,90"></div>
+      <div class="etf"><label class="fl" for="d"><small id="dl">Data do pagamento</small></label><input id="d" type="date"></div>
     </div>
     <div class="g2">
       <div class="etf"><label class="fl" for="ds"><small>Descrição</small></label><input id="ds" placeholder="Ex.: Mercado"></div>
@@ -699,7 +700,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
   <div class="mbox">
     <div class="mhd"><h3 id="mdt"></h3><button class="trash" id="mdx" type="button" hidden aria-label="Excluir cartão" title="Excluir cartão"></button></div>
     <div class="etf"><label class="fl" for="mdn"><small id="mdnl">Nome</small></label><input id="mdn" placeholder="Nome da linha" maxlength="40"></div>
-    <div class="etf" id="mdgw" hidden><label class="fl" for="mdg"><small>Meta (opcional)</small></label><input id="mdg" inputmode="decimal" placeholder="Ex.: 3000,00"></div>
+    <div class="etf" id="mdgw" hidden><label class="fl" for="mdg"><small>Meta (opcional)</small></label><input id="mdg" inputmode="numeric" placeholder="Ex.: 3000,00"></div>
     <div id="mdcr" hidden><div class="g2" style="margin:12px 0 0"><div><label class="fl" for="mdcl"><small>Dia do fechamento</small></label><input id="mdcl" type="number" inputmode="numeric" min="1" max="31" placeholder="Ex.: 15"></div><div><label class="fl" for="mdcd"><small>Dia do vencimento</small></label><input id="mdcd" type="number" inputmode="numeric" min="1" max="31" placeholder="Ex.: 23"></div></div><small style="display:block;margin-top:2px">Compras feitas no dia do fechamento ou depois vão para a fatura seguinte.</small></div>
     <p id="mde" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
     <div class="bk"><button class="pri" id="mdok" type="button">Adicionar</button><button id="mdc" type="button">Cancelar</button></div>
@@ -709,7 +710,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
   <div class="mbox">
     <h3 id="rst"></h3>
     <p id="rsi" class="mi"></p>
-    <div class="g2"><div class="etf"><label class="fl" for="rsv"><small>Valor que voltou (R$)</small></label><input id="rsv" inputmode="decimal" placeholder="0,00"></div><div class="etf"><label class="fl" for="rsd"><small>Data</small></label><input id="rsd" type="date"></div></div>
+    <div class="g2"><div class="etf"><label class="fl" for="rsv"><small>Valor que voltou (R$)</small></label><input id="rsv" inputmode="numeric" placeholder="0,00"></div><div class="etf"><label class="fl" for="rsd"><small>Data</small></label><input id="rsd" type="date"></div></div>
     <div class="etf" style="margin-top:10px"><label class="fl" for="rsw"><small>Quem devolveu (opcional)</small></label><input id="rsw" list="rsn" placeholder="Nome"></div>
     <datalist id="rsn"></datalist>
     <p id="rse" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
@@ -803,7 +804,14 @@ const fmt=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const parse=v=>{v=String(v).trim();if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');return parseFloat(v)};
-const num=n=>n?String(n).replace('.',','):'';
+const num=n=>n?(+n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
+// Máscara de valor (R$): só dígitos, entram pela direita (2590 -> 25,90). Vale para todo campo de valor, inclusive os criados depois.
+const MONEY='#v,#etv,#cv,#pv,#rsv,#mdg,input[data-f=amt],input[data-dv],input[data-d=v]';
+document.addEventListener('input',e=>{
+  const t=e.target;if(!t.matches||!t.matches(MONEY))return;
+  const d=t.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,11);
+  t.value=d?(+d/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
+},true);
 let m=today().slice(0,7);
 $('m').value=m;$('d').value=today();
 
@@ -855,7 +863,7 @@ function render(){
       :`<div class="ba${sp?'':' e'}" style="flex:0 0 clamp(70px,${p.toFixed(1)}%,calc(100% - 80px))">${fmt(sp)}</div><div class="bd">${Math.abs(lim-sp)<0.005?nr(0):nr(lim-sp)}</div>`;
     const eb=ed?`<span class="bem"><input data-de="${esc(c)}" value="${esc(dr.e)}" maxlength="16" placeholder="${EMO_DEF}" aria-label="Emoji de ${esc(c)}"></span>`:`<span class="bem" aria-hidden="true">${emoOf(c)}</span>`;
     const nm=ed?`<input class="bname" data-dn="${esc(c)}" value="${esc(dr.n)}" maxlength="30" aria-label="Nome do orçamento ${esc(c)}">`:`<button type="button" class="cn" data-d="${esc(c)}" aria-expanded="${open}">${esc(c)} <span aria-hidden="true">${open?'▾':'▸'}</span></button>`;
-    const bo=ed?`<span class="bo"><input data-dv="${esc(c)}" inputmode="decimal" enterkeyhint="done" value="${esc(dr.v)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}"></span>`
+    const bo=ed?`<span class="bo"><input data-dv="${esc(c)}" inputmode="numeric" enterkeyhint="done" value="${esc(dr.v)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}"></span>`
       :`<span class="bo">${lim?'de <b>'+fmt(lim)+'</b>':'sem orçamento'}</span>`;
     return `<li class="bi ${cl}"><div class="bh">${eb}${nm}${bo}</div><div class="bl"><div class="bb"${ed?'':` data-d="${esc(c)}"`}>${seg}</div></div>${over?`<div class="bov">estourou ${fmt(sp-lim)}</div>`:''}${det}</li>`}).join('')+capLi;
   const byI={};tx.filter(t=>t.type==='in').forEach(t=>byI[t.cat]=(byI[t.cat]||0)+t.amount);
@@ -1703,7 +1711,7 @@ document.querySelectorAll('.tape [data-go]').forEach(x=>{
 });
 function parUI(){
   const out=document.querySelector('input[name=tp]:checked').value==='out',card=document.querySelector('input[name=pg]:checked').value==='Cartão';
-  $('par').hidden=!(out&&card);const on=!$('par').hidden&&$('pcx').checked;$('pcf').hidden=!on;$('vlb').textContent=on?'Valor total da compra (R$)':'Valor (R$)';$('cardrow').hidden=!(out&&card);if(!$('cardrow').hidden)fillCards();parPrev();
+  $('par').hidden=!(out&&card);$('dl').textContent=out&&card?'Data da compra':'Data do pagamento';const on=!$('par').hidden&&$('pcx').checked;$('pcf').hidden=!on;$('vlb').textContent=on?'Valor total da compra (R$)':'Valor (R$)';$('cardrow').hidden=!(out&&card);if(!$('cardrow').hidden)fillCards();parPrev();
 }
 function parPrev(){
   const el=$('pprev');if(!el)return;
@@ -1732,12 +1740,12 @@ function renderCx(){
     const sv=cxSaved(x),t=x.target||0,done=t>0&&sv>=t-0.005,pp=t>0?Math.min(100,sv/t*100):0,cl=t?'':' nb';
     if(cxEd){
       const dr=cxDr[x.id]||(cxDr[x.id]={n:x.name,e:x.emo||'',v:num(t)});
-      return `<div class="cxi cxc bi edmode${cl}" data-x="${x.id}"><div class="cxe"><div class="etf"><small class="fl">Emoji</small><span class="bem"><input data-d="e" value="${esc(dr.e)}" maxlength="16" placeholder="${EMO_CX}" aria-label="Emoji de ${esc(x.name)}"></span></div><div class="etf" style="flex:1;min-width:0"><small class="fl">Nome</small><input class="bname" style="width:100%;height:36px;min-height:0;flex:none;padding:0 10px" data-d="n" value="${esc(dr.n)}" maxlength="40" aria-label="Nome da caixinha ${esc(x.name)}"></div><div class="etf" style="width:112px"><small class="fl">Meta (R$)</small><input data-d="v" style="width:100%;height:36px;min-height:0;padding:0 8px;text-align:right;font-family:var(--font-mono)" inputmode="decimal" enterkeyhint="done" value="${esc(dr.v)}" placeholder="0,00" aria-label="Meta de ${esc(x.name)}"></div></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button type="button" class="trash" data-a="del" aria-label="Excluir caixinha" title="Excluir caixinha">${TRASH}</button></div></div>`}
+      return `<div class="cxi cxc bi edmode${cl}" data-x="${x.id}"><div class="cxe"><div class="etf"><small class="fl">Emoji</small><span class="bem"><input data-d="e" value="${esc(dr.e)}" maxlength="16" placeholder="${EMO_CX}" aria-label="Emoji de ${esc(x.name)}"></span></div><div class="etf" style="flex:1;min-width:0"><small class="fl">Nome</small><input class="bname" style="width:100%;height:36px;min-height:0;flex:none;padding:0 10px" data-d="n" value="${esc(dr.n)}" maxlength="40" aria-label="Nome da caixinha ${esc(x.name)}"></div><div class="etf" style="width:112px"><small class="fl">Meta (R$)</small><input data-d="v" style="width:100%;height:36px;min-height:0;padding:0 8px;text-align:right;font-family:var(--font-mono)" inputmode="numeric" enterkeyhint="done" value="${esc(dr.v)}" placeholder="0,00" aria-label="Meta de ${esc(x.name)}"></div></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button type="button" class="trash" data-a="del" aria-label="Excluir caixinha" title="Excluir caixinha">${TRASH}</button></div></div>`}
     const ex=cxExp.has(x.id);
     const seg=(!t||done)?`<div class="ba" style="flex:1">${fmt(sv)}</div>`
       :`<div class="ba${sv?'':' e'}" style="flex:0 0 clamp(70px,${pp.toFixed(1)}%,calc(100% - 80px))">${fmt(sv)}</div><div class="bd">${nr(t-sv)}</div>`;
     const bo=!t?'<span class="bo">sem meta</span>':done?'<b class="bsd in">Meta atingida</b>':`<span class="bo">de <b>${fmt(t)}</b></span>`;
-    const body=ex?`<div class="g2" style="margin-top:10px"><div class="etf"><small class="fl">Valor (R$)</small><input data-f="amt" inputmode="decimal" placeholder="0,00" aria-label="Valor para ${esc(x.name)}"></div><div class="etf"><small class="fl">Data</small><input data-f="dt" type="date" value="${today()}" aria-label="Data"></div></div><div class="bk"><button class="pri" type="button" data-a="dep">Guardar</button><button type="button" data-a="ret">Retirar</button></div><details class="adv" data-x="${x.id}"${cxOpen.has(x.id)?' open':''}><summary>Histórico</summary><div class="cxh">${cxOpen.has(x.id)?cxHist(x):''}</div></details>`:'';
+    const body=ex?`<div class="g2" style="margin-top:10px"><div class="etf"><small class="fl">Valor (R$)</small><input data-f="amt" inputmode="numeric" placeholder="0,00" aria-label="Valor para ${esc(x.name)}"></div><div class="etf"><small class="fl">Data</small><input data-f="dt" type="date" value="${today()}" aria-label="Data"></div></div><div class="bk"><button class="pri" type="button" data-a="dep">Guardar</button><button type="button" data-a="ret">Retirar</button></div><details class="adv" data-x="${x.id}"${cxOpen.has(x.id)?' open':''}><summary>Histórico</summary><div class="cxh">${cxOpen.has(x.id)?cxHist(x):''}</div></details>`:'';
     return `<div class="cxi cxc bi${cl}" data-x="${x.id}"><div class="bh"><span class="bem" aria-hidden="true">${x.emo||EMO_CX}</span><button type="button" class="cn" data-a="tg" aria-expanded="${ex}">${esc(x.name)} <span aria-hidden="true">${ex?'▾':'▸'}</span></button>${bo}</div><div class="bl"><div class="bb" data-a="tg">${seg}</div></div>${body}</div>`}).join(''):'<p class="empty" style="margin:10px 0 0">Nenhuma caixinha ainda. Toque em "Novo" para criar a primeira.</p>';
 }
 $('cxl').addEventListener('click',e=>{
@@ -2211,7 +2219,7 @@ document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closes
 
 // ----- editar lançamentos -----
 let etT=null,etD0='';
-const etPay=()=>{const o=$('etp').value==='Cartão'&&etT.type==='out';$('etkw').hidden=!o;$('etdl').textContent=o?'Data da compra':'Data';etInfo()};
+const etPay=()=>{const o=$('etp').value==='Cartão'&&etT.type==='out';$('etkw').hidden=!o;$('etdl').textContent=o?'Data da compra':'Data do pagamento';etInfo()};
 function etInfo(){
   const el=$('etinfo'),card=+$('etk').value||0,d=$('etd').value;
   if(!(etT&&etT.type==='out'&&$('etp').value==='Cartão'&&card)){el.hidden=true;return}
