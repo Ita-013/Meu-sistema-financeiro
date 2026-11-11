@@ -28,6 +28,18 @@ Ver MEMORIA.md (fonte única; não repetir aqui).
 6. Caixinhas redesenhadas (11/11/2026): código em renderCx (estado cxExp/cxEd/cxDr); removidos o lápis por caixinha e o campo Nome dentro de Histórico.
 Lição: testar com dados completos (cartões, recorrentes, pagos, parcelas), não só com dados mínimos.
 
+## Índice do index.html (funções e linhas aproximadas; confirme com `grep -n "function nome"`)
+- Estado e base: `S` e `persist` (~742-780), `fillCats` (794), `norm` (803), `toast` (1156), `askDel` (752).
+- Resumo e painel do topo: `render` (805; cálculo do Sobrou em ~808-811), `detail` (1603), `renderFat`/`detailFat` (1854/1866), `renderOced`/`ocApply` (1569/1570, modo Editar do orçado).
+- Lançamentos: `openEt`/`etDel` (2183/2175), parcelas `parUI`/`parPrev` (1659/1663).
+- Compromissos: `occ`/`fatOcc` (2041/2043), `renderComp` (2057), `openForm` (2076), `recvOf` (2111).
+- Orçamentos (planilha): `renderSheet` (1135), `setPlan`/`setCell` (1080/1097), `bAt` (1602), `renameCat` (1198), arrastar `dstart`/`dmove`/`dend` (2155-2159).
+- Caixinhas: `cxMove` (1676), `renderCx` (1682; estado `cxExp`/`cxEd`/`cxDr`), `cxOced` (1681), `openCxNew` (1161).
+- Conciliação/Pluggy: `renderRec` (1464), `recImport` (1322), `cpCands`/`cpSug` (1344/1346), parcelas `inst*` (1364-1437), `pgIngest` (2251), `pgShow` (2234).
+- Importar/exportar: `importText` (978), `parseCSV`/`parseOFX` (1307/1316).
+- Nuvem e acesso: `startCloud` (2030), `applyCloud` (1964), `reinit` (1963), PIN `lockNow` (1928), `wipeAll` (1941).
+- Tema: `setTema`/`applyTheme` (1043/1044). CSS dos blocos de orçamento e caixinhas: seção "blocos de orçamento e caixinhas" (~205).
+
 ## Configuração na Vercel (já feita pelo usuário)
 Variáveis: `FIREBASE_SERVICE_ACCOUNT`, `CRON_SECRET`, `FIREBASE_API_KEY`, `PLUGGY_ENC_KEY`. Notificações precisam ser ativadas no app (aba ⚙) no celular.
 Verificar: Vercel → Settings → Cron Jobs mostra `/api/daily`. Se o push não chegar até ~10h, ver Logs de `/api/daily`.
