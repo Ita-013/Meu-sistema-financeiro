@@ -196,6 +196,12 @@ small{color:var(--mu);font-size:.82rem}
 #rcl .g2{margin:8px 0}
 #rcl .bk{grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin:0}
 .dupb{display:inline-block;border:1px solid var(--am);color:var(--am);border-radius:6px;padding:0 6px;font-size:.78rem;margin-left:8px}
+.srcb{display:inline-block;border:1px solid var(--ln);color:var(--mu);border-radius:6px;padding:0 6px;font-size:.78rem;margin-left:8px;white-space:nowrap}
+.srcb.cd{color:var(--ink);border-color:var(--mu)}
+#rc-flt{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+#rc-flt button{min-height:34px;padding:0 12px;border:1px solid var(--ln);border-radius:8px;background:var(--sf);font-size:.84rem}
+#rc-flt button[aria-pressed=true]{background:var(--in);color:var(--on-in);border-color:var(--in)}
+#rc-flt button:disabled{opacity:.45}
 .sm{min-height:40px;padding:0 12px;border:1px solid var(--ln);border-radius:10px;background:var(--sf2);color:var(--ink);font-weight:700}
 .sm:disabled{opacity:.4}
 #cats li.nb .bar i{background:var(--mu)}
@@ -621,6 +627,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <div class="rw"><h2 id="rct" style="margin:0">Pendentes</h2><button id="rc-all" type="button" class="sm"></button></div>
     <small id="rc-allnote" style="display:block;margin-top:4px"></small>
     <small id="rcs"></small>
+    <div id="rc-flt" role="group" aria-label="Filtrar pendentes por origem" hidden></div>
     <div class="bk" style="margin-top:8px"><button id="rc-dn" type="button" class="sm" hidden></button><button id="rc-ig" type="button" class="sm" hidden></button></div>
     <ul id="rcl" style="margin-top:8px"></ul>
     <ul id="rcig" hidden style="margin-top:12px;border-top:1px solid var(--ln);padding-top:8px"></ul>
@@ -745,6 +752,14 @@ const DEF={out:['Moradia','Alimentação','Transporte','Saúde','Lazer','Educaç
 let S={tx:[],bud:{},goal:{name:'',target:0,saved:0},sheet:[],rec:[],rules:{},myname:'',budm:{},cx:[],mig:0,cats:null,lastConv:null,cards:[],lastCard:null,cmig:0,comp:[],cfix:[],ord:{fx:[],vr:[]},emo:{}};
 try{const r=localStorage.getItem('caixa-v1');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 const EMO_DEF='🏷️',EMO_CX='💰';
+// Conciliação: filtro das pendentes por origem (all | conta = extrato | fatura = cartões) e etiqueta de origem em cada linha.
+// Fica aqui no topo (e não junto de renderRec) para existir antes de qualquer renderização do carregamento.
+let recF='all';
+function recFok(x){return recF==='all'||(recF==='fatura')===(x.kind==='fatura')}
+function srcTag(x){
+  if(x.kind==='fatura'){const c=S.cards.find(c=>c.id===x.card),n=c?c.name:(x.bk||'');return `<span class="srcb cd">Cartão${n?' '+esc(n):''}</span>`}
+  if(x.kind==='conta')return `<span class="srcb">Extrato${x.bk?' · '+esc(x.bk):''}</span>`;
+  return ''}
 const PENCIL='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
 
 const TRASH='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></svg>';
@@ -1468,25 +1483,35 @@ function renderRec(){
   const pend=S.rec.filter(x=>x.st==='pend').sort((a,b)=>b.date.localeCompare(a.date)),ign=S.rec.filter(x=>x.st==='ign').length,done=S.rec.filter(x=>x.st==='done').length;
   {const rb=document.querySelector('nav [data-t=rec]');rb.textContent='⚙'+(pend.length?' '+pend.length:'');rb.setAttribute('aria-label','Conciliação e configurações'+(pend.length?', '+pend.length+' pendentes':''))}
   $('rct').textContent='Pendentes: '+pend.length;$('rcs').textContent=done+' conciliada(s), '+ign+' ignorada(s).';
-  const IS=instRender(pend),sug=pend.filter(bulkOk).length,sugCp=pend.filter(x=>!x.dup&&!isInstRec(x)&&cpOf(x)).length;
+  // filtro por origem: se o filtro escolhido ficou sem nenhuma pendente, volta para Todas
+  const nCd=pend.filter(x=>x.kind==='fatura').length,nEx=pend.length-nCd;
+  if((recF==='fatura'&&!nCd)||(recF==='conta'&&!nEx))recF='all';
+  const pf=pend.filter(recFok);
+  {const f=$('rc-flt');f.hidden=!pend.length;
+   f.innerHTML=[['all','Todas',pend.length],['conta','Extrato',nEx],['fatura','Cartões',nCd]].map(([k,t,n])=>`<button type="button" data-rf="${k}" aria-pressed="${recF===k}"${k!=='all'&&!n?' disabled':''}>${t} (${n})</button>`).join('')}
+  const IS=instRender(pf),sug=pf.filter(bulkOk).length,sugCp=pf.filter(x=>!x.dup&&!isInstRec(x)&&cpOf(x)).length;
   $('rc-all').textContent='Lançar sugeridas ('+sug+')';$('rc-all').disabled=!sug;$('rc-allnote').textContent=sugCp?sugCp+' com compromisso sugerido: confirme uma a uma abaixo.':'';$('rc-undo').hidden=!ign;
   const usedD=new Set();
-  $('rcl').innerHTML=pend.length?pend.map(x=>{
+  $('rcl').innerHTML=pf.length?pf.map(x=>{
     if(IS.skip.has(x.id))return '';if(IS.html.has(x.id))return IS.html.get(x.id);
     const s=recSug(x),pay=x.pay||s.pay||recPay(x),dm=x.dup?dupMatch(x,usedD):null;if(dm)usedD.add(dm.t.id);const cpl=dm?null:cpOf(x),cat=x.cat||(cpl&&cpl.c)||s.cat||'';
-    return `<li data-r="${esc(x.id)}"${dm?` data-im="${dm.t.id}"`:''}><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${(()=>{const du=recDue(x,pay);return du!==x.date?' · vence '+brd(du):''})()}${dm?'<span class="dupb">parece já lançado</span>':''}</small>${dm?`<div class="ipv" style="margin-top:8px"><b>O sistema achou este lançamento:</b>${txLine(dm.t)}${dm.linked?'<small>Ele já foi conciliado com outra movimentação do banco.</small>':''}</div>`:''}<div class="etf" style="margin:8px 0 10px"><label class="fl"><small>Descrição (opcional)</small></label><input data-f="nd" maxlength="120" placeholder="O que foi essa compra?" value="${esc(x.nd||'')}" autocomplete="off"></div>${dm?'':cpBlock(x)}<div class="g2"><div class="etf"><label class="fl"><small>Categoria</small></label><select data-f="cat"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select></div><div class="etf"><label class="fl"><small>Forma de pagamento</small></label><select data-f="pay">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div></div>${recCardSel(x,pay,s)}<div class="bk">${dm?'<button class="pri full" data-a="had" type="button">Conciliar com esse lançamento</button><button data-a="ok" type="button">Lançar mesmo assim</button>':(cpl?'<button class="pri full" data-a="ok" type="button">Lançar e marcar como pago</button>':'<button class="pri" data-a="ok" type="button">Lançar</button>')}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.</li>';
+    return `<li data-r="${esc(x.id)}"${dm?` data-im="${dm.t.id}"`:''}><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${(()=>{const du=recDue(x,pay);return du!==x.date?' · vence '+brd(du):''})()}${srcTag(x)}${dm?'<span class="dupb">parece já lançado</span>':''}</small>${dm?`<div class="ipv" style="margin-top:8px"><b>O sistema achou este lançamento:</b>${txLine(dm.t)}${dm.linked?'<small>Ele já foi conciliado com outra movimentação do banco.</small>':''}</div>`:''}<div class="etf" style="margin:8px 0 10px"><label class="fl"><small>Descrição (opcional)</small></label><input data-f="nd" maxlength="120" placeholder="O que foi essa compra?" value="${esc(x.nd||'')}" autocomplete="off"></div>${dm?'':cpBlock(x)}<div class="g2"><div class="etf"><label class="fl"><small>Categoria</small></label><select data-f="cat"><option value="">Escolha a categoria</option>${CATS[x.type].filter(c=>c!=='Caixinhas').map(c=>`<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select></div><div class="etf"><label class="fl"><small>Forma de pagamento</small></label><select data-f="pay">${PAYS.map(p=>`<option${p===pay?' selected':''}>${p}</option>`).join('')}</select></div></div>${recCardSel(x,pay,s)}<div class="bk">${dm?'<button class="pri full" data-a="had" type="button">Conciliar com esse lançamento</button><button data-a="ok" type="button">Lançar mesmo assim</button>':(cpl?'<button class="pri full" data-a="ok" type="button">Lançar e marcar como pago</button>':'<button class="pri" data-a="ok" type="button">Lançar</button>')}${x.type==='in'?'<button data-a="rs" type="button">Ressarcimento</button>':''}<button data-a="skip" type="button">Ignorar</button></div></li>`}).join(''):'<li class="empty">'+(pend.length?'Nenhuma pendente nesta origem. Toque em Todas para ver as demais.':'Nenhuma movimentação pendente. Sincronize o Open Finance ou importe um extrato acima.')+'</li>';
   const igl=S.rec.filter(x=>x.st==='ign').sort((a,b)=>b.date.localeCompare(a.date));
   $('rc-ig').hidden=!igl.length;$('rc-ig').textContent=(showIgn?'Ocultar':'Mostrar')+' ignoradas ('+igl.length+')';
   $('rcig').hidden=!(showIgn&&igl.length);
-  if(showIgn)$('rcig').innerHTML='<li class="empty" style="margin-bottom:6px">Ignoradas: não entram no seu controle. Toque para trazer de volta.</li>'+igl.slice(0,150).map(x=>`<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${RWHY[x.why]?' · '+RWHY[x.why]:''}</small><div class="bk"><button class="pri" data-a="rest" type="button">Mover para pendentes</button></div></li>`).join('');
+  if(showIgn)$('rcig').innerHTML='<li class="empty" style="margin-bottom:6px">Ignoradas: não entram no seu controle. Toque para trazer de volta.</li>'+igl.slice(0,150).map(x=>`<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${x.date.split('-').reverse().join('/')}${RWHY[x.why]?' · '+RWHY[x.why]:''}${srcTag(x)}</small><div class="bk"><button class="pri" data-a="rest" type="button">Mover para pendentes</button></div></li>`).join('');
   const dnl=S.rec.filter(x=>x.st==='done').sort((a,b)=>b.date.localeCompare(a.date));
   $('rc-dn').hidden=!dnl.length;$('rc-dn').textContent=(showDn?'Ocultar':'Mostrar')+' conciliadas ('+dnl.length+')';
   $('rcdn').hidden=!(showDn&&dnl.length);
   if(showDn)$('rcdn').innerHTML='<li class="empty" style="margin-bottom:6px">Conciliadas: cada movimentação do banco e o lançamento do sistema que ela representa.</li>'+dnl.slice(0,150).map(x=>{
     const t=x.tx?S.tx.find(v=>v.id===x.tx):null;
-    return `<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${dmy(x.date)}${t?'':' · marcada como já lançada, sem vínculo'}</small>`+
+    return `<li data-r="${esc(x.id)}"><div class="rw"><span class="rd">${esc(x.desc)}</span><b class="${x.type}">${x.type==='out'?'−':'+'}${fmt(x.amount)}</b></div><small>${dmy(x.date)}${t?'':' · marcada como já lançada, sem vínculo'}${srcTag(x)}</small>`+
     (t?`<div class="ipv" style="margin-top:8px"><b>Lançamento no sistema</b>${txLine(t)}</div>`:'')+
-    (x.lk||!t?'<div class="bk"><button data-a="undo" type="button">Voltar para pendentes</button></div>':'<small style="display:block;margin-top:6px">Criado por esta conciliação. Para desfazer, exclua o lançamento na aba Lançamentos: a movimentação volta para as pendentes.</small>')+'</li>'}).join('');
+    (()=>{
+      if(x.lk||!t)return '<div class="bk"><button data-a="undo" type="button">Voltar para pendentes</button></div>';
+      const cp=S.comp.find(c=>c.st==='g'&&c.tx===t.id);   // lançamento criado por esta conciliação (pode ter pago um compromisso)
+      return (cp?'<small style="display:block;margin-top:6px">O compromisso "'+esc(cp.n)+'" está marcado como pago por este lançamento.</small>':'')+
+        '<div class="bk"><button data-a="undotx" type="button" style="color:var(--out);border-color:var(--out)">Desfazer lançamento</button></div>'})()+'</li>'}).join('');
   $('rlss').textContent='Memória de preenchimento ('+Object.keys(S.rules||{}).length+')';
   if($('rlsd').open)renderRules();
 }
@@ -1523,13 +1548,30 @@ function renderRules(){
 }
 const recDue=(x,pay)=>{if(!(pay==='Cartão'&&x.type==='out'&&x.card))return x.date;if(/^\d{4}-\d\d-\d\d$/.test(x.bd||''))return x.bd;return invDue(x.card,x.date)};
 function recCommit(x,cat,pay){const du=recDue(x,pay),ntx={id:Date.now()+Math.floor(Math.random()*1e4),type:x.type,amount:x.amount,desc:(x.nd||x.desc).slice(0,120),cat,date:du,pay,card:(pay==='Cartão'&&x.type==='out'&&x.card)?x.card:undefined};if(du!==x.date)ntx.pd=x.date;ntx.rid=x.id;x.tx=ntx.id;S.tx.push(ntx);x.st='done';delete x.why;delete x.nd;learnRule(x.desc,cat,pay,ntx.card)}
+// desfaz um lançamento criado pela conciliação: exclui o lançamento, a movimentação volta para as pendentes e o compromisso
+// que ele pagou (se houver) volta para "A pagar". Parcela: desfaz só aquela (como excluir uma parcela na aba Lançamentos).
+function recUndoAsk(x){
+  const t=x.tx?S.tx.find(v=>v.id===x.tx):null;if(!t)return;
+  const cp=S.comp.find(c=>c.st==='g'&&c.tx===t.id),np=t.sid?S.tx.filter(v=>String(v.sid)===String(t.sid)).length:0;
+  askDel('Desfazer este lançamento?','O lançamento "'+t.desc.slice(0,40)+'" será excluído e a movimentação volta para as pendentes.'+(cp?' O compromisso "'+cp.n.slice(0,40)+'" volta para A pagar.':'')+(np>1?' Só esta parcela é desfeita; as outras continuam (para apagar todas, use a aba Lançamentos).':''),[{t:'Desfazer lançamento',fn:()=>recUndoTx(x.id)}])}
+function recUndoTx(id){
+  const x=S.rec.find(v=>v.id===id);if(!x)return;
+  const t=x.tx?S.tx.find(v=>v.id===x.tx):null;
+  if(t){
+    if(t.sid){const r=S.sheet.find(v=>String(v.sid)===String(t.sid)),k=t.date.slice(0,7);
+      if(r&&r.v&&k in r.v){r.v[k]=Math.round((r.v[k]-t.amount)*100)/100;if(r.v[k]<=.004)delete r.v[k];if(!Object.keys(r.v).length)S.sheet=S.sheet.filter(v=>v!==r)}}
+    S.tx=S.tx.filter(v=>v!==t)}
+  x.st='pend';delete x.tx;delete x.lk;x.pgchk=1;
+  reconcileComp();   // o compromisso pago por esse lançamento volta para A pagar
+  save();render();renderCx();renderSheet();renderRec();rmsg('Lançamento desfeito: a movimentação voltou para as pendentes.')}
 $('rc-file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;let t='';
   try{t=await readTxt(f)}catch(err){rmsg('Não consegui ler o arquivo. Tente colar o texto na opção abaixo.',true);return}
   e.target.value='';recImport(t,document.querySelector('input[name=rk]:checked').value)});
 $('rc-go').addEventListener('click',()=>recImport($('rc-txt').value,document.querySelector('input[name=rk]:checked').value));
 $('rc-ig').addEventListener('click',()=>{showIgn=!showIgn;renderRec()});
 $('rc-dn').addEventListener('click',()=>{showDn=!showDn;renderRec()});
-$('rcdn').addEventListener('click',e=>{if(e.target.dataset.a!=='undo')return;const li=e.target.closest('li'),x=S.rec.find(v=>v.id===li.dataset.r);if(!x)return;
+$('rcdn').addEventListener('click',e=>{const act=e.target.dataset.a;if(act!=='undo'&&act!=='undotx')return;const li=e.target.closest('li'),x=S.rec.find(v=>v.id===li.dataset.r);if(!x)return;
+  if(act==='undotx'){recUndoAsk(x);return}
   const t=x.tx?S.tx.find(v=>v.id===x.tx):null;if(t&&t.rid===x.id)delete t.rid;
   x.st='pend';delete x.tx;delete x.lk;x.pgchk=1;save();renderRec();rmsg('Voltou para as pendentes.')});
 $('rcig').addEventListener('click',e=>{if(e.target.dataset.a!=='rest')return;const li=e.target.closest('li'),x=S.rec.find(v=>v.id===li.dataset.r);if(!x)return;x.st='pend';delete x.why;x.pgchk=1;save();renderRec();rmsg('Voltou para as pendentes.')});
@@ -1559,7 +1601,8 @@ $('rcl').addEventListener('click',e=>{
   else if(a==='imno'){x.nomatch=1;rmsg('Ok, vou tratar como uma compra nova.')}
   else if(a==='rs'){openRp(x);return}
   save();render();renderRec()});
-$('rc-all').addEventListener('click',e=>{const b=e.currentTarget,items=S.rec.filter(bulkOk);
+$('rc-flt').addEventListener('click',e=>{const b=e.target.closest('[data-rf]');if(!b||b.disabled)return;recF=b.dataset.rf;$('rc-all').dataset.arm='';renderRec()});
+$('rc-all').addEventListener('click',e=>{const b=e.currentTarget,items=S.rec.filter(x=>bulkOk(x)&&recFok(x));
   if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Confirmar '+items.length+'?';setTimeout(()=>{b.dataset.arm='';renderRec()},3500);return}
   b.dataset.arm='';items.forEach(x=>{const s=recSug(x);if(!x.card&&s.card&&S.cards.some(c=>c.id===s.card))x.card=s.card;recCommit(x,x.cat||s.cat,x.pay||s.pay||recPay(x))});
   save();render();renderRec();rmsg(items.length+' lançamento(s) feito(s).')});
@@ -2031,7 +2074,7 @@ $('au-out').addEventListener('click',async()=>{
 });
 document.addEventListener('visibilitychange',()=>{if(!cu)return;if(document.hidden){if(S.sh!==undefined&&isDirty()){clearTimeout(pushT);flush()}}else if(Date.now()-lastPull>20000)pull()});
 addEventListener('online',()=>{if(cu){if(S.sh!==undefined&&isDirty())flush();else pull()}});
-function startCloud(){FB.onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();checkRosa();if(u){await pull();if(window.pgAuto)pgAuto();if(typeof pgShow==='function')pgShow()}})}
+function startCloud(){FB.onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();checkRosa();if(u){await pull();if(window.pgAuto)pgAuto();if(typeof pgShow==='function')pgShow();if(window.nfStatus)nfStatus()}})}
 if(window.FB)startCloud();else addEventListener('fb-ready',startCloud,{once:true});
 updCloud();
 // ----- data da última alteração -----
@@ -2271,6 +2314,7 @@ function pgIngest(d){
     const mv={id,pg:1,pgchk:1,date,type,amount,desc,st:'pend',kind:a.card?'fatura':'conta',card:(a.card&&type==='out')?cid:undefined};
     if(t.totalInstallments>1){mv.ik=+t.installmentNumber||0;mv.inn=+t.totalInstallments||0}
     if(t.cp)mv.cp=String(t.cp).slice(0,60);
+    if(a.inst)mv.bk=String(a.inst).slice(0,40);   // nome do banco, para a etiqueta de origem na conciliação
     if(a.card&&/^\d{4}-\d\d-\d\d$/.test(bd))mv.bd=bd;
     {const w=pgSkip(mv,names,t.cp);if(w){mv.st='ign';mv.why=w;auto++}}
     mv.dup=S.tx.some(x=>x.type===type&&Math.abs((x.gross||x.amount)-amount)<.005&&Math.abs(new Date(x.pd||x.date)-new Date(date))<=864e5);
@@ -2373,6 +2417,10 @@ window.compReady=true;render();
   const sv=()=>{try{localStorage.setItem(K,JSON.stringify(cfg))}catch(e){}};
   // o push deste aparelho está cadastrado para a conta que está logada agora (o cadastro guarda o uid da conta)
   const pushMine=()=>!!cfg.pushOn&&!!cu&&cfg.pushUid===cu.uid;
+  // a caixinha "Ativar notificações" é de cada conta: só vem marcada para a conta que a marcou (cfg.onUid). Quem entra depois
+  // no mesmo navegador vê desmarcada e escolhe. Preferência antiga sem dono: vale para quem tem o push cadastrado (cfg.pushUid).
+  const nfOwner=()=>cfg.onUid||cfg.pushUid||'';
+  const nfOn=()=>!!cfg.on&&(cu?nfOwner()===cu.uid:nfOwner()==='');
   const perm=()=>sup?Notification.permission:'unsupported';
   const lst=a=>a.slice(0,3).map(x=>x.n+' ('+fmt(x.v)+')').join(', ')+(a.length>3?' e mais '+(a.length-3):'');
   // atrasadas = em aberto com vencimento antes de hoje (meses anteriores + este mês); mesmas regras do Resumo, faturas incluídas
@@ -2389,18 +2437,20 @@ window.compReady=true;render();
     try{const r=await navigator.serviceWorker.getRegistration();return r?(r.active?'ativo':'instalando'):'não registrado'}catch(e){return'erro'}}
   async function status(){
     const p=perm(),el=$('nfs');
-    $('nfon').checked=!!cfg.on&&p==='granted';$('nftm').value=cfg.time;
-    $('nftm').disabled=$('nftest').disabled=!(cfg.on&&p==='granted');
+    // preferência antiga sem dono, mas com push cadastrado por esta conta: passa a ser dela
+    if(cfg.on&&!cfg.onUid&&cfg.pushUid&&cu&&cfg.pushUid===cu.uid){cfg.onUid=cu.uid;sv()}
+    $('nfon').checked=nfOn()&&p==='granted';$('nftm').value=cfg.time;
+    $('nftm').disabled=$('nftest').disabled=!(nfOn()&&p==='granted');
     el.style.color='var(--mu)';
     if(p==='unsupported')el.textContent='Este navegador (ou este endereço) não permite notificações. Abra o sistema pelo endereço https no Chrome.';
     else if(p==='denied'){el.style.color='var(--out)';el.textContent='As notificações estão bloqueadas para este site. No Chrome, toque no ícone ao lado do endereço, abra as configurações do site e permita Notificações.'}
-    else if(cfg.on&&pushMine())el.textContent='Ativadas. O servidor avisa todo dia, por volta das 9h, o que vence hoje, o que está atrasado e as movimentações novas para conciliar, mesmo com o app fechado.';
-    else if(cfg.on){const l=msg();el.textContent='Ativadas. Sem push do servidor neste aparelho'+(cfg.pushWhy?' ('+cfg.pushWhy+')':'')+': você será avisado todo dia às '+cfg.time+', quando abrir o app, se houver algo vencendo, atrasado ou para conciliar'+(l.length?'.':'. Hoje não há nada disso.')}
+    else if(nfOn()&&pushMine())el.textContent='Ativadas. O servidor avisa todo dia, por volta das 9h, o que vence hoje, o que está atrasado e as movimentações novas para conciliar, mesmo com o app fechado.';
+    else if(nfOn()){const l=msg();el.textContent='Ativadas. Sem push do servidor neste aparelho'+(cfg.pushWhy?' ('+cfg.pushWhy+')':'')+': você será avisado todo dia às '+cfg.time+', quando abrir o app, se houver algo vencendo, atrasado ou para conciliar'+(l.length?'.':'. Hoje não há nada disso.')}
     else el.textContent='Desativadas.';
     const sw=await swState(),la=cfg.lastAt?new Date(cfg.lastAt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'nenhuma ainda';
     $('nfd').textContent='Permissão: '+({granted:'concedida',denied:'bloqueada',default:'não pedida',unsupported:'sem suporte'}[p]||p)+' · Service worker: '+sw+' · Push: '+(pushMine()?'ativo':'inativo')+' · Última enviada: '+la;
     $('nfr').textContent=srvTxt;
-    if(cfg.on&&window.FB&&FB.token&&cu&&Date.now()-srvAt>3e5)srvStatus()}
+    if(nfOn()&&window.FB&&FB.token&&cu&&Date.now()-srvAt>3e5)srvStatus()}
   // último envio do servidor (cron das 9h), lido de /api/push: mostra se rodou, quantos aparelhos recebeu e por que não enviou
   let srvTxt='',srvAt=0;
   async function srvStatus(){
@@ -2429,7 +2479,7 @@ window.compReady=true;render();
   const T0=Date.now(),pgOn=()=>!!(S.pgCred||(S.pgItems&&S.pgItems.length)),pgFresh=()=>{const l=pgLoad().last;return !!l&&isoD(new Date(l))===today()};
   async function check(){
     pushRegister(false);
-    if(!cfg.on||perm()!=='granted'||!window.compReady||check.busy)return;
+    if(!nfOn()||perm()!=='granted'||!window.compReady||check.busy)return;
     const t=today(),d=new Date(),hm=pad(d.getHours())+':'+pad(d.getMinutes());
     if(cfg.last===t||hm<cfg.time||Date.now()-(cfg.fail||0)<6e5)return;
     // logo após abrir, o banco ainda não foi consultado: espera a consulta do dia (até ~30 s) para o aviso já incluir as movimentações novas
@@ -2443,10 +2493,10 @@ window.compReady=true;render();
       if(r.ok){cfg.last=t;cfg.lastAt=Date.now();cfg.fail=0}else cfg.fail=Date.now();
       sv();status();
     }finally{check.busy=0}}
-  window.nfCheck=check;
+  window.nfCheck=check;window.nfStatus=status;
   // movimentações que chegam do banco depois do aviso do dia geram um segundo aviso (um só aviso por consulta)
   window.nfMore=async n=>{
-    const t=today();if(!cfg.on||perm()!=='granted'||cfg.last!==t||await pushHoje()===t)return;
+    const t=today();if(!nfOn()||perm()!=='granted'||cfg.last!==t||await pushHoje()===t)return;
     const r=await show('Meu caixa',n+(n===1?' movimentação nova para conciliar':' movimentações novas para conciliar'),'caixa-mov');
     if(r.ok){cfg.lastAt=Date.now();sv();status()}};
   // push do servidor (Firebase Cloud Messaging): registra este aparelho para receber o aviso diário com o app fechado
@@ -2457,7 +2507,7 @@ window.compReady=true;render();
     let d={};try{d=await r.json()}catch(e){}
     return{ok:r.ok,st:r.status,d}}
   async function pushRegister(force){
-    if(!cfg.on||perm()!=='granted'||!window.FB||!FB.push||!cu||!('serviceWorker' in navigator))return;
+    if(!nfOn()||perm()!=='granted'||!window.FB||!FB.push||!cu||!('serviceWorker' in navigator))return;
     // cadastro feito por outra conta (ou antes de o app guardar de quem era): vale como não cadastrado, e refaz já
     if(cfg.pushOn&&cfg.pushUid!==cu.uid){cfg.pushOn=false;cfg.pushTok='';cfg.pushTry=0}
     if(!force&&(cfg.pushOn&&Date.now()-(cfg.pushAt||0)<216e5||Date.now()-(cfg.pushTry||0)<6e5))return;
@@ -2477,13 +2527,13 @@ window.compReady=true;render();
     const tok=cfg.pushTok;cfg.pushOn=false;cfg.pushTok='';cfg.pushUid='';sv();status();
     if(!tok||!window.FB||!cu)return;try{await pushApi({action:'unregister',token:tok})}catch(e){}}
   // ao sair da conta: descadastra o push desta conta neste aparelho e zera o que era dela (último aviso, status do servidor)
-  window.nfLogout=async()=>{cfg.last='';cfg.lastAt=0;srvTxt='';srvAt=Date.now();sv();await pushOff()};
+  window.nfLogout=async()=>{if(cfg.on&&!cfg.onUid&&cfg.pushUid)cfg.onUid=cfg.pushUid;cfg.last='';cfg.lastAt=0;srvTxt='';srvAt=Date.now();sv();await pushOff()};
   $('nfon').addEventListener('change',async e=>{
-    if(!e.target.checked){cfg.on=false;sv();status();pushOff();return}
+    if(!e.target.checked){cfg.on=false;cfg.onUid='';sv();status();pushOff();return}
     if(!sup){status();return}
     let p=Notification.permission;
     if(p==='default'){try{p=await Notification.requestPermission()}catch(x){p=Notification.permission}}
-    cfg.on=p==='granted';if(cfg.on){cfg.last='';cfg.fail=0}sv();status();
+    cfg.on=p==='granted';cfg.onUid=cfg.on&&cu?cu.uid:'';if(cfg.on){cfg.last='';cfg.fail=0}sv();status();
     if(cfg.on){toast('Notificações ativadas.');pushRegister(true);check()}
   });
   $('nftm').addEventListener('change',e=>{if(!e.target.value)return;cfg.time=e.target.value;cfg.last='';cfg.fail=0;sv();status();check()});
