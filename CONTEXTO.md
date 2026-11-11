@@ -16,7 +16,7 @@ Ver MEMORIA.md (fonte única; não repetir aqui).
 - Resumo: 3 blocos (Sobrou no mês, Receitas com A receber, Despesas com A pagar), mais orçado x realizado por categoria em blocos.
 - Lançamentos/Compromissos (Pix, dinheiro, cartão). Compromissos: vencimento opcional, recorrentes ou avulsos, status a pagar/pago/atrasado, dá para ignorar.
 - Orçamentos: planilha por categoria (realizado e planejado por mês); fixos e variáveis, arrastar para reordenar.
-- Caixinhas: layout parecido com o orçado x realizado.
+- Caixinhas: blocos iguais aos do orçado x realizado do Resumo (emoji, nome, "de meta", barra com guardado e falta tracejada). Tocar no nome ou na barra expande Valor/Data, Guardar/Retirar e Histórico. Botão Editar no topo (como no Resumo) libera emoji, nome e meta de todas, com ✓/✕ e lixeira por caixinha.
 - Conciliação (aba da engrenagem): importa movimentações via Pluggy, usuário confirma categorias; parcelamentos com prévia (x/X); atualiza na primeira abertura do dia.
 
 ## O que foi feito nesta fase (11/11/2026)
@@ -25,6 +25,7 @@ Ver MEMORIA.md (fonte única; não repetir aqui).
 3. Títulos acima de todos os campos de formulário.
 4. Conciliação: movimentação de saída que bate com um compromisso em aberto (mesmo valor, ou nome parecido + valor até 20% próximo, vencimento até 40 dias) sugere o compromisso; botão "Lançar e marcar como pago". "Lançar sugeridas" NÃO inclui as que têm compromisso sugerido (confirmação individual).
 5. Bug introduzido e corrigido: a sugestão chamava `occ()` antes de `cdt` existir no carregamento (erro "Cannot access 'cdt' before initialization"), quebrando cliques (Compromissos e categorias do Resumo) para quem tem cartões/recorrentes. Correção: `cpCands` só roda com `window.compReady`.
+6. Caixinhas redesenhadas (11/11/2026): código em renderCx (estado cxExp/cxEd/cxDr); removidos o lápis por caixinha e o campo Nome dentro de Histórico.
 Lição: testar com dados completos (cartões, recorrentes, pagos, parcelas), não só com dados mínimos.
 
 ## Configuração na Vercel (já feita pelo usuário)

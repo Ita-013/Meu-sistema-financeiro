@@ -232,6 +232,9 @@ span.bem{cursor:default}
 .bsub{display:block;margin-top:8px}
 #ocard h2{display:flex;align-items:center;gap:8px}
 .oced{margin-left:auto;display:flex;gap:8px;align-items:center}
+#cxs h2{display:flex;align-items:center;gap:8px}
+.cxe{display:flex;gap:8px;align-items:flex-end}
+.cxe .etf{display:flex;flex-direction:column;gap:4px}
 .edb{min-height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--ln);background:var(--sf2);color:var(--ink);font-weight:700;font-size:.85rem;cursor:pointer}
 .oks,.oxs{width:36px;height:36px;min-height:0;padding:0;border-radius:10px;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .oks{background:var(--in);color:#052E16}.oxs{background:var(--out);color:#fff}
@@ -554,7 +557,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 
 <section id="cxs" role="tabpanel" hidden>
   <div class="card">
-    <h2>Minhas caixinhas<button class="inf" type="button" aria-label="Ajuda" data-tip="Cada caixinha é uma meta. Ao guardar, o valor sai do caixa do mês e entra em &quot;Guardado em caixinhas&quot;; ao retirar, volta ao caixa. Nada disso conta como despesa ou receita nas linhas do orçamento.">i</button></h2>
+    <h2>Minhas caixinhas<button class="inf" type="button" aria-label="Ajuda" data-tip="Cada caixinha é uma meta. Ao guardar, o valor sai do caixa do mês e entra em &quot;Guardado em caixinhas&quot;; ao retirar, volta ao caixa. Nada disso conta como despesa ou receita nas linhas do orçamento.">i</button><span class="oced" id="cxoced"></span></h2>
     <div class="top2"><div class="hd2"><div><div class="lab2">Guardado</div></div><b id="cxt" class="in"></b></div><div class="rw2"><span>Metas</span><b id="cxm"></b></div><div class="rw2"><span>Falta</span><b id="cxf"></b></div></div>
     <p id="cxmsg" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem"></p>
     <div id="cxl"></div>
@@ -1672,29 +1675,30 @@ parUI();
 let _u=Date.now();const uid=()=>(_u=Math.max(_u+1,Date.now()));
 function cxMove(x,amt,d,desc,pay,dep){const tid=uid(),mid=uid();S.tx.push({id:tid,type:dep?'out':'in',amount:amt,desc,cat:'Caixinhas',date:d,pay:pay||'Pix',cx:x.id,cxm:mid});x.mv.push({id:mid,date:d,amt:dep?amt:-amt,tx:tid})}
 const cxSaved=x=>x.mv.reduce((a,v)=>a+v.amt,0);
-let cxOpen=new Set(),editCx=null,editCxEmo=null;
+let cxOpen=new Set(),cxExp=new Set(),cxEd=false,cxDr={};
 const cxsay=(t,bad)=>{$('cxmsg').textContent=t;$('cxmsg').style.color=bad?'var(--out)':'var(--in)'};
 function cxHist(x){return x.mv.map((v,i)=>[v,i]).sort((a,b)=>b[0].date.localeCompare(a[0].date)||b[1]-a[1]).map(([v])=>`<div class="dr"><span>${v.note?esc(v.note):v.amt>0?'Guardado':'Retirado'}, ${v.date.split('-').reverse().join('/')}</span><b class="${v.amt>0?'in':'out'}">${v.amt>0?'+':'−'}${fmt(Math.abs(v.amt))}</b><button type="button" class="lnk" data-a="undo" data-mv="${v.id}">Desfazer</button></div>`).join('')||'<p class="empty" style="margin:6px 0 0">Nenhuma movimentação ainda.</p>'}
+function cxOced(){const el=$('cxoced');if(!el)return;el.innerHTML=!S.cx.length?'':cxEd?`<button type="button" class="oks" data-ce="ok" aria-label="Salvar alterações" title="Salvar">${OK_SVG}</button><button type="button" class="oxs" data-ce="no" aria-label="Cancelar e desfazer" title="Cancelar">${X_SVG}</button>`:'<button type="button" class="edb" data-ce="start">Editar</button>'}
 function renderCx(){
   const tot=S.cx.reduce((a,x)=>a+cxSaved(x),0),mt=S.cx.reduce((a,x)=>a+(x.target||0),0),fl=S.cx.reduce((a,x)=>a+(x.target>0?Math.max(0,x.target-cxSaved(x)):0),0);
   $('cxt').textContent=fmt(tot);$('cxm').textContent=mt?fmt(mt):'—';$('cxf').textContent=mt?fmt(fl):'—';
+  cxOced();
   $('cxl').innerHTML=S.cx.length?S.cx.map(x=>{
-    const sv=cxSaved(x);
-    const hist=`<div class="cxh">${cxOpen.has(x.id)?cxHist(x):''}</div>`;
-    const t=x.target||0,done=t>0&&sv>=t-0.005,ed=editCx===x.id,pp=t>0?Math.min(100,sv/t*100):0;
-    const inp=`<input data-f="tg" inputmode="decimal" value="${num(t)}" placeholder="Meta" aria-label="Meta da caixinha ${esc(x.name)}">`;
-    const sdv=t>0?(done?'<b class="bsd in">Meta atingida</b>':`<b class="bsd mu">faltam ${fmt(t-sv)}</b>`):'<span class="bsd mu">Sem meta</span>';
-    const seg=!t?`<div class="ba" style="flex:1">${fmt(sv)}</div><div class="bd" style="flex:0 0 ${ed?130:96}px;min-width:0">${ed?inp:'definir meta'}</div>`
-      :(done&&!ed)?`<div class="ba" style="flex:1">${fmt(sv)}</div>`
-      :`<div class="ba${sv?'':' e'}" style="flex:0 0 clamp(70px,${pp.toFixed(1)}%,calc(100% - 80px))">${fmt(sv)}</div><div class="bd">${ed?inp:nr(t)}</div>`;
-    const eb=editCxEmo===x.id?`<span class="bem"><input data-f="emo" maxlength="16" placeholder="🙂" aria-label="Emoji da caixinha ${esc(x.name)}"></span>`:`<button type="button" class="bem" data-a="em" aria-label="Escolher emoji de ${esc(x.name)}">${x.emo||EMO_CX}</button>`;
-    return `<div class="cxi cxc bi${t?'':' nb'}" data-x="${x.id}"><div class="bh">${eb}<b class="bnm cxn">${esc(x.name)}</b>${sdv}</div>${ed?'<small class="fl" style="margin-top:6px">Meta (R$)</small>':''}${editCxEmo===x.id?'<small class="fl" style="margin-top:6px">Emoji da caixinha</small>':''}<div class="bl"><div class="bb">${seg}</div><button type="button" class="bp" data-a="pe" aria-label="${t?'Editar':'Definir'} meta de ${esc(x.name)}">${PENCIL}</button></div><div class="g2" style="margin-top:10px"><div class="etf"><small class="fl">Valor (R$)</small><input data-f="amt" inputmode="decimal" placeholder="0,00" aria-label="Valor para ${esc(x.name)}"></div><div class="etf"><small class="fl">Data</small><input data-f="dt" type="date" value="${today()}" aria-label="Data"></div></div><div class="bk"><button class="pri" type="button" data-a="dep">Guardar</button><button type="button" data-a="ret">Retirar</button></div><details class="adv" data-x="${x.id}"${cxOpen.has(x.id)?' open':''}><summary>Histórico e ajustes</summary>${hist}<div class="etf" style="margin-top:10px"><small class="fl">Nome da caixinha</small><input data-f="nm" value="${esc(x.name)}" aria-label="Nome da caixinha"></div><button type="button" class="trash" data-a="del" aria-label="Excluir caixinha" title="Excluir caixinha">${TRASH}</button></details></div>`}).join(''):'<p class="empty" style="margin:10px 0 0">Nenhuma caixinha ainda. Toque em "Novo" para criar a primeira.</p>';
+    const sv=cxSaved(x),t=x.target||0,done=t>0&&sv>=t-0.005,pp=t>0?Math.min(100,sv/t*100):0,cl=t?'':' nb';
+    if(cxEd){
+      const dr=cxDr[x.id]||(cxDr[x.id]={n:x.name,e:x.emo||'',v:num(t)});
+      return `<div class="cxi cxc bi edmode${cl}" data-x="${x.id}"><div class="cxe"><div class="etf"><small class="fl">Emoji</small><span class="bem"><input data-d="e" value="${esc(dr.e)}" maxlength="16" placeholder="${EMO_CX}" aria-label="Emoji de ${esc(x.name)}"></span></div><div class="etf" style="flex:1;min-width:0"><small class="fl">Nome</small><input class="bname" style="width:100%;height:36px;min-height:0;flex:none;padding:0 10px" data-d="n" value="${esc(dr.n)}" maxlength="40" aria-label="Nome da caixinha ${esc(x.name)}"></div><div class="etf" style="width:112px"><small class="fl">Meta (R$)</small><input data-d="v" style="width:100%;height:36px;min-height:0;padding:0 8px;text-align:right;font-family:var(--font-mono)" inputmode="decimal" enterkeyhint="done" value="${esc(dr.v)}" placeholder="0,00" aria-label="Meta de ${esc(x.name)}"></div></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button type="button" class="trash" data-a="del" aria-label="Excluir caixinha" title="Excluir caixinha">${TRASH}</button></div></div>`}
+    const ex=cxExp.has(x.id);
+    const seg=(!t||done)?`<div class="ba" style="flex:1">${fmt(sv)}</div>`
+      :`<div class="ba${sv?'':' e'}" style="flex:0 0 clamp(70px,${pp.toFixed(1)}%,calc(100% - 80px))">${fmt(sv)}</div><div class="bd">${nr(t-sv)}</div>`;
+    const bo=!t?'<span class="bo">sem meta</span>':done?'<b class="bsd in">Meta atingida</b>':`<span class="bo">de <b>${fmt(t)}</b></span>`;
+    const body=ex?`<div class="g2" style="margin-top:10px"><div class="etf"><small class="fl">Valor (R$)</small><input data-f="amt" inputmode="decimal" placeholder="0,00" aria-label="Valor para ${esc(x.name)}"></div><div class="etf"><small class="fl">Data</small><input data-f="dt" type="date" value="${today()}" aria-label="Data"></div></div><div class="bk"><button class="pri" type="button" data-a="dep">Guardar</button><button type="button" data-a="ret">Retirar</button></div><details class="adv" data-x="${x.id}"${cxOpen.has(x.id)?' open':''}><summary>Histórico</summary><div class="cxh">${cxOpen.has(x.id)?cxHist(x):''}</div></details>`:'';
+    return `<div class="cxi cxc bi${cl}" data-x="${x.id}"><div class="bh"><span class="bem" aria-hidden="true">${x.emo||EMO_CX}</span><button type="button" class="cn" data-a="tg" aria-expanded="${ex}">${esc(x.name)} <span aria-hidden="true">${ex?'▾':'▸'}</span></button>${bo}</div><div class="bl"><div class="bb" data-a="tg">${seg}</div></div>${body}</div>`}).join(''):'<p class="empty" style="margin:10px 0 0">Nenhuma caixinha ainda. Toque em "Novo" para criar a primeira.</p>';
 }
 $('cxl').addEventListener('click',e=>{
   const btn=e.target.closest('[data-a]'),a=btn&&btn.dataset.a,card=e.target.closest('.cxc');if(!a||!card)return;
   const x=S.cx.find(y=>String(y.id)===card.dataset.x);if(!x)return;
-  if(a==='pe'){editCx=x.id;editCxEmo=null;renderCx();const i=$('cxl').querySelector('.cxc[data-x="'+x.id+'"] input[data-f=tg]');if(i){i.focus();if(i.select)i.select()}return}
-  if(a==='em'){editCxEmo=x.id;editCx=null;renderCx();const i=$('cxl').querySelector('.cxc[data-x="'+x.id+'"] input[data-f=emo]');if(i)i.focus();return}
+  if(a==='tg'){if(cxExp.has(x.id))cxExp.delete(x.id);else cxExp.add(x.id);renderCx();return}
   if(a==='dep'||a==='ret'){
     const v=parse(card.querySelector('[data-f=amt]').value),d=card.querySelector('[data-f=dt]').value||today();
     if(!(v>0)){cxsay('Digite um valor maior que zero.',true);return}
@@ -1706,16 +1710,22 @@ $('cxl').addEventListener('click',e=>{
     const mv=x.mv.find(v=>String(v.id)===btn.dataset.mv);if(!mv)return;
     x.mv=x.mv.filter(v=>v!==mv);if(mv.tx)S.tx=S.tx.filter(t=>t.id!==mv.tx);save();render();renderCx();renderSheet();cxsay('Movimentação desfeita.');
   }else if(a==='del'){
-    askDel('Excluir '+x.name+'?','Os lançamentos no caixa continuam. Essa ação não pode ser desfeita.',[{t:'Excluir',fn:()=>{    S.cx=S.cx.filter(y=>y!==x);S.sheet=S.sheet.filter(r=>r.cx!==x.id);cxOpen.delete(x.id);save();renderCx();renderSheet();fillCats();cxsay('Caixinha excluída. Os lançamentos no caixa continuam.');}}]);
+    askDel('Excluir '+x.name+'?','Os lançamentos no caixa continuam. Essa ação não pode ser desfeita.',[{t:'Excluir',fn:()=>{S.cx=S.cx.filter(y=>y!==x);S.sheet=S.sheet.filter(r=>r.cx!==x.id);cxOpen.delete(x.id);cxExp.delete(x.id);delete cxDr[x.id];if(!S.cx.length)cxEd=false;save();renderCx();renderSheet();fillCats();cxsay('Caixinha excluída. Os lançamentos no caixa continuam.');}}]);
   }
 });
-$('cxl').addEventListener('change',e=>{
-  const card=e.target.closest('.cxc'),f=e.target.dataset.f;if(!card||(f!=='nm'&&f!=='tg'&&f!=='emo'))return;
-  const x=S.cx.find(y=>String(y.id)===card.dataset.x);if(!x)return;
-  if(f==='nm')x.name=e.target.value.trim().slice(0,40)||x.name;else if(f==='emo'){const v=emoClean(e.target.value);if(v)x.emo=v;else delete x.emo;editCxEmo=null}else{const v=parse(e.target.value);x.target=v>0?Math.round(v*100)/100:0;editCx=null}
-  S.sheet.forEach(r=>{if(r.cx===x.id)r.name=x.name});save();renderCx();renderSheet();fillCats();
+$('cxs').addEventListener('click',e=>{
+  const b=e.target.closest('[data-ce]');if(!b)return;const k=b.dataset.ce;
+  if(k==='start'){cxEd=true;cxDr={};cxsay('');renderCx();return}
+  if(k==='no'){cxEd=false;cxDr={};renderCx();return}
+  const upd=S.cx.map(x=>{const dr=cxDr[x.id];return dr?{x,n:String(dr.n).replace(/\s+/g,' ').trim().slice(0,40),e:emoClean(dr.e),v:parse(dr.v)}:null}).filter(Boolean);
+  if(upd.some(u=>!u.n)){toast('Dê um nome a todas as caixinhas.',true);return}
+  upd.forEach(u=>{u.x.name=u.n;if(u.e)u.x.emo=u.e;else delete u.x.emo;u.x.target=u.v>0?Math.round(u.v*100)/100:0;S.sheet.forEach(r=>{if(r.cx===u.x.id)r.name=u.x.name})});
+  cxEd=false;cxDr={};save();render();renderCx();renderSheet();fillCats();cxsay('Caixinhas atualizadas.');
 });
-$('cxl').addEventListener('focusout',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f==='tg')editCx=null;if(f==='emo')editCxEmo=null});
+$('cxl').addEventListener('input',e=>{
+  const d=e.target.dataset&&e.target.dataset.d,c=e.target.closest('.cxc');if(!d||!c||!cxEd)return;
+  const dr=cxDr[c.dataset.x];if(dr)dr[d]=e.target.value;
+});
 $('cxl').addEventListener('toggle',e=>{const d=e.target;if(d.tagName==='DETAILS'&&d.dataset.x){const id=+d.dataset.x;if(d.open){cxOpen.add(id);const x=S.cx.find(y=>y.id===id),h=d.querySelector('.cxh');if(x&&h&&!h.firstChild)h.innerHTML=cxHist(x)}else cxOpen.delete(id)}},true);
 $('cxnew').addEventListener('click',openCxNew);
 
