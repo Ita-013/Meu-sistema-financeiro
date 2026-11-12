@@ -33,8 +33,8 @@ Sistema de finanças pessoais em página web, arquivo único `index.html`. Uso p
 - Variáveis da Vercel: `FIREBASE_SERVICE_ACCOUNT`, `CRON_SECRET`, `FIREBASE_API_KEY`, `PLUGGY_ENC_KEY`, `ADMIN_UID`. Notificações precisam ser ativadas no app (aba ⚙) em cada aparelho.
 
 ## Histórico
-- 11/11/2026: push diário às 9h e registro do último envio; correções do sync do Pluggy; títulos acima dos campos; sugestão de compromisso na conciliação; caixinhas redesenhadas; Pagar pelo Resumo e pop-ups sem teclado automático; isolamento de dados por conta; etiqueta/filtro de origem e desfazer na conciliação; máscara de valor e "Data do pagamento".
-- 12/11/2026: refresh do Pluggy no push e botão ⟳; aviso fixo de horário das notificações; cadastro só por convite; Lançamentos pela data da compra com ordenação Valor/Data; quadro Caixinhas no Resumo; barra cheia em 100% e verde até 70%; limpeza da memória e novos scripts em `tools/`.
+- 11/11/2026: push diário às 9h; correções do sync do Pluggy; títulos acima dos campos; sugestão de compromisso e desfazer na conciliação; caixinhas redesenhadas; Pagar pelo Resumo; isolamento de dados por conta; máscara de valor e "Data do pagamento".
+- 12/11/2026: refresh do Pluggy no push e botão ⟳; aviso fixo de horário das notificações; cadastro só por convite; Lançamentos pela data da compra com ordenação Valor/Data; quadro Caixinhas no Resumo; barra cheia em 100% e verde até 70%; limpeza da memória e novos scripts em `tools/`; Orçado x realizado: "Gasto" e "fora do orçamento" sem caixinhas, e caixinhas do mês clicáveis (abrem a aba Caixinhas já expandida).
 
 ## Pendências
 - Confirmar o push real das 9h de 12/11 (aba ⚙, linha "Servidor": deve mostrar "Pluggy: x/y atualizado(s)").

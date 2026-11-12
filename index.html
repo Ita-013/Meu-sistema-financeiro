@@ -240,6 +240,9 @@ span.bem{cursor:default}
 #cats .bd input,#cxl .bd input{width:100%;height:100%;min-height:0;border:0;border-radius:0;background:transparent;text-align:center;font-family:var(--font-mono);font-size:.8rem;font-weight:600;color:var(--ink);padding:0 4px;outline:none}
 .bp{flex:none;width:30px;height:30px;min-height:0;padding:0;border-radius:9px;border:1px solid var(--ln);background:var(--sf2);color:var(--mu);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .bsub{display:block;margin-top:8px}
+.cxgl{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.cxgl button{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:0 12px;border:1px solid var(--ln);border-radius:10px;background:var(--sf2);color:inherit;font:inherit;text-align:left;cursor:pointer}
+.cxgl button b{margin-left:auto;font-family:var(--font-mono)}
 #ocard h2{display:flex;align-items:center;gap:8px}
 .oced{margin-left:auto;display:flex;gap:8px;align-items:center}
 #cxs h2{display:flex;align-items:center;gap:8px}
@@ -869,16 +872,18 @@ function render(){
   const eff=c=>sbm(c,m);
   const cs=[...CATS.out,...Object.keys(by).filter(c=>!CATS.out.includes(c)&&c!=='Caixinhas')];
   const lims=cs.filter(c=>eff(c)>0);
-  const ob=lims.reduce((a,c)=>a+eff(c),0),rl=lims.reduce((a,c)=>a+(by[c]||0),0),sd=ob-rl,outside=exp-rl;
+  const ob=lims.reduce((a,c)=>a+eff(c),0),rl=lims.reduce((a,c)=>a+(by[c]||0),0),sd=Math.round((ob-rl)*100)/100,outside=exp-gDep-rl;   // caixinha tem quadro próprio: não entra em Gasto nem em "fora do orçamento"
   const top=Object.entries(by).filter(x=>x[0]!=='Caixinhas').sort((a,b)=>b[1]-a[1])[0];
-  $('ot').textContent=ob?fmt(ob):'—';$('rt').textContent=fmt(exp);
+  $('ot').textContent=ob?fmt(ob):'—';$('rt').textContent=fmt(Math.max(0,exp-gDep));
   if(ob){$('sdl').textContent=sd<0?'estourou o orçado':'sobra do orçado';$('sd').textContent=(sd<0?'−':'+')+fmt(Math.abs(sd));$('sd').style.color=sd<0?'var(--out)':'var(--in)'}
   else{$('sdl').textContent='maior gasto';$('sd').textContent=top?top[0]:'—';$('sd').style.color=''}
   $('tp2').className='top2'+(ob&&sd<0?' neg':'');
   $('ocn').textContent=!exp&&!ob?'Sem despesas neste mês. Registre uma em Lançamentos.':!ob?'Mostrando o que você gastou em cada categoria. Para acompanhar quanto sobra, defina um valor em "Orçado". Toque no nome de uma categoria para ver os lançamentos dela.':'O resultado considera só as categorias com orçamento'+(outside>0.005?' ('+fmt(outside)+' foram gastos em categorias sem orçamento)':'')+'. O orçado é o mesmo da aba Orçamentos: o que você digita aqui atualiza a planilha. Ao preencher um mês vazio, o valor vale dali até dezembro; ao editar um valor já preenchido, muda só aquele mês. Toque no nome de uma categoria para ver os lançamentos dela.';
   if(S.cards.some(c=>c.cl&&c.dd))$('ocn').textContent+=' O realizado inclui as compras no cartão; no topo, a fatura só entra em Despesas depois de paga.';
   const gy=by['Caixinhas']||0,gp=S.sheet.filter(r=>r.cx&&S.cx.some(x=>x.id===r.cx)).reduce((a,r)=>a+(r.v[m]||0),0);
-  const capLi=(gy||gp)?`<li class="bi nb"><div class="bh"><span class="bem" aria-hidden="true">${EMO_CX}</span><span class="bnm">Guardado em caixinhas</span><b class="bsd">${fmt(gy)}</b></div><small class="bsub">${gp?'Planejado '+fmt(gp):'Veja na aba Caixinhas'}</small></li>`:'';
+  const cxMes=S.cx.map(x=>{const mv=tx.filter(t=>t.cx===x.id);return mv.length?{x,v:Math.round(mv.reduce((a,t)=>a+(t.type==='out'?t.amount:-t.amount),0)*100)/100}:null}).filter(Boolean);   // líquido do mês (guardado − retirado) por caixinha
+  const cxGo=cxMes.map(o=>`<button type="button" data-cxgo="${o.x.id}" aria-label="Abrir a caixinha ${esc(o.x.name)}"><span aria-hidden="true">${o.x.emo||EMO_CX}</span><span>${esc(o.x.name)}</span><b>${o.v<0?'−':''}${fmt(Math.abs(o.v))}</b><span aria-hidden="true">›</span></button>`).join('');
+  const capLi=(gy||gp)?`<li class="bi nb"><div class="bh"><span class="bem" aria-hidden="true">${EMO_CX}</span><button type="button" class="cn" data-cxgo="all">Guardado em caixinhas <span aria-hidden="true">›</span></button><b class="bsd">${fmt(gy)}</b></div>${gp?`<small class="bsub">Planejado ${fmt(gp)}</small>`:''}${cxGo?`<div class="cxgl">${cxGo}</div>`:''}</li>`:'';
   $('cats').className=editAll?'edmode':'';renderOced();
   $('cats').innerHTML=[...cs].sort((a,b)=>(by[b]||0)-(by[a]||0)).map(c=>{
     const sp=by[c]||0,lim=eff(c),over=lim>0&&sp>lim+0.005,p=lim?Math.min(100,sp/lim*100):0,cl=lim?(over?'over':sp/lim>=.7?'warn':''):'nb'+(sp?'':' z');
@@ -982,6 +987,9 @@ $('cats').addEventListener('change',e=>{
 });
 $('cats').addEventListener('focusout',e=>{const d=e.target.dataset;if(!d)return;if(d.c!==undefined)editCat=null;if(d.emo!==undefined)editEmo=null});
 $('cats').addEventListener('click',e=>{
+  const cg=e.target.closest('[data-cxgo]');
+  if(cg){const x=S.cx.find(y=>String(y.id)===cg.dataset.cxgo);if(x)cxExp.add(x.id);document.querySelector('nav [data-t=cxs]').click();renderCx();
+    const el=x&&$('cxl').querySelector('.cxc[data-x="'+x.id+'"]');if(el)el.scrollIntoView({block:'center',behavior:'smooth'});else window.scrollTo(0,0);return}
   const pe=e.target.closest('[data-pe]');
   if(pe){editCat=pe.dataset.pe;editEmo=null;render();const i=$('cats').querySelector('input[data-c]');if(i){i.focus();if(i.select)i.select()}return}
   const em=e.target.closest('[data-em]');
