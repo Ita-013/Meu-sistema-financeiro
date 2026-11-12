@@ -662,10 +662,9 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <button class="sm" id="wipe" type="button" style="width:100%">Apagar todos os dados</button>
   </div>
   <div class="card" id="nfcard">
-    <h2>Notificações<button class="inf" type="button" aria-label="Ajuda" data-tip="Aviso diário, por volta das 9h (horário de Brasília), com o que vence hoje, o que está atrasado e as movimentações novas para conciliar. Com o push ativo ele chega mesmo com o app fechado. O horário abaixo só vale como plano B, quando este aparelho não está com o push ativo: nesse caso o aviso aparece quando o app for aberto depois dele.">i</button></h2>
+    <h2>Notificações<button class="inf" type="button" aria-label="Ajuda" data-tip="Aviso diário, por volta das 9h (horário de Brasília), com o que vence hoje, o que está atrasado e as movimentações novas para conciliar. Com o push ativo ele chega mesmo com o app fechado. Sem o push ativo neste aparelho, o aviso aparece quando o app for aberto depois das 9h.">i</button></h2>
     <div class="opt" style="margin-bottom:10px"><label><input type="checkbox" id="nfon">Ativar notificações neste navegador</label></div>
-    <label class="fl" for="nftm"><small>Horário do aviso sem push (plano B)</small></label>
-    <input id="nftm" type="time" value="09:00" aria-label="Horário da notificação">
+    <small style="display:block;color:var(--mu)">As notificações chegam todo dia por volta das 9h (horário de Brasília).</small>
     <button class="sm" id="nftest" type="button" style="width:100%;margin-top:10px">Enviar notificação de teste</button>
     <p id="nfs" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem;color:var(--mu)"></p>
     <small id="nfd" style="display:block;margin-top:6px"></small>
@@ -2422,6 +2421,7 @@ window.compReady=true;render();
   const K='caixa-notif',sup='Notification' in window;
   let cfg={on:false,time:'09:00',last:'',lastAt:0,fail:0};
   try{Object.assign(cfg,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
+  cfg.time='09:00';   // horário fixo (o do servidor); preferência antiga de outro horário é ignorada
   const sv=()=>{try{localStorage.setItem(K,JSON.stringify(cfg))}catch(e){}};
   // o push deste aparelho está cadastrado para a conta que está logada agora (o cadastro guarda o uid da conta)
   const pushMine=()=>!!cfg.pushOn&&!!cu&&cfg.pushUid===cu.uid;
@@ -2447,8 +2447,8 @@ window.compReady=true;render();
     const p=perm(),el=$('nfs');
     // preferência antiga sem dono, mas com push cadastrado por esta conta: passa a ser dela
     if(cfg.on&&!cfg.onUid&&cfg.pushUid&&cu&&cfg.pushUid===cu.uid){cfg.onUid=cu.uid;sv()}
-    $('nfon').checked=nfOn()&&p==='granted';$('nftm').value=cfg.time;
-    $('nftm').disabled=$('nftest').disabled=!(nfOn()&&p==='granted');
+    $('nfon').checked=nfOn()&&p==='granted';
+    $('nftest').disabled=!(nfOn()&&p==='granted');
     el.style.color='var(--mu)';
     if(p==='unsupported')el.textContent='Este navegador (ou este endereço) não permite notificações. Abra o sistema pelo endereço https no Chrome.';
     else if(p==='denied'){el.style.color='var(--out)';el.textContent='As notificações estão bloqueadas para este site. No Chrome, toque no ícone ao lado do endereço, abra as configurações do site e permita Notificações.'}
@@ -2544,7 +2544,6 @@ window.compReady=true;render();
     cfg.on=p==='granted';cfg.onUid=cfg.on&&cu?cu.uid:'';if(cfg.on){cfg.last='';cfg.fail=0}sv();status();
     if(cfg.on){toast('Notificações ativadas.');pushRegister(true);check()}
   });
-  $('nftm').addEventListener('change',e=>{if(!e.target.value)return;cfg.time=e.target.value;cfg.last='';cfg.fail=0;sv();status();check()});
   $('nftest').addEventListener('click',async()=>{
     if(perm()!=='granted')return status();
     if(pushMine()){ // teste de ponta a ponta: o servidor envia um push para este aparelho

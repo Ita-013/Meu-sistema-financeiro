@@ -34,7 +34,9 @@ module.exports = async (req, res) => {
             const S = JSON.parse(u.data);
             const r = compute(S, t);
             const b = await novas(S, d.id, t);
-            const l = linhas(r, b.n || 0, !!(b.err || b.partial));
+            const rf = b.ref || null;
+            const extra = rf && rf.bad ? ['Um banco pede atenção no Pluggy (reconectar ou autorizar).'] : [];
+            const l = linhas(r, b.n || 0, !!(b.err || b.partial), extra);
             if (!l.length) { out.skipped++; why = 'nada a avisar hoje'; }   // nada atrasado, vencendo ou para conciliar
             else {
               const msg = { title: 'Meu caixa', body: l.join('\n'), tag: 'caixa-diario', day: t };
@@ -47,6 +49,8 @@ module.exports = async (req, res) => {
               if (dead.length) await g.setPush(d.id, tokens.filter(x => !dead.includes(x)));
               why = ok + ' de ' + tokens.length + ' aparelho(s) enviado(s)' + (codes.length ? ' · erro FCM: ' + [...new Set(codes)].join(', ') : '') + (dead.length ? ' · removido(s) ' + dead.length + ' inválido(s)' : '');
             }
+            // o que o refresh do Pluggy fez, para aparecer em "último envio" na aba ⚙
+            if (rf) why += ' · Pluggy: ' + rf.ok + '/' + rf.total + ' atualizado(s)' + (rf.slow ? ', ' + rf.slow + ' ainda atualizando' : '') + (rf.bad ? ', ' + rf.bad + ' pede(m) atenção' : '') + (rf.err ? ', ' + rf.err + ' recusado(s)' : '');
           }
         } catch (e) {
           out.failed++;   // um usuário com problema não impede os outros
