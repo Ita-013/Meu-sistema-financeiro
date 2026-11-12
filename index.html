@@ -292,6 +292,8 @@ span.bem{cursor:default}
 .tp2c .bv b{color:inherit;font-size:inherit}
 .tp2c .bs{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 6px;border-top:1px solid var(--tape-ln);padding-top:7px;font-size:.72rem;color:var(--tape-mu)}
 .tp2c .bs b{white-space:nowrap;margin-left:auto}
+.tp2c.u{grid-template-columns:minmax(0,1fr);margin-top:8px}.tp2c.u[hidden]{display:none}
+.tp2c .bx.cx{cursor:pointer}.tp2c .bx.cx .bv{color:var(--tape-ink)}.tp2c .bs i{font-style:normal;font-family:var(--font-mono);font-weight:700;color:var(--tape-ink);font-size:.74rem;white-space:nowrap}
 .tp2c .bs b{font-family:var(--font-mono);font-weight:700;color:var(--tape-ink);font-size:.74rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 #icats li,#icats li:last-child{margin-bottom:10px}
 #icats li:last-child{margin-bottom:0}
@@ -324,6 +326,9 @@ span.bem{cursor:default}
 .dt .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:.85rem;color:var(--mu);flex-wrap:wrap}
 .dt .st button{margin-left:6px;min-height:32px;padding:0 10px;border:1px solid var(--ln);border-radius:8px;background:var(--sf);font-size:.82rem}
 .dt .st button[aria-pressed=true]{background:var(--in);color:var(--on-in);border-color:var(--in)}
+.lsr{display:flex;justify-content:flex-end;align-items:center;margin:0 0 8px;font-size:.85rem;color:var(--mu)}
+.lsr button{margin-left:6px;min-height:32px;padding:0 10px;border:1px solid var(--ln);border-radius:8px;background:var(--sf);font-size:.82rem}
+.lsr button[aria-pressed=true]{background:var(--in);color:var(--on-in);border-color:var(--in)}
 .dr{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 0;border-top:1px solid var(--ln)}
 .dr span{overflow-wrap:anywhere}
 .chk{display:flex;align-items:center;gap:8px;min-height:44px;font-weight:600}
@@ -496,6 +501,9 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <div class="bx in"><div class="bt">Receitas</div><span class="bv" data-go="rcard" role="button" tabindex="0"><b id="inc"></b></span><div class="bs"><span>A receber</span><b id="rcvb" role="button" tabindex="0"><span id="rcv"></span></b></div></div>
     <div class="bx out"><div class="bt">Despesas</div><span class="bv" data-go="ocard" role="button" tabindex="0"><b id="exp"></b></span><div class="bs"><span>A pagar</span><b role="button" tabindex="0" data-ca="goc"><span id="cm"></span></b></div></div>
   </div>
+  <div class="tp2c u" id="cxbxw" hidden>
+    <div class="bx cx" id="cxbx" role="button" tabindex="0" aria-label="Caixinhas: ver a aba Caixinhas"><div class="bt">Caixinhas</div><span class="bv" id="cxv"></span><div class="bs"><span>Guardado <i id="cxg"></i></span><span>Retirado <i id="cxr"></i></span></div></div>
+  </div>
 </section>
   <div class="card" id="vcard"><h2>Próximos vencimentos</h2><div id="vl"></div></div>
   <div class="card" id="ocard">
@@ -555,7 +563,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <p id="err" role="alert"></p>
     <button class="go" type="button" id="add">Adicionar lançamento</button>
   </div>
-  <div class="card"><h2>Lançamentos do mês</h2><ul id="list"></ul></div>
+  <div class="card"><h2>Lançamentos do mês</h2><div class="lsr" id="lsrt"></div><ul id="list"></ul></div>
 </section>
 
 <section id="plan" role="tabpanel" hidden>
@@ -766,6 +774,8 @@ const EMO_DEF='🏷️',EMO_CX='💰';
 // Conciliação: filtro das pendentes por origem (all | conta = extrato | fatura = cartões) e etiqueta de origem em cada linha.
 // Fica aqui no topo (e não junto de renderRec) para existir antes de qualquer renderização do carregamento.
 let recF='all';
+// Lançamentos do mês: ordenação ('d' = data da compra, padrão; 'v' = valor). Também no topo, para existir antes do primeiro render.
+let lsort='d';
 function recFok(x){return recF==='all'||(recF==='fatura')===(x.kind==='fatura')}
 function srcTag(x){
   if(x.kind==='fatura'){const c=S.cards.find(c=>c.id===x.card),n=c?c.name:(x.bk||'');return `<span class="srcb cd">Cartão${n?' '+esc(n):''}</span>`}
@@ -839,17 +849,22 @@ function norm(x){return String(x).normalize('NFD').replace(/[\u0300-\u036f]/g,''
 const rowCat=r=>r.cat!==undefined?r.cat:((r.k==='in'?CATS.in:CATS.out).find(c=>norm(c)===norm(r.name))||'');
 function render(){
   updPer();renderFat();
-  const tx=S.tx.filter(t=>t.date.slice(0,7)===m).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+  const dc=t=>t.pd||t.date;   // data da compra (pd, em compra no cartão); sem pd, a própria data
+  const tx=S.tx.filter(t=>t.date.slice(0,7)===m).sort(lsort==='v'?(a,b)=>b.amount-a.amount||dc(b).localeCompare(dc(a))||b.id-a.id:(a,b)=>dc(b).localeCompare(dc(a))||b.id-a.id);
   const inc=tx.filter(t=>t.type==='in').reduce((s,t)=>s+t.amount,0);
   const exp=tx.filter(t=>t.type==='out').reduce((s,t)=>s+t.amount,0);
   const cm0=window.compReady?openCm():0,rcv=window.compReady?recvOf(m):0,fatOpen=window.compReady?fatOcc(m).filter(x=>x.st==='a').reduce((a,x)=>a+x.v,0):0,expCash=Math.max(0,exp-fatOpen),bal=inc-expCash-cm0+rcv;
   $('lbl').textContent=bal<0?'Faltou no mês':'Sobrou no mês';
   $('bal').textContent=fmt(Math.abs(bal));$('bal').className='big'+(bal<0?' neg':'');
-  $('inc').textContent=fmt(inc);$('exp').textContent=fmt(expCash);$('rcv').textContent=fmt(rcv);
+  // Caixinhas têm quadro próprio: o que foi guardado/retirado no mês sai de Despesas/Receitas só na exibição (o Sobrou continua descontando tudo, `bal` acima)
+  const gDep=tx.filter(t=>t.type==='out'&&t.cat==='Caixinhas').reduce((s,t)=>s+t.amount,0),gRet=tx.filter(t=>t.type==='in'&&t.cat==='Caixinhas').reduce((s,t)=>s+t.amount,0),gNet=Math.round((gDep-gRet)*100)/100;
+  $('inc').textContent=fmt(inc-gRet);$('exp').textContent=fmt(Math.max(0,exp-gDep-fatOpen));$('rcv').textContent=fmt(rcv);
+  $('cxbxw').hidden=!(S.cx.length||gDep||gRet);$('cxv').textContent=(gNet<0?'−':'')+fmt(Math.abs(gNet));$('cxg').textContent=fmt(gDep);$('cxr').textContent=fmt(gRet);
 
   const by={};tx.filter(t=>t.type==='out').forEach(t=>by[t.cat]=(by[t.cat]||0)+t.amount);
 
-  $('list').innerHTML=tx.length?tx.map(t=>`<li data-ed="${t.id}" style="cursor:pointer"><div><div>${esc(t.desc)}</div><small>${esc(t.cat)}${payLabel(t)?', '+payLabel(t):''}, ${t.date.split('-').reverse().join('/')}${pdNote(t)}</small>${t.res?`<small>Pago ${fmt(t.gross)}, ressarcido ${fmt(t.gross-t.amount)}</small>`:''}</div><b class="${t.type}">${t.type==='out'?'−':'+'}${fmt(t.amount)}</b><div class="acts">${t.type==='out'&&!t.cx?`<button data-rs="${t.id}" aria-label="Registrar ressarcimento de ${esc(t.desc)}">Ressarcimento</button>`:''}<button type="button" class="trash" data-id="${t.id}" data-sid="${t.sid||''}" aria-label="Excluir ${esc(t.desc)}" title="Excluir">${TRASH}</button></div></li>`).join(''):'<li class="empty">Nenhum lançamento neste mês. Adicione o primeiro acima.</li>';
+  $('lsrt').innerHTML='Ordenar: <button type="button" data-ls="v" aria-pressed="'+(lsort==='v')+'">Valor</button><button type="button" data-ls="d" aria-pressed="'+(lsort==='d')+'">Data</button>';
+  $('list').innerHTML=tx.length?tx.map(t=>`<li data-ed="${t.id}" style="cursor:pointer"><div><div>${esc(t.desc)}</div><small>${esc(t.cat)}${payLabel(t)?', '+payLabel(t):''}, ${dc(t).split('-').reverse().join('/')}${t.pd?', fatura vence '+t.date.slice(8,10)+'/'+t.date.slice(5,7):''}${t.prev?', prevista (ainda não veio do banco)':''}</small>${t.res?`<small>Pago ${fmt(t.gross)}, ressarcido ${fmt(t.gross-t.amount)}</small>`:''}</div><b class="${t.type}">${t.type==='out'?'−':'+'}${fmt(t.amount)}</b><div class="acts">${t.type==='out'&&!t.cx?`<button data-rs="${t.id}" aria-label="Registrar ressarcimento de ${esc(t.desc)}">Ressarcimento</button>`:''}<button type="button" class="trash" data-id="${t.id}" data-sid="${t.sid||''}" aria-label="Excluir ${esc(t.desc)}" title="Excluir">${TRASH}</button></div></li>`).join(''):'<li class="empty">Nenhum lançamento neste mês. Adicione o primeiro acima.</li>';
 
   const eff=c=>sbm(c,m);
   const cs=[...CATS.out,...Object.keys(by).filter(c=>!CATS.out.includes(c)&&c!=='Caixinhas')];
@@ -937,6 +952,7 @@ const addTx=()=>{
 };
 $('add').addEventListener('click',addTx);
 $('f').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.type!=='radio'){e.preventDefault();addTx()}});
+$('lsrt').addEventListener('click',e=>{const b=e.target.closest('[data-ls]');if(b){lsort=b.dataset.ls;render()}});
 $('list').addEventListener('click',e=>{
   const rs0=e.target.closest('[data-rs]');if(rs0){openRes(rs0.dataset.rs);return}
   const bt=e.target.closest('button.trash');if(!bt){return}
@@ -1715,6 +1731,7 @@ $('icats').addEventListener('click',e=>{
   const sb=e.target.closest('[data-sort]');if(sb){dsort=sb.dataset.sort;render();return}
   const d=e.target.closest('[data-i]');if(d&&!e.target.closest('.dt')){openIn=openIn===d.dataset.i?null:d.dataset.i;render()}
 });
+{const gc=()=>document.querySelector('nav [data-t=cxs]').click(),cb=$('cxbx');cb.addEventListener('click',gc);cb.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();gc()}})}
 document.querySelectorAll('.tape [data-go]').forEach(x=>{
   const go=()=>{document.querySelector('nav [data-t=res]').click();const t=$(x.dataset.go);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})};
   x.addEventListener('click',go);x.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}});
