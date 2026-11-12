@@ -881,11 +881,11 @@ function render(){
   const capLi=(gy||gp)?`<li class="bi nb"><div class="bh"><span class="bem" aria-hidden="true">${EMO_CX}</span><span class="bnm">Guardado em caixinhas</span><b class="bsd">${fmt(gy)}</b></div><small class="bsub">${gp?'Planejado '+fmt(gp):'Veja na aba Caixinhas'}</small></li>`:'';
   $('cats').className=editAll?'edmode':'';renderOced();
   $('cats').innerHTML=[...cs].sort((a,b)=>(by[b]||0)-(by[a]||0)).map(c=>{
-    const sp=by[c]||0,lim=eff(c),over=lim>0&&sp>lim+0.005,p=lim?Math.min(100,sp/lim*100):0,cl=lim?(over?'over':sp/lim>=.8?'warn':''):'nb'+(sp?'':' z');
+    const sp=by[c]||0,lim=eff(c),over=lim>0&&sp>lim+0.005,p=lim?Math.min(100,sp/lim*100):0,cl=lim?(over?'over':sp/lim>=.7?'warn':''):'nb'+(sp?'':' z');
     const ed=editAll,open=!ed&&openCat===c,det=open?detail(c):'',dr=ed?(odraft[c]||(odraft[c]={n:c,e:(S.emo&&S.emo[c])||'',v:num(lim)})):null;
     const seg=!lim?`<div class="ba" style="flex:1">${fmt(sp)}</div>`
-      :over?`<div class="ba" style="flex:1">${fmt(sp)}</div>`
-      :`<div class="ba${sp?'':' e'}" style="flex:0 0 clamp(70px,${p.toFixed(1)}%,calc(100% - 80px))">${fmt(sp)}</div><div class="bd">${Math.abs(lim-sp)<0.005?nr(0):nr(lim-sp)}</div>`;
+      :(over||sp>=lim-0.005)?`<div class="ba" style="flex:1">${fmt(sp)}</div>`   // estourou ou usou 100%: barra cheia, sem o trecho tracejado
+      :`<div class="ba${sp?'':' e'}" style="flex:0 0 clamp(70px,${p.toFixed(1)}%,calc(100% - 80px))">${fmt(sp)}</div><div class="bd">${nr(lim-sp)}</div>`;
     const eb=ed?`<span class="bem"><input data-de="${esc(c)}" value="${esc(dr.e)}" maxlength="16" placeholder="${EMO_DEF}" aria-label="Emoji de ${esc(c)}"></span>`:`<span class="bem" aria-hidden="true">${emoOf(c)}</span>`;
     const nm=ed?`<input class="bname" data-dn="${esc(c)}" value="${esc(dr.n)}" maxlength="30" aria-label="Nome do orçamento ${esc(c)}">`:`<button type="button" class="cn" data-d="${esc(c)}" aria-expanded="${open}">${esc(c)} <span aria-hidden="true">${open?'▾':'▸'}</span></button>`;
     const bo=ed?`<span class="bo"><input data-dv="${esc(c)}" inputmode="numeric" enterkeyhint="done" value="${esc(dr.v)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}"></span>`
