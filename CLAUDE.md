@@ -3,26 +3,31 @@
 @MEMORIA.md
 @CONTEXTO.md
 
-A memória (CLAUDE.md, MEMORIA.md, CONTEXTO.md) vive na raiz do repositório do GitHub para que o agente consiga trabalhar também pelo celular. A versão da main é a referência.
+A memória (CLAUDE.md, MEMORIA.md, CONTEXTO.md) vive na raiz do repositório; a main do GitHub é a referência (assim o agente também trabalha pelo celular).
 
-## Passo 0: sincronizar a memória (antes de qualquer outra coisa)
-Os arquivos importados acima foram lidos na abertura da sessão e podem estar desatualizados. Antes de executar o pedido:
-1. `git fetch origin main`
-2. `git status -sb` e `git diff HEAD origin/main --stat -- CLAUDE.md MEMORIA.md CONTEXTO.md`
-3. Se a main do GitHub tem commits novos: `git pull --ff-only origin main` e depois RELEIA `MEMORIA.md` e `CONTEXTO.md` do disco. Siga a versão relida, não a do início da sessão.
-4. Se há alterações locais não commitadas nesses arquivos, ou o pull não é fast-forward (histórico divergiu): PARE. Mostre o que difere e pergunte qual versão vale. Não sobrescreva nada.
-5. Se o GitHub estiver inacessível: avise que não foi possível conferir e siga com a cópia local, sinalizando isso no resumo final.
-6. Se os arquivos de memória ainda não estiverem no repositório (migração em andamento): avise e proponha commitá-los, junto com o `.vercelignore` que impede a Vercel de publicar CLAUDE.md, MEMORIA.md e CONTEXTO.md.
-Só depois do passo 0 comece a tarefa.
+## Antes de tudo
+Rode `sh tools/sync-memoria.sh` (uma chamada) e siga o resultado:
+- `OK`: siga com o pedido.
+- `ATUALIZADO`: releia MEMORIA.md e CONTEXTO.md do disco (os importados acima ficaram velhos).
+- `PARAR`: mostre o que difere e pergunte qual versão vale. Não sobrescreva nada.
+- `SEM_GITHUB`: avise e siga com a cópia local, sinalizando isso no resumo final.
+Se os arquivos de memória não estiverem no repositório: avise e proponha commitá-los junto com o `.vercelignore`.
 
-## Fluxo em toda tarefa
-1. A raiz deste repositório é o próprio app: `index.html`, `sw.js`, `vercel.json`, `api/`, `lib/`, `tools/`. Trabalhe só dentro do repositório.
+## Economia (leia antes de agir)
+- `index.html` é grande (arquivo único): nunca leia inteiro. Ache a função com `grep -n "function nome" index.html` (nomes no mapa do CONTEXTO.md) e leia só o trecho.
+- Não releia o que acabou de editar nem rode comandos para "conferir" o que a ferramenta já confirmou.
+- Pergunta de diagnóstico ("por que…?"): leia o código, responda e pare. Só edite quando pedirem a mudança.
+- Teste de tela: `node tools/teste-chrome.js cenario.js` (uso no cabeçalho do script); não monte navegador do zero.
+
+## Fluxo
+1. A raiz é o app: `index.html`, `sw.js`, `vercel.json`, `api/`, `lib/`, `tools/`. Trabalhe só no repositório.
 2. Mudança visual ou de funcionalidade: descreva ou mostre um mockup e ESPERE aprovação antes de editar.
-3. Depois de editar, verifique antes de dizer que terminou:
-   - rode `tools/checar-cores.sh`;
-   - confira que o `index.html` não tem erro de sintaxe JS (extraia o `<script>` e rode `node --check`);
-   - revise o fluxo mexido pensando em dados completos (cartões, recorrentes, pagos, parcelas), não só dados mínimos.
-4. NUNCA faça `git push` sem o usuário autorizar nesta conversa (a Vercel publica a main sozinha). Sem criar branches: trabalhar direto na main.
-5. Ao final, atualize a memória para ela melhorar: `CONTEXTO.md` (o que mudou, pendências novas, data e commit) e, se surgir regra fixa nova, `MEMORIA.md`. Mantenha os dois curtos: resuma histórico antigo em vez de acumular. Os arquivos de memória sobem no mesmo commit/push da mudança, para o celular e o PC partirem do mesmo estado.
-6. Nunca escreva segredos (chaves, tokens, conteúdo de variáveis de ambiente) em arquivo do repositório. Eles ficam só nas variáveis da Vercel.
-7. Resposta final: resumo curto do que mudou e por quê (o usuário está aprendendo), e a oferta de subir na main.
+3. Depois de editar: `sh tools/verificar.sh` (sintaxe JS + cores fixas) e revise o fluxo mexido com dados completos (cartões, recorrentes, pagos, parcelas), não só dados mínimos.
+4. NUNCA `git push` sem o usuário autorizar nesta conversa (a Vercel publica a main sozinha). Sem branches: direto na main.
+5. Memória, no MESMO commit da mudança:
+   - CONTEXTO.md: uma linha nova em "Histórico" (data + o que mudou); uma linha em "Armadilhas" só se houver pegadinha que o código não mostra; tire de "Pendências" o que foi resolvido.
+   - MEMORIA.md: só se surgir regra fixa nova.
+   - NUNCA escreva status de publicação ("ainda sem subir", "subiu no…") nem hash de commit: quem diz o que subiu é o `git log`.
+   - Mantenha o CONTEXTO.md abaixo de ~6 KB: ao passar, funda o histórico antigo em uma linha por mês.
+6. Segredos (chaves, tokens, variáveis de ambiente) nunca vão para arquivo do repositório; ficam só na Vercel.
+7. Resposta final curta: o que mudou e por quê (o usuário está aprendendo) e a oferta de subir na main.
