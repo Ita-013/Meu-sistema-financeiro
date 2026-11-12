@@ -3,6 +3,7 @@
     { "path": "/api/daily", "schedule": "0 12 * * *" }
   ],
   "functions": {
-    "api/daily.js": { "maxDuration": 60 }
+    "api/daily.js": { "maxDuration": 60 },
+    "api/pluggy.js": { "maxDuration": 60 }
   }
 }

@@ -1,5 +1,5 @@
 # Meu Caixa — MEMÓRIA (regras fixas)
-Atualizado em 11/11/2026. Espelha a memória do Claude e serve para colar nas instruções do projeto. Histórico e detalhes técnicos ficam no CONTEXTO.md.
+Atualizado em 12/11/2026. Espelha a memória do Claude e serve para colar nas instruções do projeto. Histórico e detalhes técnicos ficam no CONTEXTO.md.
 
 ## Como o Claude deve trabalhar comigo
 - Respostas diretas e técnicas; explicar o porquê das decisões (estou aprendendo sistemas e análise de dados).
@@ -35,3 +35,7 @@ Atualizado em 11/11/2026. Espelha a memória do Claude e serve para colar nas in
 
 ## Dados por conta
 - Tudo que o app guarda no navegador (localStorage) e que vem de uma conta (Open Finance, push, etc.) deve levar o uid da conta ou ser apagado ao sair. Nunca mostrar dado de uma conta em outra no mesmo aparelho. Testar com duas contas no mesmo navegador.
+
+## Acesso e segurança
+- O cadastro público é desligado: contas novas só por convite do administrador (cartão "Convidar pessoa" na aba ⚙, `api/invite.js`, UID do admin em `ADMIN_UID` na Vercel). Não recolocar "Criar conta" no app.
+- Regras do Firestore: cada pessoa só lê e grava `users/{uid}` com o próprio uid; nenhuma outra coleção é aberta ao cliente.

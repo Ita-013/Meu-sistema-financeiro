@@ -8,6 +8,7 @@
 // Opcionais (só para o dono usar o próprio Pluggy sem conectar pelo app):
 //   PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, ALLOWED_EMAIL, PLUGGY_ITEM_IDS
 const crypto = require('crypto');
+const { refresh } = require('../lib/bank');   // pede ao Pluggy que atualize os bancos (o mesmo passo do push das 9h)
 const P = 'https://api.pluggy.ai';
 const keys = new Map();   // apiKey do Pluggy em cache (2h)
 const hits = new Map();   // limite de uso por usuário
@@ -117,7 +118,11 @@ module.exports = async (req, res) => {
     if (!items.length) return res.status(400).json({ error: 'noitems' });
     items = [...new Set(items)].slice(0, 10);
 
+    // refresh manual (botão ⟳ do app): gasta cota do plano do Pluggy, então tem limite próprio
+    if (body.refresh === true && limited(user.uid, 'refresh', 3)) return res.status(429).json({ error: 'rate' });
     const key = await apiKey(creds);
+    // pede a atualização no banco e espera até 28 s (o limite da função é 60 s; ver vercel.json); depois lê normalmente
+    const refreshed = body.refresh === true ? await refresh(items, key, 28000) : null;
     const accounts = [], transactions = [], usedItems = [], errors = [], owners = [];
 
     for (const itemId of items) {
@@ -167,7 +172,7 @@ module.exports = async (req, res) => {
         errors.push({ itemId, detail: String(e.message || e).slice(0, 120) });
       }
     }
-    res.status(200).json({ accounts, transactions, items: usedItems, errors, me: [...new Set(owners)], from, at: Date.now() });
+    res.status(200).json({ accounts, transactions, items: usedItems, errors, me: [...new Set(owners)], from, at: Date.now(), refresh: refreshed });
   } catch (e) {
     if (e && e.auth) return res.status(401).json({ error: 'badcreds' });
     res.status(502).json({ error: 'pluggy', detail: String(e.message || e).slice(0, 200) });

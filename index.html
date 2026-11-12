@@ -205,6 +205,9 @@ small{color:var(--mu);font-size:.82rem}
 #rc-flt button:disabled{opacity:.45}
 .sm{min-height:40px;padding:0 12px;border:1px solid var(--ln);border-radius:10px;background:var(--sf2);color:var(--ink);font-weight:700}
 .sm:disabled{opacity:.4}
+.rf{width:40px;padding:0;flex:none;display:flex;align-items:center;justify-content:center}
+.rf.spin svg{animation:pgspin 1s linear infinite}
+@keyframes pgspin{to{transform:rotate(360deg)}}
 #cats li.nb .bar i{background:var(--mu)}
 #cats li.z{opacity:.55}
 button.cn{background:none;border:0;padding:6px 0;font:inherit;font-weight:600;color:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:36px}
@@ -418,11 +421,12 @@ body.dragging{-webkit-user-select:none;user-select:none}
   <div class="mbox">
     <h3 id="aut">Entrar no Meu caixa</h3>
     <p class="mi">Entre com seu e-mail para abrir e sincronizar seus dados.</p>
-    <input id="aue" type="email" autocomplete="username" placeholder="E-mail" aria-label="E-mail">
-    <input id="aup" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha" style="margin-top:8px">
+    <div class="etf"><label class="fl" for="aue"><small>E-mail</small></label><input id="aue" type="email" autocomplete="username" placeholder="nome@exemplo.com"></div>
+    <div class="etf" style="margin-top:8px"><label class="fl" for="aup"><small>Senha</small></label><input id="aup" type="password" autocomplete="current-password"></div>
     <p id="aum" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
     <button class="go" id="aub" type="button">Entrar</button>
-    <div class="bk"><button id="auc" type="button">Criar conta</button><button id="aur" type="button">Esqueci a senha</button></div>
+    <div class="bk"><button class="full" id="aur" type="button">Esqueci a senha</button></div>
+    <small style="display:block;margin-top:10px;text-align:center;color:var(--mu)">Acesso somente por convite. Peça um convite a quem administra o sistema.</small>
   </div>
 </div>
 <div class="mdl" id="cpm" hidden><div class="mbox"><div class="mhd"><h3 id="cmt">Novo compromisso</h3><button id="cdel" type="button" hidden></button></div>
@@ -578,7 +582,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 <section id="rec" role="tabpanel" hidden>
   <div class="card" id="pgc">
     <h2>Open Finance<button class="inf" type="button" aria-label="Ajuda" data-tip="As movimentações do banco e dos cartões chegam sozinhas ao abrir o sistema. Aqui embaixo você só escolhe categoria e forma de pagamento.">i</button></h2>
-    <small id="pgs"></small>
+    <div class="rw"><small id="pgs"></small><button class="sm rf" id="pgrf" type="button" aria-label="Atualizar no banco e consultar agora" title="Atualizar no banco e consultar agora"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></button></div>
     <div id="pgmap"></div>
     <div id="pgbk"></div>
     <details class="adv" id="pgcd"><summary>Conectar meu Pluggy</summary>
@@ -669,6 +673,13 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <p id="nfs" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem;color:var(--mu)"></p>
     <small id="nfd" style="display:block;margin-top:6px"></small>
     <small id="nfr" style="display:block;margin-top:6px"></small>
+  </div>
+  <div class="card" id="ivcard" hidden>
+    <h2>Convidar pessoa</h2>
+    <small style="display:block;margin-bottom:10px;color:var(--mu)">A pessoa recebe um e-mail para criar a própria senha. Só você vê este cartão.</small>
+    <div class="etf"><label class="fl" for="ive"><small>E-mail da pessoa</small></label><input id="ive" type="email" autocomplete="off" placeholder="pessoa@exemplo.com"></div>
+    <p id="ivm" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem;color:var(--mu)"></p>
+    <button class="go" id="ivb" type="button" style="margin-top:6px">Enviar convite</button>
   </div>
   <div class="card" id="backup">
     <h2>Backup dos dados<button class="inf" type="button" aria-label="Ajuda" data-tip="Seus dados ficam só neste aparelho. Baixe um backup de vez em quando e guarde o arquivo onde preferir.">i</button></h2>
@@ -2063,12 +2074,42 @@ async function doAuth(kind){
     if(kind==='reset'){await FB.reset(em);aumsg('Se esse e-mail tiver conta, enviamos um link para criar uma nova senha.',true);return}
     if(!pw){aumsg('Digite a senha.');return}
     aumsg('');
-    if(kind==='up')await FB.signUp(em,pw);else await FB.signIn(em,pw);
+    await FB.signIn(em,pw);
     $('aup').value='';
   }catch(e){aumsg(authErr(e))}
 }
+/* convite por e-mail: o cartão da aba ⚙ só aparece para o administrador (o servidor confere o UID; ver api/invite.js) */
+async function inviteApi(body){
+  const tk=await FB.token();
+  const r=await fetch(PGBASE+'/api/invite',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify(body)});
+  let d={};try{d=await r.json()}catch(e){}
+  return{ok:r.ok,st:r.status,d}}
+async function inviteInit(u){
+  const c=$('ivcard');if(!c)return;
+  c.hidden=true;$('ivm').textContent='';
+  if(!u)return;
+  try{const r=await inviteApi({action:'status'});if(r.ok&&r.d.admin&&cu&&cu.uid===u.uid)c.hidden=false}catch(e){}}
+const ivmsg=(t,ok)=>{$('ivm').textContent=t;$('ivm').style.color=ok?'var(--in)':'var(--out)'};
+let ivBusy=false;
+async function doInvite(){
+  if(ivBusy)return;
+  const em=$('ive').value.trim().toLowerCase();
+  if(!em){ivmsg('Digite o e-mail da pessoa.');return}
+  ivBusy=true;ivmsg('Enviando…');
+  try{
+    const r=await inviteApi({action:'invite',email:em}),d=r.d||{};
+    if(r.ok){$('ive').value='';ivmsg(d.existed?'Esse e-mail já tem conta. Reenviamos o link para criar uma nova senha.':'Convite enviado para '+em+'. A pessoa recebe um e-mail para criar a senha.',true)}
+    else if(r.st===400)ivmsg('E-mail inválido.');
+    else if(r.st===403)ivmsg('Só quem administra o sistema pode convidar.');
+    else if(r.st===429)ivmsg('Muitos convites seguidos. Aguarde alguns minutos.');
+    else if(d.error==='mail')ivmsg('Usuário criado, mas o e-mail não saiu'+(d.detail?' ('+d.detail+')':'')+'. Envie o convite de novo para reenviar.');
+    else if(d.error==='create')ivmsg('Não consegui criar o usuário'+(d.detail?' ('+d.detail+')':'')+'.');
+    else ivmsg('Não consegui enviar o convite. Tente de novo.');
+  }catch(e){ivmsg('Sem conexão com a internet.')}
+  ivBusy=false}
+$('ivb').addEventListener('click',doInvite);
+$('ive').addEventListener('keydown',e=>{if(e.key==='Enter')doInvite()});
 $('aub').addEventListener('click',()=>doAuth('in'));
-$('auc').addEventListener('click',()=>doAuth('up'));
 $('aur').addEventListener('click',()=>doAuth('reset'));
 $('aup').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth('in')});
 $('au-out').addEventListener('click',async()=>{
@@ -2081,7 +2122,7 @@ $('au-out').addEventListener('click',async()=>{
 });
 document.addEventListener('visibilitychange',()=>{if(!cu)return;if(document.hidden){if(S.sh!==undefined&&isDirty()){clearTimeout(pushT);flush()}}else if(Date.now()-lastPull>20000)pull()});
 addEventListener('online',()=>{if(cu){if(S.sh!==undefined&&isDirty())flush();else pull()}});
-function startCloud(){FB.onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();checkRosa();if(u){await pull();if(window.pgAuto)pgAuto();if(typeof pgShow==='function')pgShow();if(window.nfStatus)nfStatus()}})}
+function startCloud(){FB.onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();checkRosa();inviteInit(u);if(u){await pull();if(window.pgAuto)pgAuto();if(typeof pgShow==='function')pgShow();if(window.nfStatus)nfStatus()}})}
 if(window.FB)startCloud();else addEventListener('fb-ready',startCloud,{once:true});
 updCloud();
 // ----- data da última alteração -----
@@ -2339,15 +2380,29 @@ function pgErr(st,d){
     :st===401?'Sua sessão expirou. Saia e entre de novo.'
     :'O Pluggy não respondeu agora'+(d&&d.detail?' ('+d.detail+')':'')+'.';
 }
-async function pgSync(manual){
+/* resumo do refresh pedido ao banco (botão ⟳): quem o Pluggy recusou, quem pede ação sua e quem ainda está atualizando */
+function pgRefNote(d){
+  const R=d.refresh||{},nm=id=>{const i=(S.pgItems||[]).find(y=>y.id===id);return (i&&i.name)||id.slice(0,8)};
+  const bad=[],ask=[],busy=[];
+  Object.keys(R).forEach(id=>{const x=R[id]||{};
+    if(x.err)bad.push(nm(id));
+    else if(/^(LOGIN_ERROR|OUTDATED|WAITING_USER_INPUT|WAITING_USER_ACTION)$/.test(x.st))ask.push(nm(id));
+    else if(/^(UPDATING|LOGIN_IN_PROGRESS|MERGING)$/.test(x.st))busy.push(nm(id))});
+  const t=[];
+  if(bad.length)t.push('O Pluggy não aceitou atualizar '+bad.join(', ')+' (plano ou cota); li o que ele já tem.');
+  if(ask.length)t.push(ask.join(', ')+' pede ação sua no Pluggy.');
+  if(busy.length)t.push(busy.join(', ')+' ainda está atualizando; toque de novo em alguns minutos.');
+  return{t:t.join(' '),bad:!!(bad.length||ask.length)}}
+async function pgSync(manual,force){
   if(pgBusy)return;
   if(!window.FB||!cu){if(manual)pgMsg('Entre na sua conta para consultar o banco.',true);return}
   const st=pgLoad(),from=$('pgfrom').value||st.from||isoD(new Date(new Date().getFullYear(),new Date().getMonth(),1));
-  pgBusy=true;pgMsg('Consultando o banco...');
+  pgBusy=true;pgMsg(force?'Pedindo ao banco para atualizar... pode levar até 30 segundos.':'Consultando o banco...');
+  if(force)$('pgrf').classList.add('spin');
   try{
     const tk=await FB.token();
     let r,d=null;
-    try{r=await fetch(PGBASE+'/api/pluggy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify({from,items:S.pgItems?S.pgItems.map(i=>i.id):undefined,cred:S.pgCred||undefined})});d=await r.json()}catch(e){if(!r)throw new Error('net')}
+    try{r=await fetch(PGBASE+'/api/pluggy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify({from,items:S.pgItems?S.pgItems.map(i=>i.id):undefined,cred:S.pgCred||undefined,refresh:force?true:undefined})});d=await r.json()}catch(e){if(!r)throw new Error('net')}
     if(!r.ok||!d){
       if(d&&d.error==='noitems'){if(!S.pgItems){S.pgItems=[];save()}pgShow();throw new Error('Nenhum banco cadastrado. Abra "Adicionar outro banco" e cole o itemId da conexão.')}
       if(d&&d.error==='nocred'){$('pgcd').open=true;throw new Error('Conecte o seu Pluggy em "Conectar meu Pluggy" para puxar as movimentações.')}
@@ -2366,13 +2421,18 @@ async function pgSync(manual){
     pgMsg(res.add?`${res.add} movimentação(ões) nova(s)${res.dups?', '+res.dups+' parece(m) já lançada(s)':''}${res.auto?', '+res.auto+' interna(s) ignorada(s)':''}.`:'Nada novo por enquanto.');
     if(d.errors&&d.errors.length){const nm=d.errors.map(x=>{const i=(S.pgItems||[]).find(y=>y.id===x.itemId);return (i&&i.name)||x.itemId.slice(0,8)});pgMsg('Não consegui ler: '+nm.join(', ')+'. Confira o itemId ou remova esse banco.',true)}
     else if(res.nomap)pgMsg('Escolha acima o cartão de cada conta do banco para puxar as compras do cartão.',true);
+    if(force){const rn=pgRefNote(d);if(rn.t){const el=$('pgm');el.textContent+=' '+rn.t;if(rn.bad)el.style.color='var(--out)'}}
   }catch(e){pgMsg(e&&e.message==='net'||/Failed to fetch|NetworkError/.test(String(e&&e.message))?'Sem conexão para consultar o banco agora.':(e&&e.message)||'Não consegui consultar o banco.',true)}
-  pgBusy=false;
+  pgBusy=false;$('pgrf').classList.remove('spin');
 }
 window.pgAuto=function(){
   if(!cu||!(S.pgCred||(S.pgItems&&S.pgItems.length))||Date.now()-pgLastTry<6e5)return;
   const l=pgLoad().last;if(l&&isoD(new Date(l))===today())return; // já consultou hoje
   pgLastTry=Date.now();window.pgPending=pgSync(false).finally(()=>{if(window.nfCheck)nfCheck()})};
+$('pgrf').addEventListener('click',()=>{
+  if(!cu){pgMsg('Entre na sua conta para consultar o banco.',true);return}
+  if(!(S.pgCred||(S.pgItems&&S.pgItems.length))){$('pgcd').open=true;pgMsg('Conecte o seu Pluggy para poder atualizar.',true);return}
+  pgLastTry=Date.now();pgSync(true,true)});
 $('pgfrom').addEventListener('change',()=>{const st=pgLoad();st.from=$('pgfrom').value||st.from;pgSaveSt(st);if(cu&&(S.pgCred||(S.pgItems&&S.pgItems.length))){pgLastTry=Date.now();pgSync(true)}});
 $('pgmap').addEventListener('change',e=>{
   const id=e.target.dataset.pgacc;if(!id||!e.target.value)return;
@@ -2572,11 +2632,11 @@ leBase=leState();leReady=true;showLe();
 </script>
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import{getAuth,onAuthStateChanged,signInWithEmailAndPassword,sendPasswordResetEmail,signOut}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import{getFirestore,doc,getDoc,setDoc,deleteDoc}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyCyL7rDgS58XejYjJ_vEdA97z72n4GJoWI",authDomain:"sistema-financeiro-59729.firebaseapp.com",projectId:"sistema-financeiro-59729",storageBucket:"sistema-financeiro-59729.firebasestorage.app",messagingSenderId:"701039353095",appId:"1:701039353095:web:865803023ae3fc9d0879a2"});
 const auth=getAuth(app),db=getFirestore(app),ref=u=>doc(db,"users",u);
-window.FB={onAuthStateChanged:f=>onAuthStateChanged(auth,f),signIn:(e,p)=>signInWithEmailAndPassword(auth,e,p),signUp:(e,p)=>createUserWithEmailAndPassword(auth,e,p),reset:e=>sendPasswordResetEmail(auth,e),signOut:()=>signOut(auth),token:()=>auth.currentUser?auth.currentUser.getIdToken():Promise.resolve(null),get:u=>getDoc(ref(u)),set:(u,d)=>setDoc(ref(u),d),del:u=>deleteDoc(ref(u)),
+window.FB={onAuthStateChanged:f=>onAuthStateChanged(auth,f),signIn:(e,p)=>signInWithEmailAndPassword(auth,e,p),reset:e=>sendPasswordResetEmail(auth,e),signOut:()=>signOut(auth),token:()=>auth.currentUser?auth.currentUser.getIdToken():Promise.resolve(null),get:u=>getDoc(ref(u)),set:(u,d)=>setDoc(ref(u),d),del:u=>deleteDoc(ref(u)),
 // push: carregado só quando pedido (import dinâmico), para uma falha nessa biblioteca nunca afetar o login nem os dados
 push:async(reg,key)=>{const m=await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js");if(!(await m.isSupported()))return null;return m.getToken(m.getMessaging(app),{vapidKey:key,serviceWorkerRegistration:reg})}};
 window.dispatchEvent(new Event("fb-ready"));
