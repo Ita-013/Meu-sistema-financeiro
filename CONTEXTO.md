@@ -18,7 +18,7 @@ Sistema de finanças pessoais em página web, arquivo único `index.html`. Uso p
 - Importar/exportar: `importText`, `parseCSV`/`parseOFX`. Nuvem/acesso: `startCloud`, `applyCloud`, `reinit`, `lockNow`, `wipeAll`. Tema: `setTema`/`applyTheme`.
 - Notificações: bloco "notificações do navegador" (`nf*`), `pushRegister`. Convite: `inviteInit`/`doInvite`.
 - Servidor: `api/pluggy.js` (consulta e refresh), `api/daily.js` (cron), `api/push.js`, `api/invite.js`; `lib/google.js` (Firestore, FCM, Auth), `lib/plan.js` (atrasadas/vencimentos, espelha o app), `lib/bank.js` (refresh do Pluggy e contagem). `sw.js` (service worker + push). `pluggy.js` na raiz é antigo (gera o erro inofensivo "module is not defined").
-- Ferramentas: `tools/sync-memoria.sh`, `tools/verificar.sh`, `tools/checar-cores.sh`, `tools/teste-chrome.js`.
+- Ferramentas: `tools/sync-memoria.sh`, `tools/verificar.sh`, `tools/checar-cores.sh`, `tools/teste-chrome.js`, `tools/regressao.js` (roteiro: TESTES.md). Backup: `bkData`; parcela excluída: `parDrop`; ajuda: botões `.inf`.
 
 ## Armadilhas
 - Cartão: `date` é o vencimento da fatura (define o mês do lançamento) e `pd` a data da compra. Lançamentos mostra e ordena por `pd||date`; o filtro do mês usa `date`. Fatura em aberto entra em A pagar, não em Despesas.
@@ -33,14 +33,16 @@ Sistema de finanças pessoais em página web, arquivo único `index.html`. Uso p
 - Variáveis da Vercel: `FIREBASE_SERVICE_ACCOUNT`, `CRON_SECRET`, `FIREBASE_API_KEY`, `PLUGGY_ENC_KEY`, `ADMIN_UID`. Notificações precisam ser ativadas no app (aba ⚙) em cada aparelho.
 
 ## Histórico
-- 11/11/2026: push diário às 9h; correções do sync do Pluggy; títulos acima dos campos; sugestão de compromisso e desfazer na conciliação; caixinhas redesenhadas; Pagar pelo Resumo; isolamento de dados por conta; máscara de valor e "Data do pagamento".
-- 12/11/2026: refresh do Pluggy no push e botão ⟳; aviso fixo de horário das notificações; cadastro só por convite; Lançamentos pela data da compra com ordenação Valor/Data; quadro Caixinhas no Resumo; barra cheia em 100% e verde até 70%; limpeza da memória e novos scripts em `tools/`; Orçado x realizado: "Gasto" e "fora do orçamento" sem caixinhas, e caixinhas do mês clicáveis (abrem a aba Caixinhas já expandida).
+- 11 e 12/11/2026: push diário às 9h com refresh do Pluggy e botão ⟳; títulos acima dos campos; compromisso sugerido e desfazer na conciliação; caixinhas redesenhadas; Pagar pelo Resumo; dados isolados por conta; máscara de valor; cadastro só por convite; Lançamentos pela data da compra; scripts em `tools/`.
+- 13/11/2026: revisão geral. Corrigidos: ids repetidos ao lançar em lote (`uid()`), parcela excluída pela lista sem ajustar a planilha, backup sem compromissos (texto) e sem faturas pagas, cabeçalho de Compromissos estourando a largura. Ícones (i) revisados e 7 novos. Criados TESTES.md e `tools/regressao.js`.
 
 ## Pendências
 - Confirmar o push real das 9h de 12/11 (aba ⚙, linha "Servidor": deve mostrar "Pluggy: x/y atualizado(s)").
 - Segurança: conferir as regras do Firestore (só `users/{uid}` com `request.auth.uid == uid`, o resto negado; `push/*` só pelo servidor) e apagar contas desconhecidas em Authentication e em Firestore > users. Opcional: restringir a API key do navegador por referrer (o servidor usa chave separada) e exigir senha mais forte.
+- Aguardando aprovação (visual): nova planilha de Orçamentos (protótipo de 13/11); título acima de `#pin1` e `#bk-txt` (R72); lixeira vermelha na planilha (R74); `confirm()` nativos, "Remover" banco e "Esquecer" regra fora do pop-up/lixeira padrão.
+- Decidir se o backup deve levar as pendências da conciliação (`rec`).
 - Trocar `#052E16` fixo em `.oks` e `.svd` por `var(--on-in)` (o `verificar.sh` avisa; muda o tema rosa: pedir aprovação).
 - Remover `pluggy.js` da raiz e a tag `<script src="pluggy.js">`.
 - Apagar no GitHub as branches antigas já mescladas (claude/push-diario, claude/titulos-compromisso, claude/corrige-carregamento).
 - Transformar em app instalável (APK Android).
-- Ideia, só se mais gente usar: horário do push por usuário (vários crons diários `/api/daily?h=HH` e seletor na aba ⚙).
+- Ideia, se mais gente usar: horário do push por usuário (`/api/daily?h=HH`).

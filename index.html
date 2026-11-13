@@ -382,7 +382,8 @@ span.bem{cursor:default}
 .addl{margin-left:8px;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--in);background:transparent;color:var(--in);font-size:1.1rem;font-weight:800;line-height:1;padding:0;vertical-align:middle;cursor:pointer}
 .inf{position:relative;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--mu);background:transparent;color:var(--mu);font:700 .75rem var(--font-mono);margin-left:8px;padding:0;vertical-align:middle;cursor:pointer}
 .inf::after{content:'';position:absolute;inset:-11px}
-.tip{position:fixed;z-index:80;background:var(--sf2);color:var(--ink);border:1px solid var(--ln);padding:12px 14px;border-radius:12px;font-size:.88rem;line-height:1.45;box-shadow:0 10px 30px var(--sh-md)}
+.tape{position:relative}.tape .tinf{position:absolute;top:7px;right:9px;margin:0;width:20px;height:20px;font-size:.7rem;color:var(--tape-mu);border-color:var(--tape-mu)}
+.tip{position:fixed;z-index:80;white-space:pre-line;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;background:var(--sf2);color:var(--ink);border:1px solid var(--ln);padding:12px 14px;border-radius:12px;font-size:.88rem;line-height:1.45;box-shadow:0 10px 30px var(--sh-md)}
 .tip[hidden]{display:none}
 .chkrow{display:flex;align-items:center;gap:4px}
 .dl{max-height:290px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--mu) transparent;padding-right:3px}
@@ -499,6 +500,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 
 <section id="res" role="tabpanel">
   <section class="tape" id="tape" aria-live="polite">
+  <button class="inf tinf" type="button" aria-label="Ajuda" data-tip="Sobrou no mês = Receitas + A receber − Despesas − A pagar.&#10;A receber: o planejado de entradas (aba Orçamentos) que ainda não foi lançado.&#10;A pagar: compromissos em aberto, atrasados de meses anteriores e faturas de cartão ainda não pagas.&#10;O que você guarda em caixinha também sai daqui. Toque em cada valor para ver os detalhes.">i</button>
   <div class="thd"><div class="lbl" id="lbl">Sobrou no mês</div><div class="big" id="bal">R$ 0,00</div></div>
   <div class="tp2c">
     <div class="bx in"><div class="bt">Receitas</div><span class="bv" data-go="rcard" role="button" tabindex="0"><b id="inc"></b></span><div class="bs"><span>A receber</span><b id="rcvb" role="button" tabindex="0"><span id="rcv"></span></b></div></div>
@@ -508,7 +510,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <div class="bx cx" id="cxbx" role="button" tabindex="0" aria-label="Caixinhas: ver a aba Caixinhas"><div class="bt">Caixinhas</div><span class="bv" id="cxv"></span><div class="bs"><span>Guardado <i id="cxg"></i></span><span>Retirado <i id="cxr"></i></span></div></div>
   </div>
 </section>
-  <div class="card" id="vcard"><h2>Próximos vencimentos</h2><div id="vl"></div></div>
+  <div class="card" id="vcard"><h2>Próximos vencimentos<button class="inf" type="button" aria-label="Ajuda" data-tip="As 5 contas em aberto mais próximas do vencimento: compromissos e faturas de cartão. No mês atual, as atrasadas de meses anteriores aparecem primeiro.&#10;Pagar em um compromisso cria o lançamento e marca como pago. Pagar em uma fatura marca a fatura como paga, e ela passa a contar em Despesas.&#10;Toque na linha para editar. A lista completa fica em Lançamentos > Compromissos.">i</button></h2><div id="vl"></div></div>
   <div class="card" id="ocard">
     <h2>Orçado x realizado<button class="inf" type="button" aria-label="Ajuda" data-tipid="ocn">i</button><span class="oced" id="oced"></span></h2>
     <div class="top2" id="tp2"><div class="hd2"><div><div class="lab2">Resultado</div><small id="sdl"></small></div><b id="sd"></b></div><div class="rw2"><span>Gasto</span><b id="rt"></b></div><div class="rw2"><span>Orçado</span><b id="ot"></b></div></div>
@@ -521,7 +523,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <ul id="icats"></ul>
   </div>
   <div class="card" id="fcard">
-    <h2>Faturas dos cartões<button class="inf" type="button" aria-label="Ajuda" data-tip="Cada fatura reúne as compras feitas no cartão no mês escolhido. Elas também aparecem normalmente nas categorias do Resumo. Toque no nome do cartão para ver as compras da fatura.">i</button></h2>
+    <h2>Faturas dos cartões<button class="inf" type="button" aria-label="Ajuda" data-tip="Cada fatura reúne as compras que vencem no mês escolhido, pelo fechamento e vencimento do cartão.&#10;Enquanto a fatura está em aberto, o total fica no A pagar; ao marcar como paga, passa a contar em Despesas. As compras também aparecem nas categorias do orçado x realizado.&#10;Toque no nome do cartão para ver as compras, no ícone para trocar a cor e no lápis para editar nome, fechamento e vencimento.">i</button></h2>
     <div class="rw"><small>Total nos cartões</small><b id="ftot" class="out"></b></div>
     <ul id="fat" style="margin-top:12px"></ul>
   </div>
@@ -531,7 +533,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
   <div class="lsg" id="lseg" role="tablist"><button type="button" role="tab" id="lsa" aria-selected="true">Lançamentos</button><button type="button" role="tab" id="lsb" aria-selected="false">Compromissos</button></div>
   <div id="cpv" hidden></div>
   <div class="card" id="f">
-    <h2>Novo lançamento</h2>
+    <h2>Novo lançamento<button class="inf" type="button" aria-label="Ajuda" data-tip="Registra o que entrou ou saiu.&#10;No cartão, informe a data da compra: o sistema coloca o lançamento no mês em que a fatura vence, pelo fechamento e vencimento cadastrados no cartão.&#10;Para guardar dinheiro, escolha uma caixinha no fim da lista de categorias.&#10;A descrição que você usa fica na memória: da próxima vez, a conciliação já sugere a mesma categoria.">i</button></h2>
     <small class="fl">Tipo</small>
     <div class="seg" role="radiogroup" aria-label="Tipo">
       <label><input type="radio" name="tp" value="out" checked>Despesa</label>
@@ -556,7 +558,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
       <button id="cardedit" class="sm" type="button">Editar</button>
     </div>
     <div id="par" hidden>
-      <div class="chkrow"><label class="chk"><input type="checkbox" id="pcx">Compra parcelada</label><button class="inf" type="button" aria-label="Ajuda" data-tip="Informe o valor total da compra: ele é dividido pelo total de parcelas. A data do lançamento é a da parcela atual. Se você está na parcela 3 de 6, as parcelas 1 e 2 vão para os meses anteriores e as demais para os meses seguintes. Tudo também vai para a aba Orçamentos.">i</button></div>
+      <div class="chkrow"><label class="chk"><input type="checkbox" id="pcx">Compra parcelada</label><button class="inf" type="button" aria-label="Ajuda" data-tip="Informe o valor total da compra: ele é dividido pelo total de parcelas, e os centavos que sobram vão na última.&#10;A data é a da compra da parcela atual. Se você está na parcela 3 de 6, as parcelas 1 e 2 vão para os meses anteriores e as demais para os seguintes. Cada parcela entra na fatura do mês dela.&#10;A compra também cria uma linha &quot;Parcelas&quot; na aba Orçamentos.">i</button></div>
       <div class="g2" id="pcf" hidden>
         <div class="etf"><label class="fl" for="pk"><small>Parcela atual</small></label><input id="pk" inputmode="numeric" placeholder="Ex.: 1"></div>
         <div class="etf"><label class="fl" for="pn2"><small>Total de parcelas</small></label><input id="pn2" inputmode="numeric" placeholder="Ex.: 6"></div>
@@ -566,12 +568,12 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <p id="err" role="alert"></p>
     <button class="go" type="button" id="add">Adicionar lançamento</button>
   </div>
-  <div class="card"><h2>Lançamentos do mês</h2><div class="lsr" id="lsrt"></div><ul id="list"></ul></div>
+  <div class="card"><h2>Lançamentos do mês<button class="inf" type="button" aria-label="Ajuda" data-tip="Tudo o que foi lançado no mês escolhido no topo. Compras no cartão aparecem no mês em que a fatura vence, com a data da compra.&#10;Toque em um lançamento para editar. Ressarcimento registra o que outra pessoa devolveu: abate a despesa e não conta como receita.&#10;A lixeira exclui, sempre com confirmação.">i</button></h2><div class="lsr" id="lsrt"></div><ul id="list"></ul></div>
 </section>
 
 <section id="plan" role="tabpanel" hidden>
   <div class="card">
-    <div class="rw"><h2 style="margin:0">Orçamentos<button class="inf" type="button" aria-label="Ajuda" data-tip="Real é o que aconteceu, vindo dos seus lançamentos. Plan é o planejado: toque para editar. Ele é o mesmo &quot;Orçado&quot; do Resumo, e vale a última alteração feita em qualquer um dos dois. Ao preencher um mês vazio, o valor vale até dezembro; ao editar um valor já preenchido, muda só aquele mês. Toque no nome de uma linha para renomeá-la; o + cria uma nova. As linhas são as mesmas categorias dos lançamentos, e cada caixinha aparece em &quot;Investimentos&quot;. Valores arredondados na tela. &quot;Transformar real em planejado&quot; copia o que aconteceu (Real) para o Plan dos meses que já terminaram, para eles ficarem como realizados.">i</button></h2>
+    <div class="rw"><h2 style="margin:0">Orçamentos<button class="inf" type="button" aria-label="Ajuda" data-tip="Real é o que aconteceu, vindo dos seus lançamentos. Plan é o planejado: toque na célula para editar.&#10;O Plan é o mesmo &quot;Orçado&quot; do Resumo, e vale a última alteração feita em qualquer um dos dois. Ao preencher um mês vazio, o valor vale dali até dezembro; ao editar um mês já preenchido, muda só aquele mês.&#10;Linhas: são as mesmas categorias dos lançamentos. Toque no nome para renomear; o + cria uma nova; a lixeira exclui (só se não houver lançamentos). Segure o nome de um gasto e arraste, ou use ⇅, para mudar entre fixos e variáveis ou reordenar. Cada caixinha aparece em &quot;Investimentos&quot;.&#10;Os valores são arredondados na tela. &quot;Transformar real em planejado&quot; copia o Real para o Plan dos meses que já terminaram.">i</button></h2>
       <div class="yr"><button id="yp" type="button" aria-label="Ano anterior">‹</button><b id="yl"></b><button id="yn" type="button" aria-label="Próximo ano">›</button></div></div>
     <div class="sh" id="shw"><table id="sh"></table></div>
     <button class="sm" id="cvb" type="button" style="width:100%">Transformar real em planejado</button>
@@ -580,7 +582,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 
 <section id="cxs" role="tabpanel" hidden>
   <div class="card">
-    <h2>Minhas caixinhas<button class="inf" type="button" aria-label="Ajuda" data-tip="Cada caixinha é uma meta. Ao guardar, o valor sai do caixa do mês e entra em &quot;Guardado em caixinhas&quot;; ao retirar, volta ao caixa. Nada disso conta como despesa ou receita nas linhas do orçamento.">i</button><span class="oced" id="cxoced"></span></h2>
+    <h2>Minhas caixinhas<button class="inf" type="button" aria-label="Ajuda" data-tip="Cada caixinha é uma meta. Ao guardar, o valor sai do Sobrou do mês e aparece no quadro Caixinhas do Resumo; ao retirar, volta. Nada disso conta como despesa ou receita nas categorias.&#10;Toque em uma caixinha para guardar, retirar e ver o histórico. &quot;Editar&quot; muda emoji, nome e meta, e é onde fica a lixeira.&#10;O planejado de cada caixinha fica na aba Orçamentos, em &quot;Investimentos&quot;.">i</button><span class="oced" id="cxoced"></span></h2>
     <div class="top2"><div class="hd2"><div><div class="lab2">Guardado</div></div><b id="cxt" class="in"></b></div><div class="rw2"><span>Metas</span><b id="cxm"></b></div><div class="rw2"><span>Falta</span><b id="cxf"></b></div></div>
     <p id="cxmsg" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem"></p>
     <div id="cxl"></div>
@@ -592,7 +594,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 
 <section id="rec" role="tabpanel" hidden>
   <div class="card" id="pgc">
-    <h2>Open Finance<button class="inf" type="button" aria-label="Ajuda" data-tip="As movimentações do banco e dos cartões chegam sozinhas ao abrir o sistema. Aqui embaixo você só escolhe categoria e forma de pagamento.">i</button></h2>
+    <h2>Open Finance<button class="inf" type="button" aria-label="Ajuda" data-tip="As movimentações do banco e dos cartões chegam sozinhas na primeira vez que você abre o app no dia, e o servidor também consulta o banco antes do aviso das 9h.&#10;O botão ⟳ pede ao banco uma atualização na hora (até 3 vezes a cada 10 minutos; pode levar meio minuto).&#10;O app só lê os dados: nada é movimentado na sua conta. Depois, em Pendentes, você confirma categoria e forma de pagamento.">i</button></h2>
     <div class="rw"><small id="pgs"></small><button class="sm rf" id="pgrf" type="button" aria-label="Atualizar no banco e consultar agora" title="Atualizar no banco e consultar agora"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></button></div>
     <div id="pgmap"></div>
     <div id="pgbk"></div>
@@ -622,7 +624,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <p id="pgm" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem"></p>
   </div>
   <div class="card">
-    <h2>Importar movimentações<button class="inf" type="button" aria-label="Ajuda" data-tip="Exporte o extrato (OFX ou CSV) no app ou site do seu banco e escolha o arquivo aqui. Nada sai do seu aparelho.">i</button></h2>
+    <h2>Importar movimentações<button class="inf" type="button" aria-label="Ajuda" data-tip="Para bancos que não estão no Open Finance: exporte o extrato (OFX ou CSV) no app ou site do banco e escolha o arquivo aqui.&#10;O arquivo é lido no próprio aparelho e as movimentações entram em Pendentes. Importar o mesmo arquivo duas vezes não duplica.&#10;Para fatura de cartão, escolha &quot;Fatura do cartão&quot; e o cartão correspondente.">i</button></h2>
     <div class="opt" role="radiogroup" aria-label="Tipo de arquivo" style="margin-top:8px">
       <label><input type="radio" name="rk" value="conta" checked>Extrato da conta</label>
       <label><input type="radio" name="rk" value="fatura">Fatura do cartão</label>
@@ -640,7 +642,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <p id="rcm" role="status" style="margin:8px 0 0;min-height:1.2em;font-size:.9rem"></p>
   </div>
   <div class="card">
-    <div class="rw"><h2 id="rct" style="margin:0">Pendentes</h2><button id="rc-all" type="button" class="sm"></button></div>
+    <div class="rw"><h2 style="margin:0"><span id="rct">Pendentes</span><button class="inf" type="button" aria-label="Ajuda" data-tip="Movimentações que vieram do banco ou de um extrato e ainda não viraram lançamento. Confira categoria e forma de pagamento e toque em Lançar.&#10;&quot;Lançar sugeridas&quot; lança de uma vez as que já têm categoria sugerida. Ficam de fora, para você confirmar uma a uma: as que parecem já lançadas, as parcelas e as que batem com um compromisso em aberto.&#10;Ignorar tira da lista sem lançar; dá para trazer de volta em &quot;Mostrar ignoradas&quot;.">i</button></h2><button id="rc-all" type="button" class="sm"></button></div>
     <small id="rc-allnote" style="display:block;margin-top:4px"></small>
     <small id="rcs"></small>
     <div id="rc-flt" role="group" aria-label="Filtrar pendentes por origem" hidden></div>
@@ -660,7 +662,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
     </details>
   </div>
   <div class="card" id="seg">
-    <h2>Segurança</h2>
+    <h2>Segurança<button class="inf" type="button" aria-label="Ajuda" data-tip="A senha daqui é a trava deste aparelho: bloqueia a tela do app depois de 1 minuto fora dele. Ela é diferente da senha da sua conta (a do login) e vale só neste aparelho.&#10;&quot;Sair da conta&quot; tira os seus dados deste aparelho; eles continuam guardados na nuvem.">i</button></h2>
     <small id="cld" style="display:block;margin-bottom:6px"></small>
     <button class="sm" id="au-out" type="button" hidden style="width:100%;margin-bottom:12px">Sair da conta</button>
     <small id="pinm" style="display:block;margin-bottom:10px"></small>
@@ -673,7 +675,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <h2 style="margin-top:16px">Aparência</h2>
     <div class="themes" id="themes" role="group" aria-label="Tema do sistema"></div>
     <h2 style="margin-top:16px">Começar do zero</h2>
-    <small style="display:block;margin-bottom:8px">Apaga todos os lançamentos, orçamentos, cartões e categorias deste aparelho. Baixe um backup antes se quiser guardar algo.</small>
+    <small style="display:block;margin-bottom:8px">Apaga todos os lançamentos, orçamentos, cartões e categorias deste aparelho e, com a conta conectada, também da nuvem. Baixe um backup antes se quiser guardar algo.</small>
     <button class="sm" id="wipe" type="button" style="width:100%">Apagar todos os dados</button>
   </div>
   <div class="card" id="nfcard">
@@ -693,14 +695,14 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <button class="go" id="ivb" type="button" style="margin-top:6px">Enviar convite</button>
   </div>
   <div class="card" id="backup">
-    <h2>Backup dos dados<button class="inf" type="button" aria-label="Ajuda" data-tip="Seus dados ficam só neste aparelho. Baixe um backup de vez em quando e guarde o arquivo onde preferir.">i</button></h2>
+    <h2>Backup dos dados<button class="inf" type="button" aria-label="Ajuda" data-tip="Com a conta conectada, seus dados ficam guardados na nuvem e neste aparelho. O backup é uma cópia extra em arquivo, sob o seu controle.&#10;Ele guarda lançamentos, orçamentos, caixinhas, cartões, compromissos e faturas pagas. As pendências da conciliação e a conexão com o banco não entram.&#10;&quot;Juntar&quot; acrescenta só o que falta; &quot;Substituir tudo&quot; apaga o que há aqui antes de restaurar.">i</button></h2>
     <div class="bk">
       <button class="pri" id="bk-dl" type="button">Baixar backup</button>
       <label class="btn" for="bk-file">Restaurar backup</label>
       <input id="bk-file" type="file" class="sr">
     </div>
     <details class="adv"><summary>Se a restauração por arquivo não funcionar</summary>
-      <div class="chkrow"><small>Backup por texto</small><button class="inf" type="button" aria-label="Ajuda" data-tip="Toque em copiar, guarde o texto onde quiser e cole aqui depois para restaurar.">i</button></div>
+      <div class="chkrow"><small>Backup por texto</small><button class="inf" type="button" aria-label="Ajuda" data-tip="Mesmo conteúdo do arquivo de backup, em forma de texto. Toque em copiar, guarde o texto onde quiser (uma nota, um e-mail para você) e cole aqui depois para restaurar.">i</button></div>
       <div class="bk"><button id="bk-cp" type="button">Copiar texto do backup</button><button id="bk-txt-go" type="button">Restaurar do texto</button></div>
       <textarea id="bk-txt" rows="4" placeholder="Cole aqui o texto do backup" aria-label="Texto do backup"></textarea>
     </details>
@@ -879,6 +881,7 @@ function render(){
   else{$('sdl').textContent='maior gasto';$('sd').textContent=top?top[0]:'—';$('sd').style.color=''}
   $('tp2').className='top2'+(ob&&sd<0?' neg':'');
   $('ocn').textContent=!exp&&!ob?'Sem despesas neste mês. Registre uma em Lançamentos.':!ob?'Mostrando o que você gastou em cada categoria. Para acompanhar quanto sobra, defina um valor em "Orçado". Toque no nome de uma categoria para ver os lançamentos dela.':'O resultado considera só as categorias com orçamento'+(outside>0.005?' ('+fmt(outside)+' foram gastos em categorias sem orçamento)':'')+'. O orçado é o mesmo da aba Orçamentos: o que você digita aqui atualiza a planilha. Ao preencher um mês vazio, o valor vale dali até dezembro; ao editar um valor já preenchido, muda só aquele mês. Toque no nome de uma categoria para ver os lançamentos dela.';
+  if(ob)$('ocn').textContent+='\nBarra: verde até 70% do orçado, laranja de 70% a 100% e vermelha quando estoura; o trecho tracejado é o que ainda pode gastar.';
   if(S.cards.some(c=>c.cl&&c.dd))$('ocn').textContent+=' O realizado inclui as compras no cartão; no topo, a fatura só entra em Despesas depois de paga.';
   const gy=by['Caixinhas']||0,gp=S.sheet.filter(r=>r.cx&&S.cx.some(x=>x.id===r.cx)).reduce((a,r)=>a+(r.v[m]||0),0);
   const cxMes=S.cx.map(x=>{const mv=tx.filter(t=>t.cx===x.id);return mv.length?{x,v:Math.round(mv.reduce((a,t)=>a+(t.type==='out'?t.amount:-t.amount),0)*100)/100}:null}).filter(Boolean);   // líquido do mês (guardado − retirado) por caixinha
@@ -915,6 +918,9 @@ if(window.compReady)renderComp(ob,rl);
 }
 
 
+// parcela excluída sozinha: o valor dela sai da linha "Parcelas: ..." da planilha (linha vazia some)
+function parDrop(t){if(!t.sid)return;const r=S.sheet.find(x=>String(x.sid)===String(t.sid)),k=t.date.slice(0,7);
+  if(r&&r.v&&k in r.v){r.v[k]=Math.round((r.v[k]-t.amount)*100)/100;if(r.v[k]<=.004)delete r.v[k];if(!Object.keys(r.v).length)S.sheet=S.sheet.filter(x=>x!==r)}}
 const addTx=()=>{
   const v=parse($('v').value),er=$('err');er.style.color='';
   if(!(v>0)){er.textContent='Digite um valor maior que zero, por exemplo 25,90.';return}
@@ -949,7 +955,7 @@ const addTx=()=>{
     S.sheet.push(row);renderSheet();
     const lab=key=>MES[+key.slice(5,7)-1]+'/'+key.slice(0,4);
     note='Compra de '+fmt(amt)+' dividida em '+n+' parcelas de '+fmt(each)+', lançadas de '+lab(addM(bk,1-k))+' a '+lab(addM(bk,n-k))+'. A linha "Parcelas: '+base.slice(0,30)+'" foi para a aba Orçamentos.';
-  }else{const ntx={id:Date.now(),type:tp,amount:amt,desc,cat:c,date:eff,pay,card:cardId||undefined};if(ruled&&eff!==d){ntx.pd=d;note='Lançado na fatura que vence em '+brd(eff)+'.'}S.tx.push(ntx)}
+  }else{const ntx={id:uid(),type:tp,amount:amt,desc,cat:c,date:eff,pay,card:cardId||undefined};if(ruled&&eff!==d){ntx.pd=d;note='Lançado na fatura que vence em '+brd(eff)+'.'}S.tx.push(ntx)}
   if(cardId)S.lastCard=cardId;
   if(base!==c)learnRule(base,c,pay,cardId);
   save();m=eff.slice(0,7);$('m').value=m;$('v').value='';$('ds').value='';$('pk').value='';$('pn2').value='';$('pcx').checked=false;parUI();render();
@@ -966,7 +972,7 @@ $('list').addEventListener('click',e=>{
   if(!t)return;
   const delOne=()=>{
     if(t.cx){const x=S.cx.find(y=>y.id===t.cx);if(x)x.mv=x.mv.filter(v=>v.id!==t.cxm)}
-    S.tx=S.tx.filter(x=>String(x.id)!==id);save();render();renderCx();renderSheet();renderRec()};
+    parDrop(t);S.tx=S.tx.filter(x=>x!==t);save();render();renderCx();renderSheet();renderRec()};
   const n=sd?S.tx.filter(x=>String(x.sid)===sd).length:0;
   if(n>1)askDel('Excluir '+t.desc+'?','Esta compra é parcelada em '+n+'x.',[{t:'Só esta parcela',fn:delOne},{t:'Excluir as '+n+' parcelas',fn:()=>{S.tx=S.tx.filter(x=>String(x.sid)!==sd);S.sheet=S.sheet.filter(r=>String(r.sid)!==sd);save();render();renderSheet();renderRec();toast('Todas as parcelas foram excluídas.')}}]);
   else askDel('Excluir '+t.desc+'?','Essa ação não pode ser desfeita.',[{t:'Excluir',fn:delOne}]);
@@ -1012,9 +1018,10 @@ document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()
 function showBk(){const d=S.lastBackup,old=!d||(Date.now()-new Date(d+'T00:00:00').getTime())>7*864e5;$('bkl').textContent=(d?'Último backup baixado em '+d.split('-').reverse().join('/')+'.':'Você ainda não baixou nenhum backup.')+(old?' Baixe um novo para não perder seus dados.':'')}
 const msg=(t,bad)=>{$('bkm').textContent=t;$('bkm').style.color=bad?'var(--out)':'var(--in)'};
 
+// o que vai no backup (arquivo e texto usam o MESMO conteúdo). fp = faturas marcadas como pagas.
+const bkData=()=>({app:'meu-caixa',version:1,exportedAt:new Date().toISOString(),comp:S.comp,cfix:S.cfix,ord:S.ord,fp:S.fp||{},rules:S.rules||{},tx:S.tx,bud:S.bud,goal:S.goal,sheet:S.sheet,budm:S.budm,cx:S.cx,cats:S.cats,cards:S.cards,emo:S.emo});
 $('bk-dl').addEventListener('click',()=>{
-  const data={app:'meu-caixa',version:1,exportedAt:new Date().toISOString(),comp:S.comp,cfix:S.cfix,ord:S.ord,tx:S.tx,bud:S.bud,goal:S.goal,sheet:S.sheet,budm:S.budm,cx:S.cx,cats:S.cats,cards:S.cards,emo:S.emo};
-  const json=JSON.stringify(data,null,2),fname='meu-caixa-backup-'+today()+'.json';
+  const json=JSON.stringify(bkData(),null,2),fname='meu-caixa-backup-'+today()+'.json';
   if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){
     const plug=n=>{try{return (Capacitor.Plugins&&Capacitor.Plugins[n])||Capacitor.registerPlugin(n)}catch(e){return null}},FS=plug('Filesystem'),SH=plug('Share');
     if(FS&&SH){
@@ -1050,9 +1057,11 @@ function importText(txt){
   const cds=(Array.isArray(o.cards)?o.cards:[]).filter(c=>c&&typeof c.name==='string'&&c.name.trim()).map((c,i)=>({id:Number.isFinite(c.id)?c.id:Date.now()+i+7000,name:c.name.trim().slice(0,30),...(typeof c.pg==='string'&&c.pg?{pg:c.pg.slice(0,80)}:{}),...(typeof c.col==='string'&&/^#[0-9A-Fa-f]{6}$/.test(c.col)?{col:c.col.toUpperCase()}:{}),...(c.cl>=1&&c.cl<=31&&c.dd>=1&&c.dd<=31?{cl:c.cl|0,dd:c.dd|0}:{})}));
   const emoIn={};if(o.emo&&typeof o.emo==='object')Object.entries(o.emo).forEach(([k,v])=>{const e=emoClean(v);if(e&&k.length<=40)emoIn[k]=e});
   const replace=document.querySelector('input[name=bm]:checked').value==='replace';
+  const fpIn={};if(o.fp&&typeof o.fp==='object')Object.entries(o.fp).forEach(([k,v])=>{if(/^\d+\|\d{4}-\d{2}$/.test(k)&&v&&typeof v==='object')fpIn[k]={d:/^\d{4}-\d{2}-\d{2}$/.test(v.d)?v.d:today(),v:Number(v.v)||0}});
+  const rlIn={};if(o.rules&&typeof o.rules==='object')Object.entries(o.rules).forEach(([k,r])=>{if(k.length<=80&&r&&typeof r.cat==='string')rlIn[k]={cat:r.cat.slice(0,30),pay:PAYS.includes(r.pay)?r.pay:'',...(Number.isFinite(r.card)?{card:r.card}:{})}});
   let added,skipped=0;
   if(replace){
-    
+    S.fp=fpIn;S.rules=rlIn;
     S.emo=emoIn;S.tx=ok;S.bud=bud;S.goal=goal;S.sheet=sh;S.budm=bm;S.cx=cxs;S.cards=cds;S.comp=Array.isArray(o.comp)?o.comp:[];S.cfix=Array.isArray(o.cfix)?o.cfix:[];S.ord=o.ord&&Array.isArray(o.ord.fx)&&Array.isArray(o.ord.vr)?o.ord:{fx:[],vr:[]};if(cts.out.length&&cts.in.length)S.cats={out:[...new Set(cts.out)],in:[...new Set(cts.in)]};added=ok.length;
   }else{
     const ids=new Set(S.tx.map(t=>t.id));
@@ -1065,6 +1074,10 @@ function importText(txt){
     S.bud=Object.assign({},bud,S.bud);S.emo=Object.assign({},emoIn,S.emo||{});
     Object.entries(bm).forEach(([c,b])=>{const cur=S.budm[c]=S.budm[c]||{s:[],o:{}};cur.s=cur.s||[];const have=new Set(cur.s.map(x=>x[0]));b.s.forEach(x=>{if(!have.has(x[0]))cur.s.push(x)});cur.o=Object.assign({},b.o,cur.o||{})});
     if(!(S.goal.target>0))S.goal=goal;
+    // compromissos e faturas pagas também entram no "Juntar" (o que já existe aqui tem prioridade)
+    const kc=new Set(S.comp.map(x=>String(x.id)));(Array.isArray(o.comp)?o.comp:[]).forEach(x=>{if(x&&!kc.has(String(x.id)))S.comp.push(x)});
+    const kf=new Set(S.cfix.map(x=>String(x.id)));(Array.isArray(o.cfix)?o.cfix:[]).forEach(x=>{if(x&&!kf.has(String(x.id)))S.cfix.push(x)});
+    S.fp=Object.assign({},fpIn,S.fp||{});S.rules=Object.assign({},rlIn,S.rules||{});
   }
   syncCats();migBud();migGoal();migRows();S.cmig=0;migCards();save();fillCards();
   fillCats();
@@ -1081,7 +1094,7 @@ $('bk-file').addEventListener('change',async e=>{
 });
 $('bk-txt-go').addEventListener('click',()=>importText($('bk-txt').value));
 $('bk-cp').addEventListener('click',async()=>{
-  const t=JSON.stringify({app:'meu-caixa',version:1,exportedAt:new Date().toISOString(),tx:S.tx,bud:S.bud,goal:S.goal,sheet:S.sheet,budm:S.budm,cx:S.cx,cats:S.cats,cards:S.cards,emo:S.emo});
+  const t=JSON.stringify(bkData());
   try{await navigator.clipboard.writeText(t);msg('Texto do backup copiado. Cole onde quiser guardar.')}
   catch(err){$('bk-txt').value=t;$('bk-txt').select();msg('Não consegui copiar sozinho. O texto apareceu na caixa abaixo: selecione tudo e copie.',true)}
 });
@@ -1589,7 +1602,7 @@ function renderRules(){
   $('rll').innerHTML=R.length?R.slice(0,200).map(([k,r])=>`<div data-rk="${esc(k)}" style="margin-bottom:14px"><div class="rw"><span class="rd">${esc(k)}</span><button class="sm" type="button" data-rdel="${esc(k)}">Esquecer</button></div><div class="g2" style="margin-top:6px"><select data-rf="cat" aria-label="Categoria de ${esc(k)}">${opt(cats,r.cat)}</select><select data-rf="pay" aria-label="Forma de pagamento de ${esc(k)}">${opt(PAYS,r.pay||'Pix')}</select></div></div>`).join(''):'<p class="empty" style="margin:0">Nenhuma regra ainda. Ela aparece aqui quando você lançar uma movimentação.</p>';
 }
 const recDue=(x,pay)=>{if(!(pay==='Cartão'&&x.type==='out'&&x.card))return x.date;if(/^\d{4}-\d\d-\d\d$/.test(x.bd||''))return x.bd;return invDue(x.card,x.date)};
-function recCommit(x,cat,pay){const du=recDue(x,pay),ntx={id:Date.now()+Math.floor(Math.random()*1e4),type:x.type,amount:x.amount,desc:(x.nd||x.desc).slice(0,120),cat,date:du,pay,card:(pay==='Cartão'&&x.type==='out'&&x.card)?x.card:undefined};if(du!==x.date)ntx.pd=x.date;ntx.rid=x.id;x.tx=ntx.id;S.tx.push(ntx);x.st='done';delete x.why;delete x.nd;learnRule(x.desc,cat,pay,ntx.card)}
+function recCommit(x,cat,pay){const du=recDue(x,pay),ntx={id:uid(),type:x.type,amount:x.amount,desc:(x.nd||x.desc).slice(0,120),cat,date:du,pay,card:(pay==='Cartão'&&x.type==='out'&&x.card)?x.card:undefined};if(du!==x.date)ntx.pd=x.date;ntx.rid=x.id;x.tx=ntx.id;S.tx.push(ntx);x.st='done';delete x.why;delete x.nd;learnRule(x.desc,cat,pay,ntx.card)}
 // desfaz um lançamento criado pela conciliação: exclui o lançamento, a movimentação volta para as pendentes e o compromisso
 // que ele pagou (se houver) volta para "A pagar". Parcela: desfaz só aquela (como excluir uma parcela na aba Lançamentos).
 function recUndoAsk(x){
@@ -2186,7 +2199,7 @@ function crow(x){const t=stt(x),b=x.fat?`<div class="ca">${x.st==='a'?`<button c
 function renderCpv(){
   const cur=today().slice(0,7),all=[...(m===cur?lateOld(1):[]),...occ(m)],g=(f)=>all.filter(f).sort((a,b)=>(a.d||'9').localeCompare(b.d||'9')),cm=openOf(m,1).reduce((a,x)=>a+x.v,0);
   const sec=(t,l)=>l.length?`<div class="cg">${t}</div>`+l.map(crow).join(''):'';
-  $('cpv').innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><small>A pagar em ${MESL[+m.slice(5,7)-1]}</small><div class="big" style="color:var(--am)">${fmt(cm)}</div></div><button class="go" data-ca="new" type="button" style="width:auto;padding:0 16px">Novo compromisso</button></div>`+
+  $('cpv').innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><small style="display:flex;align-items:center;white-space:nowrap">A pagar em ${MESL[+m.slice(5,7)-1]}<button class="inf" type="button" aria-label="Ajuda" data-tip="Compromisso é uma conta a pagar: avulsa, parcelada ou que se repete todo mês. O vencimento é opcional nas recorrentes.&#10;Marcar como pago cria o lançamento da despesa. Se esse lançamento for excluído, o compromisso volta para A pagar.&#10;Ignorar tira a conta do A pagar só neste mês, e o valor volta para o Sobrou.&#10;Atrasados de meses anteriores aparecem no mês atual até serem pagos ou ignorados.">i</button></small><div class="big" style="color:var(--am)">${fmt(cm)}</div></div><button class="go" data-ca="new" type="button" style="width:auto;padding:0 16px">Novo compromisso</button></div>`+
   (all.some(x=>x.fat)?'<small style="display:block;margin-top:8px">As faturas dos cartões entram no "A pagar" e só viram despesa quando você marca a fatura como paga. As compras no cartão continuam aparecendo nas categorias e nos orçamentos.</small>':'')+(sec('Atrasados',g(isLate))+sec('A pagar',g(x=>x.st==='a'&&!isLate(x)))+sec('Pagos',g(x=>x.st==='g'))+sec('Ignorados neste mês',g(x=>x.st==='i'))||'<p class="mi" style="margin-top:12px">Nenhum compromisso neste mês. Toque em "Novo compromisso" para cadastrar.</p>')+'</div>';
 }
 function lview(b){$('lsa').setAttribute('aria-selected',!b);$('lsb').setAttribute('aria-selected',b);[...$('lan').children].forEach(e=>{if(e.id!=='lseg'&&e.id!=='cpv')e.hidden=b});$('cpv').hidden=!b;if(b)renderCpv()}
@@ -2296,9 +2309,7 @@ function etDel(all){
   const t=etT;if(!t)return;
   if(all&&t.sid){const sd=String(t.sid);S.tx=S.tx.filter(x=>String(x.sid)!==sd);S.sheet=S.sheet.filter(r=>String(r.sid)!==sd)}
   else{
-    if(t.sid){const r=S.sheet.find(x=>String(x.sid)===String(t.sid)),k=t.date.slice(0,7);
-      if(r&&r.v&&k in r.v){r.v[k]=Math.round((r.v[k]-t.amount)*100)/100;if(r.v[k]<=.004)delete r.v[k];if(!Object.keys(r.v).length)S.sheet=S.sheet.filter(x=>x!==r)}}
-    S.tx=S.tx.filter(x=>x!==t)}
+    parDrop(t);S.tx=S.tx.filter(x=>x!==t)}
   etT=null;$('etm').hidden=true;save();render();renderCx();renderSheet();renderRec();toast(all?'Todas as parcelas foram excluídas.':'Lançamento excluído.')}
 function openEt(id){const t=S.tx.find(x=>String(x.id)===String(id));if(!t)return;
   if(t.cx||t.cat==='Caixinhas'){toast('Movimentos de caixinha são editados na aba Caixinhas.',true);return}

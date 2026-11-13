@@ -22,7 +22,7 @@ Se os arquivos de memória não estiverem no repositório: avise e proponha comm
 ## Fluxo
 1. A raiz é o app: `index.html`, `sw.js`, `vercel.json`, `api/`, `lib/`, `tools/`. Trabalhe só no repositório.
 2. Mudança visual ou de funcionalidade: descreva ou mostre um mockup e ESPERE aprovação antes de editar.
-3. Depois de editar: `sh tools/verificar.sh` (sintaxe JS + cores fixas) e revise o fluxo mexido com dados completos (cartões, recorrentes, pagos, parcelas), não só dados mínimos.
+3. Depois de editar: `sh tools/verificar.sh` (sintaxe JS + cores fixas) e `node tools/regressao.js` (testes de regressão com dados fictícios; roteiro em TESTES.md; bug novo corrigido = teste novo) e revise o fluxo mexido com dados completos (cartões, recorrentes, pagos, parcelas), não só dados mínimos.
 4. NUNCA `git push` sem o usuário autorizar nesta conversa (a Vercel publica a main sozinha). Sem branches: direto na main.
 5. Memória, no MESMO commit da mudança:
    - CONTEXTO.md: uma linha nova em "Histórico" (data + o que mudou); uma linha em "Armadilhas" só se houver pegadinha que o código não mostra; tire de "Pendências" o que foi resolvido.
