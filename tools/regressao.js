@@ -39,12 +39,14 @@ const rd = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
         let vivo = false; try { vivo = await ev("!!document.querySelector('nav [data-t=res]')&&typeof render==='function'&&(render(),renderSheet(),true)") } catch (e) { errs.push(String(e.message).split('\n')[0]) }
         const e2 = errs.splice(0); if (!vivo || e2.length) bad.push(nome + ': ' + (e2[0] || 'não abriu')) }
       cor.ok = !bad.length; cor.d = bad.join(' | ') || cor.casos.length + ' casos'; delete cor.casos }
-    if (errs.length) res.push({ id: 'R99', n: 'Nenhum erro de JavaScript durante os testes', ok: false, d: [...new Set(errs)].join(' | ') });
+    if (errs.length) res.push({ id: 'R00', n: 'Nenhum erro de JavaScript durante os testes', ok: false, d: [...new Set(errs)].join(' | ') });
   } catch (e) { fatal = String(e.message || e) }
   ch.kill();
   // 4) servidor (lib/plan.js) tem de dar o mesmo resultado do app para atrasadas e vence hoje
   const srv = res.find(x => x.id === 'R40');
   if (srv && srv.S) { try { const { compute } = require('../lib/plan'); const r = compute(JSON.parse(srv.S), srv.t); const a = r.late.map(x => x.id).sort().join(','), b = srv.late.slice().sort().join(','); srv.ok = a === b && r.due.length === srv.due; srv.d = 'servidor ' + r.late.length + ' atrasadas/' + r.due.length + ' hoje; app ' + srv.late.length + '/' + srv.due + (a === b ? '' : ' (listas diferentes)') } catch (e) { srv.ok = false; srv.d = String(e.message) } delete srv.S }
+  // 5) servidor: webhook do Pluggy (api/hook.js) com respostas falsas, sem internet
+  if (!EST) { try { res.push(...await require('./hook-teste')()) } catch (e) { res.push({ id: 'R101', n: 'Testes do webhook', ok: false, d: String(e && e.stack || e).slice(0, 300) }) } }
   let bad = 0;
   res.forEach(x => { if (!x.ok) bad++; console.log((x.ok ? 'ok   ' : 'FALHA') + ' ' + x.id + ' ' + x.n + (x.d ? '  [' + String(x.d).slice(0, 300) + ']' : '')) });
   if (fatal) { console.log('ERRO NO ROTEIRO: ' + fatal); bad++ }

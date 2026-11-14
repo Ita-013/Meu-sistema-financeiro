@@ -8,7 +8,8 @@
 // Opcionais (só para o dono usar o próprio Pluggy sem conectar pelo app):
 //   PLUGGY_CLIENT_ID, PLUGGY_CLIENT_SECRET, ALLOWED_EMAIL, PLUGGY_ITEM_IDS
 const crypto = require('crypto');
-const { refresh } = require('../lib/bank');   // pede ao Pluggy que atualize os bancos (o mesmo passo do push das 9h)
+const { refresh } = require('../lib/bank');
+const H = require('../lib/hook');   // assinatura do webhook (avisos na hora)   // pede ao Pluggy que atualize os bancos (o mesmo passo do push das 9h)
 const P = 'https://api.pluggy.ai';
 const keys = new Map();   // apiKey do Pluggy em cache (2h)
 const hits = new Map();   // limite de uso por usuário
@@ -48,6 +49,12 @@ async function apiKey(c) {
   if (keys.size > 200) keys.clear();
   keys.set(h, { key, exp: Date.now() + 100 * 60 * 1000 });
   return key;
+}
+
+async function pgJson(method, path, key, body) {
+  const r = await fetch(P + path, { method, headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  if (!r.ok) throw new Error(method + ' ' + path.split('?')[0] + ' ' + r.status);
+  return r.status === 204 ? {} : r.json().catch(() => ({}));
 }
 
 async function pg(path, key) {
@@ -96,6 +103,35 @@ module.exports = async (req, res) => {
     try { await apiKey({ id, secret }); }
     catch (e) { return res.status(401).json({ error: 'badcreds' }); }
     return res.status(200).json({ ok: true, clientId: id, enc: seal(secret, user.uid) });
+  }
+
+  // ---- avisos na hora: cadastra (ou confere) no Pluggy da própria conta o webhook que chama /api/hook quando um banco atualiza
+  if (body.action === 'hook') {
+    if (limited(user.uid, 'hook', 5)) return res.status(429).json({ error: 'rate' });
+    if (!process.env.CRON_SECRET) return res.status(500).json({ error: 'config', missing: ['CRON_SECRET'] });
+    if (!(body.cred && body.cred.id && body.cred.enc)) return res.status(400).json({ error: 'nocred' });
+    let key;
+    try { key = await apiKey({ id: String(body.cred.id), secret: unseal(String(body.cred.enc), user.uid) }); }
+    catch (e) { return res.status(401).json({ error: 'badcreds' }); }
+    const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+    if (!/^[\w.-]+\.[a-z]{2,}$/i.test(host) || /localhost/.test(host)) return res.status(400).json({ error: 'host' });
+    const url = 'https://' + host + '/api/hook?u=' + encodeURIComponent(user.uid), headers = { 'X-Caixa-Sig': H.sig(user.uid) };
+    try {
+      const list = await pgJson('GET', '/webhooks', key);
+      const all = Array.isArray(list) ? list : (list.results || []), mine = all.filter(w => w && w.url === url);
+      const done = [];
+      for (const ev of H.EVENTS) {
+        const w = mine.find(x => x.event === ev);
+        if (w) await pgJson('PATCH', '/webhooks/' + w.id, key, { url, event: ev, headers, enabled: true });
+        else await pgJson('POST', '/webhooks', key, { url, event: ev, headers });
+        done.push(ev);
+      }
+      // remove cadastros antigos desta conta com evento que não usamos mais
+      for (const w of mine) if (!H.EVENTS.includes(w.event)) { try { await pgJson('DELETE', '/webhooks/' + w.id, key); } catch (e) {} }
+      return res.status(200).json({ ok: true, events: done, v: H.VERSION });
+    } catch (e) {
+      return res.status(502).json({ error: 'hook', detail: String(e && e.message || e).slice(0, 120) });
+    }
   }
 
   // ---- sincronizar

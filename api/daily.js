@@ -33,7 +33,8 @@ module.exports = async (req, res) => {
           else {
             const S = JSON.parse(u.data);
             const r = compute(S, t);
-            const b = await novas(S, d.id, t);
+            const seen = Array.isArray(d.seen) ? d.seen : [];
+            const b = await novas(S, d.id, t, { seen });
             const rf = b.ref || null;
             const extra = rf && rf.bad ? ['Um banco pede atenção no Pluggy (reconectar ou autorizar).'] : [];
             const l = linhas(r, b.n || 0, !!(b.err || b.partial), extra);
@@ -47,6 +48,7 @@ module.exports = async (req, res) => {
                 if (s.ok) { out.sent++; ok++; } else { out.failed++; codes.push(s.code || s.status); if (s.dead) dead.push(tk); }
               }
               if (dead.length) await g.setPush(d.id, tokens.filter(x => !dead.includes(x)));
+              if (ok && b.ids && b.ids.length) { try { await g.setFields(d.id, { seen: [...new Set([...seen, ...b.ids])].slice(-400) }); } catch (e) {} }   // o webhook não repete o que já foi avisado aqui
               why = ok + ' de ' + tokens.length + ' aparelho(s) enviado(s)' + (codes.length ? ' · erro FCM: ' + [...new Set(codes)].join(', ') : '') + (dead.length ? ' · removido(s) ' + dead.length + ' inválido(s)' : '');
             }
             // o que o refresh do Pluggy fez, para aparecer em "último envio" na aba ⚙

@@ -162,5 +162,14 @@
       else if(tr.querySelector('td.ro')){const r=[...tr.querySelectorAll('td.ro')].map(c=>nv(c.textContent)*(c.classList.contains('cxc')&&c.classList.contains('pos')?-1:1)),p=[...tr.querySelectorAll('td.pl input')].map(c=>nv(c.value));r.push(nv(tr.querySelector('td.g.t').textContent)*(tr.querySelector('td.cxc')&&tr.querySelector('td.g.t').classList.contains('pos')?-1:1));p.push(nv(tr.querySelector('td.t:not(.g)').textContent));acc.push({r,p})}});
     const hd=document.querySelector('#sh').textContent.includes('Planejado em'),est=getComputedStyle(document.querySelector('#sh tr.gsum td')).backgroundColor;
     return{ok:nT>=3&&!bad.length&&!hd&&est!=='rgba(0, 0, 0, 0)',d:'linhas de total '+nT+'; divergências '+bad.length+(bad[0]?' ('+bad[0]+')':'')+'; texto antigo '+hd+'; fundo '+est}});
+  await t('R103','Conciliação mostra só o mês do topo (lista, contadores e Lançar sugeridas); a aba ⚙ conta todas; o atalho leva ao mês com pendência',()=>{
+    reset();const k0=cur,k1=addM(cur,-1),mk=(id,k,d)=>({id,st:'pend',date:k+'-'+d,desc:'Teste '+id,amount:10,type:'out',kind:'conta',cat:'Outros'});
+    S.rec=[mk('p:a1',k0,'05'),mk('p:a2',k0,'06'),mk('p:b1',k1,'10'),Object.assign(mk('p:b2',k1,'11'),{st:'ign'})];setPer(k0);
+    const l0=document.querySelectorAll('#rcl li[data-r]').length,nav=document.querySelector('nav [data-t=rec]').textContent,out=$('rc-out');
+    const outOk=!out.hidden&&/1 pendente/.test(out.textContent);const ig0=$('rc-ig').hidden;
+    $('rc-all').click();$('rc-all').click();const pb1=S.rec.find(x=>x.id==='p:b1').st;
+    out.querySelector('[data-rcgo]').click();const l1=[...document.querySelectorAll('#rcl li[data-r]')].map(li=>li.dataset.r).join(),mOk=m===k1,ig1=!$('rc-ig').hidden;
+    setPer(cur);
+    return{ok:l0===2&&/⚙ 3/.test(nav)&&outOk&&ig0&&pb1==='pend'&&mOk&&l1==='p:b1'&&ig1,d:'mês atual '+l0+' itens; aba "'+nav+'"; outros meses: '+out.textContent+'; b1 após Lançar sugeridas: '+pb1+'; no mês anterior: '+l1}});
   return R;
 })()

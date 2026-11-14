@@ -64,7 +64,7 @@ module.exports = async (req, res) => {
     }
 
     if (body.action === 'status') {   // o que o envio diário (cron) fez por último, gravado por api/daily.js
-      return res.status(200).json({ ok: true, devices: tokens.length, lastRun: (doc && doc.lastRun) || 0, lastResult: (doc && doc.lastResult) || '' });
+      return res.status(200).json({ ok: true, devices: tokens.length, lastRun: (doc && doc.lastRun) || 0, lastResult: (doc && doc.lastResult) || '', lastHook: (doc && doc.lastHook) || 0, lastHookResult: (doc && doc.lastHookResult) || '' });
     }
 
     if (body.action === 'unregister') {
