@@ -19,7 +19,7 @@
 :root,:root[data-theme="dark"]{
   --bg:#090D16;--sf:#111827;--sf2:#1E293B;--ink:#F8FAFC;--mu:#94A3B8;--ln:#1E293B;
   --in:#10B981;--out:#F43F5E;--am:#F59E0B;--bt:#10B981;--btx:#052E16;--neg:#FB7185;
-  --cur:rgba(16,185,129,.14);--m0:rgba(16,185,129,.05);--m1:rgba(56,189,248,.05);
+  --cur:rgba(16,185,129,.14);--zb:rgba(148,163,184,.075);--cur2:rgba(148,163,184,.11);--pk-ok:rgba(16,185,129,.16);--pk-wa:rgba(245,158,11,.18);--pk-ov:rgba(244,63,94,.22);--m0:rgba(16,185,129,.05);--m1:rgba(56,189,248,.05);
   --glow1:rgba(16,185,129,.08);--glow2:rgba(56,189,248,.06);--ring:rgba(16,185,129,.15);
   --tape-bg:linear-gradient(145deg,#131C31 0%,#0B111E 100%);--tape-ink:#F8FAFC;--tape-mu:#94A3B8;--tape-tx:#CBD5E1;
   --tape-ln:rgba(255,255,255,.08);--tape-ln2:rgba(255,255,255,.07);--tape-bx:rgba(255,255,255,.04);--tape-bar:rgba(255,255,255,.12);
@@ -40,14 +40,14 @@
 :root[data-theme="light"]{
   --bg:#F1F5F9;--sf:#FFFFFF;--sf2:#E2E8F0;--ink:#0F172A;--mu:#64748B;--ln:#CBD5E1;
   --in:#059669;--out:#E11D48;--am:#D97706;--bt:#0F172A;--btx:#F8FAFC;--neg:#F43F5E;
-  --cur:rgba(5,150,105,.12);--m0:rgba(5,150,105,.05);--m1:rgba(2,132,199,.05);
+  --cur:rgba(5,150,105,.12);--zb:rgba(15,23,42,.045);--cur2:rgba(15,23,42,.07);--pk-ok:rgba(5,150,105,.14);--pk-wa:rgba(217,119,6,.16);--pk-ov:rgba(225,29,72,.16);--m0:rgba(5,150,105,.05);--m1:rgba(2,132,199,.05);
   --t-in:#059669;--t-out:#E11D48;--t-neg:#F43F5E;--per-bg:rgba(241,245,249,.85);
   color-scheme:light
 }
 :root[data-theme="rosa"]{
   --bg:#FCE4EE;--sf:#FFF4F8;--sf2:#F8CFE0;--ink:#4A1030;--mu:#8A4466;--ln:#EFB3CD;
   --in:#831843;--out:#B3123F;--am:#A8326A;--bt:#CC2272;--btx:#FFFFFF;--neg:#B3123F;
-  --cur:rgba(204,34,114,.14);--m0:rgba(204,34,114,.05);--m1:rgba(131,24,67,.05);
+  --cur:rgba(204,34,114,.14);--zb:rgba(204,34,114,.06);--cur2:rgba(204,34,114,.09);--pk-ok:rgba(131,24,67,.12);--pk-wa:rgba(168,50,106,.14);--pk-ov:rgba(179,18,63,.16);--m0:rgba(204,34,114,.05);--m1:rgba(131,24,67,.05);
   --glow1:rgba(236,72,153,.2);--glow2:rgba(244,114,182,.22);--ring:rgba(204,34,114,.22);
   --tape-bg:linear-gradient(145deg,#C21E63 0%,#8E1450 100%);--tape-ink:#FFFFFF;--tape-mu:rgba(255,255,255,.88);--tape-tx:rgba(255,255,255,.92);
   --tape-ln:rgba(255,255,255,.2);--tape-ln2:rgba(255,255,255,.2);--tape-bx:rgba(255,255,255,.1);--tape-bar:rgba(255,255,255,.25);
@@ -412,6 +412,25 @@ html.noauth .au{display:flex}
 .cr small{display:block}.cr b{font-family:var(--font-mono)}
 .cg{font-size:.8rem;color:var(--mu);margin:14px 0 4px}
 .ca{display:flex;gap:8px;padding:0 0 10px}.ca button{flex:1;min-height:36px}
+/* planilha de Orçamentos: linhas alternadas, nome mais largo, Real em negrito, Plan tracejado, pílula de status no Real dos gastos */
+.sh tbody tr:not(.grp) td{border-bottom-color:var(--ln-soft)}
+.sh tbody tr.zb td{box-shadow:inset 0 0 0 999px var(--zb)}
+.sh tbody tr.grp td{border-top:2px solid var(--ln-soft)}
+.sh .nm{min-width:128px;max-width:128px;width:128px}
+.sh td.ro{font-weight:700;background-image:none!important;position:relative}
+.sh td.pl input:not(:placeholder-shown){text-decoration:underline dashed var(--dash);text-underline-offset:4px}
+.sh tr.grp .nm small{display:block;font-weight:400;text-transform:none;letter-spacing:0;margin-top:2px}
+.sh tr.grp .addl{margin-left:8px;vertical-align:middle}
+.sh .m0,.sh .m1{background-color:transparent}
+.sh thead th.m0,.sh thead th.m1{background-image:none}
+.sh th.cur,.sh td.cur{box-shadow:inset 0 0 0 999px var(--cur2)}
+.sh tbody tr.zb td.cur{box-shadow:inset 0 0 0 999px var(--cur2),inset 0 0 0 999px var(--zb)}
+.sh tbody td.ro,.sh tbody td.t{color:var(--ink)}
+.sh td.pl input,.sh tbody td.t[data-tp]{color:var(--mu)!important}
+.sh td.ro.s-ok::after,.sh td.ro.s-warn::after,.sh td.ro.s-over::after{content:'';position:absolute;inset:6px 3px;border-radius:8px;z-index:0;pointer-events:none}
+.sh td.ro.s-ok::after{background:var(--pk-ok)}.sh td.ro.s-warn::after{background:var(--pk-wa)}.sh td.ro.s-over::after{background:var(--pk-ov)}
+.sh td.ro.cxc{cursor:pointer;text-decoration:underline dotted;text-underline-offset:4px}
+#cxrl .dr{display:flex;align-items:center;gap:10px}#cxrl .dr span{flex:1}
 #sh tr.dg td{background:var(--sf);box-shadow:inset 0 0 0 2px var(--in)}
 #sh tr.dov td{box-shadow:inset 0 2px 0 var(--in)}
 #sh tr.dova td{box-shadow:inset 0 -2px 0 var(--in)}
@@ -573,7 +592,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 
 <section id="plan" role="tabpanel" hidden>
   <div class="card">
-    <div class="rw"><h2 style="margin:0">Orçamentos<button class="inf" type="button" aria-label="Ajuda" data-tip="Real é o que aconteceu, vindo dos seus lançamentos. Plan é o planejado: toque na célula para editar.&#10;O Plan é o mesmo &quot;Orçado&quot; do Resumo, e vale a última alteração feita em qualquer um dos dois. Ao preencher um mês vazio, o valor vale dali até dezembro; ao editar um mês já preenchido, muda só aquele mês.&#10;Linhas: são as mesmas categorias dos lançamentos. Toque no nome para renomear; o + cria uma nova; a lixeira exclui (só se não houver lançamentos). Segure o nome de um gasto e arraste, ou use ⇅, para mudar entre fixos e variáveis ou reordenar. Cada caixinha aparece em &quot;Investimentos&quot;.&#10;Os valores são arredondados na tela. &quot;Transformar real em planejado&quot; copia o Real para o Plan dos meses que já terminaram.">i</button></h2>
+    <div class="rw"><h2 style="margin:0">Orçamentos<button class="inf" type="button" aria-label="Ajuda" data-tip="Real é o que aconteceu, vindo dos seus lançamentos. Plan é o planejado: toque na célula para editar.&#10;O Plan é o mesmo &quot;Orçado&quot; do Resumo, e vale a última alteração feita em qualquer um dos dois. Ao preencher um mês vazio, o valor vale dali até dezembro; ao editar um mês já preenchido, muda só aquele mês.&#10;Linhas: são as mesmas categorias dos lançamentos. Toque no nome para renomear; o + cria uma nova; a lixeira exclui (só se não houver lançamentos). Segure o nome de um gasto e arraste, ou use ⇅, para mudar entre fixos e variáveis ou reordenar. Cada caixinha aparece em &quot;Investimentos&quot;.&#10;Cor do Real nos gastos com Plan: verde até 70% do Plan, laranja de 70% a 100%, vermelho acima. O sinal − continua em todos, sem depender da cor.&#10;Toque no Real de uma caixinha para ver e ajustar o guardado do mês.&#10;Os valores são arredondados na tela. &quot;Transformar real em planejado&quot; copia o Real para o Plan dos meses que já terminaram.">i</button></h2>
       <div class="yr"><button id="yp" type="button" aria-label="Ano anterior">‹</button><b id="yl"></b><button id="yn" type="button" aria-label="Próximo ano">›</button></div></div>
     <div class="sh" id="shw"><table id="sh"></table></div>
     <button class="sm" id="cvb" type="button" style="width:100%">Transformar real em planejado</button>
@@ -741,6 +760,18 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <div id="rsh" style="margin-top:10px"></div>
   </div>
 </div>
+<div id="cxrm" class="mdl" hidden role="dialog" aria-modal="true" aria-labelledby="cxrt">
+  <div class="mbox">
+    <h3 id="cxrt"></h3>
+    <p id="cxrs" class="mi"></p>
+    <small>Movimentos do mês</small>
+    <div id="cxrl"></div>
+    <div class="etf" id="cxrw"><label class="fl" for="cxrv"><small>Valor guardado no mês (R$)</small></label><input id="cxrv" inputmode="numeric" placeholder="Ex.: 500,00"></div>
+    <p id="cxrh" class="mi"></p>
+    <p id="cxre" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
+    <div class="bk"><button class="pri" id="cxrok" type="button">Salvar</button><button id="cxrc" type="button">Cancelar</button></div>
+  </div>
+</div>
 <div id="mvm" class="mdl" hidden role="dialog" aria-modal="true" aria-labelledby="mvt">
   <div class="mbox">
     <h3 id="mvt">Mover linha</h3>
@@ -831,7 +862,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const parse=v=>{v=String(v).trim();if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');return parseFloat(v)};
 const num=n=>n?(+n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
 // Máscara de valor (R$): só dígitos, entram pela direita (2590 -> 25,90). Vale para todo campo de valor, inclusive os criados depois.
-const MONEY='#v,#etv,#cv,#pv,#rsv,#mdg,input[data-f=amt],input[data-dv],input[data-d=v]';
+const MONEY='#v,#etv,#cv,#pv,#rsv,#mdg,#cxrv,input[data-f=amt],input[data-dv],input[data-d=v]';
 document.addEventListener('input',e=>{
   const t=e.target;if(!t.matches||!t.matches(MONEY))return;
   const d=t.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,11);
@@ -1145,7 +1176,7 @@ function syncCats(){
   S.tx.forEach(t=>{const l=CATS[t.type==='in'?'in':'out'];if(t.cat&&t.cat!=='Caixinhas'&&!l.includes(t.cat))l.push(t.cat)});
   S.sheet.forEach(r=>{if(r.cx)return;const l=CATS[r.k==='in'?'in':'out'],c=rowCat(r);if(c&&c!=='Caixinhas'&&!l.includes(c))l.push(c)});
 }
-let RC=new Map();
+let RC=new Map(),RZ=0;
 const nocx=r=>!r.cx;
 const plan=(kind,c,k)=>(kind==='cx'?S.sheet.filter(r=>r.cx===+c):S.sheet.filter(r=>nocx(r)&&(r.k==='in')===(kind==='in')&&rowCat(r)===c)).reduce((a,r)=>a+(r.v[k]||0),0);
 const sgn=kind=>kind==='in'?'+':'−';
@@ -1196,9 +1227,9 @@ const mp=i=>' m'+(i%2);
 function dataRow(kind,key,label,nameCell,actCell){
   const cx=kind==='cx',rv=MES.map((_,i)=>RC.get((cx?'cx|':kind+'|')+key+'|'+mk(i))||0),pv=MES.map((_,i)=>plan(kind,key,mk(i))),mx=Math.max(1,...rv.map(Math.abs));
   const sg=sgn(kind),cl=kind==='in'?'pos':'neg',col=kind==='in'?'--heat-in':'--heat-out',tcl=kind==='in'?'in':'out';
-  let h=`<tr>${nameCell}`;
-  MES.forEach((_,i)=>{const k=mk(i),cur=k===m?' cur':'',v=rv[i],al=v?(.06+.3*Math.abs(v)/mx).toFixed(2):0,c2=cx&&v<0?'pos':cl,sg2=cx&&v<0?'+':sg;
-    h+=`<td class="g ro ${c2}${mp(i)}${cur}"${al?` style="background-image:linear-gradient(rgba(var(${col}),${al}),rgba(var(${col}),${al}))"`:''}>${v?sg2+fz(Math.abs(v)):''}</td><td class="pl ${tcl}${mp(i)}${cur}"><input data-kd="${kind}" data-pc="${esc(key)}" data-k="${k}" inputmode="decimal" value="${pv[i]?sg+fz(pv[i]):''}" placeholder="0" aria-label="Planejado de ${esc(label)} em ${MES[i]}"></td>`});
+  let h=`<tr${(RZ++%2)?' class="zb"':''}>${nameCell}`;
+  MES.forEach((_,i)=>{const k=mk(i),cur=k===m?' cur':'',v=rv[i],c2=cx&&v<0?'pos':cl,sg2=cx&&v<0?'+':sg;
+    h+=`<td class="g ro ${c2}${mp(i)}${cur}${kind==='out'&&pv[i]>0&&v>0?(v>pv[i]+.5?' s-over':v>=pv[i]*.7?' s-warn':' s-ok'):''}${cx?' cxc':''}"${cx?` data-cxr="${esc(key)}" data-k="${k}" role="button" tabindex="0" aria-label="Editar o guardado de ${esc(label)} em ${MES[i]}"`:''}>${v?sg2+fz(Math.abs(v)):''}</td><td class="pl ${tcl}${mp(i)}${cur}"><input data-kd="${kind}" data-pc="${esc(key)}" data-k="${k}" inputmode="decimal" value="${pv[i]?sg+fz(pv[i]):''}" placeholder="0" aria-label="Planejado de ${esc(label)} em ${MES[i]}"></td>`});
   const tr=rv.reduce((a,x)=>a+x,0),tp=pv.reduce((a,x)=>a+x,0);
   return h+`<td class="g t ${tr<0?'pos':cl}">${tr?(tr<0?'+':sg)+fz(Math.abs(tr)):''}</td><td class="t ${cl}" data-tp="${esc(kind+'|'+key)}">${tp?sg+fz(tp):''}</td><td class="act">${actCell}</td></tr>`;
 }
@@ -1213,9 +1244,9 @@ function renderSheet(){
   const cu=i=>mk(i)===m?' cur':'';
   const h1='<tr><th class="nm" rowspan="2">Categorias</th>'+MES.map((x,i)=>`<th class="g${mp(i)}${cu(i)}" colspan="2">${x}</th>`).join('')+'<th class="g" colspan="2">Total</th><th class="sub" rowspan="2"></th></tr>';
   const h2='<tr>'+MES.map((_,i)=>`<th class="g sub${mp(i)}${cu(i)}">Real</th><th class="sub${mp(i)}${cu(i)}">Plan</th>`).join('')+'<th class="g sub">Real</th><th class="sub">Plan</th></tr>';
-  const grp=(t,kd)=>`<tr class="grp"><td class="nm">${t}${kd?`<button type="button" class="addl" data-addkind="${kd}" aria-label="Adicionar linha de ${t.toLowerCase()}">+</button>`:''}</td><td colspan="27"></td></tr>`;
+  const grp=(t,kd)=>(RZ=0,'')+`<tr class="grp"><td class="nm">${t}${kd?`<button type="button" class="addl" data-addkind="${kd}" aria-label="Adicionar linha de ${t.toLowerCase()}">+</button>`:''}</td><td colspan="27"></td></tr>`;
   const gsum=g=>fmt(S.sheet.filter(r=>nocx(r)&&r.k!=='in'&&outList(g).includes(rowCat(r))).reduce((a,r)=>a+(r.v[m]||0),0));
-  const gh=(t,g,kd)=>`<tr class="grp" data-grp="${g}"><td class="nm">${t}<small style="display:block;font-weight:400">plan ${gsum(g)}</small>${kd?`<button type="button" class="addl" data-addkind="${kd}" aria-label="Adicionar linha de ${t.toLowerCase()}">+</button>`:''}</td><td colspan="27"></td></tr>`;
+  const gh=(t,g,kd)=>(RZ=0,'')+`<tr class="grp" data-grp="${g}"><td class="nm">${t}${kd?`<button type="button" class="addl" data-addkind="${kd}" aria-label="Adicionar linha de ${t.toLowerCase()}">+</button>`:''}<small>Planejado em ${MES[+m.slice(5,7)-1].toLowerCase()}: ${gsum(g)}</small></td><td colspan="27"></td></tr>`;
   const foot=(id,lab)=>`<tr><td class="nm">${lab}</td>`+MES.map((_,i)=>`<td class="g${mp(i)}${cu(i)}" id="${id}R${i}"></td><td class="${(mp(i)+cu(i)).trim()}" id="${id}P${i}"></td>`).join('')+`<td class="g" id="${id}Rg"></td><td id="${id}Pg"></td><td></td></tr>`;
   $('sh').innerHTML='<thead>'+h1+h2+'</thead><tbody>'+grp('Entradas','in')+CATS.in.map(c=>catRow('in',c)).join('')+gh('Gastos fixos','fx','')+outList('fx').map(c=>catRow('out',c)).join('')+gh('Gastos variáveis','vr','out')+outList('vr').map(c=>catRow('out',c)).join('')+(S.cx.length?grp('Investimentos (caixinhas)')+S.cx.map(cxRow).join(''):'')+'</tbody><tfoot>'+foot('ti','Total de entradas')+foot('to','Total de saídas')+foot('tg','Guardado em caixinhas')+foot('td','Saldo do período')+foot('ta','Resultado acumulado')+'</tfoot>';
   document.querySelectorAll('#sh textarea[data-ren="out"]').forEach(t=>{t.closest('tr').dataset.cat=t.dataset.old});
@@ -1223,7 +1254,7 @@ function renderSheet(){
 }
 function autosize(t){t.style.height='auto';t.style.height=Math.max(38,t.scrollHeight)+'px'}
 function autosizeAll(){if($('plan').hidden)return;document.querySelectorAll('#sh textarea[data-ren]').forEach(autosize)}
-function monthScroll(){const w=$('shw'),th=document.querySelector('#sh thead th.g.cur');if(w&&th&&!$('plan').hidden)w.scrollLeft=Math.max(0,th.offsetLeft-116)}
+function monthScroll(){const w=$('shw'),th=document.querySelector('#sh thead th.g.cur');if(w&&th&&!$('plan').hidden)w.scrollLeft=Math.max(0,th.offsetLeft-136)}
 let _tt;
 function toast(t,bad){const el=$('toast');el.textContent=t;el.className='toast on'+(bad?' bad':'');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),bad?5200:3600)}
 $('toast').addEventListener('click',()=>$('toast').classList.remove('on'));
@@ -1925,8 +1956,8 @@ $('cvun').addEventListener('click',()=>{
   b.forEach(x=>{if(setPlanExact(x.kd,x.c,x.k,x.old))n++});
   S.lastPlan=null;save();$('cvm').hidden=true;render();renderSheet();toast('Conversão desfeita: '+n+' célula(s) voltaram ao planejado anterior.');
 });
-['rsm','cvm','rpm','mvm'].forEach(id=>$(id).addEventListener('click',e=>{if(e.target===$(id))$(id).hidden=true}));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')['rsm','cvm','rpm','mvm'].forEach(id=>$(id).hidden=true)});
+['rsm','cvm','rpm','mvm','cxrm'].forEach(id=>$(id).addEventListener('click',e=>{if(e.target===$(id))$(id).hidden=true}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['rsm','cvm','rpm','mvm','cxrm'].forEach(id=>$(id).hidden=true)});
 // ----- cartões e faturas -----
 const cardName=id=>{const c=S.cards.find(x=>x.id===id);return c?c.name:''};
 const payLabel=t=>esc((t.pay==='Cartão'&&t.card&&cardName(t.card))?'Cartão '+cardName(t.card):(t.pay||''));   // sempre escapado: nome de cartão pode vir do banco
@@ -2273,6 +2304,36 @@ function mvShow(){
 function mvApply(L){S.ord.fx=L.fx;S.ord.vr=L.vr;save();renderSheet();mvShow()}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-mvcat]');if(!b)return;mvC=b.dataset.mvcat;mvShow();$('mvm').hidden=false});
 $('mvc').addEventListener('click',()=>{$('mvm').hidden=true});
+// planilha de Orçamentos: tocar no Real de uma caixinha abre os movimentos do mês e deixa ajustar o total guardado (cria só a diferença como "Ajuste de planilha")
+let cxrX=null,cxrK='';
+const cxrCur=()=>Math.round(S.tx.filter(t=>t.cx===cxrX.id&&t.date.slice(0,7)===cxrK).reduce((a,t)=>a+(t.type==='out'?t.amount:-t.amount),0)*100)/100;
+function cxrShow(){
+  const x=cxrX,k=cxrK,cur=cxrCur(),L=x.mv.filter(v=>v.date.slice(0,7)===k).sort((a,b)=>a.date.localeCompare(b.date));
+  $('cxrt').textContent=(x.emo||EMO_CX)+' '+x.name+' · '+mname(k)+'/'+k.slice(0,4);
+  $('cxrs').textContent=cur>=0?'Guardado no mês: '+fmt(cur):'Retirado no mês: '+fmt(-cur);
+  $('cxrl').innerHTML=L.map(v=>`<div class="dr"><span>${v.note?esc(v.note):v.amt>0?'Guardado':'Retirado'}, ${v.date.split('-').reverse().join('/')}</span><b class="${v.amt>0?'out':'in'}">${v.amt>0?'−':'+'}${fmt(Math.abs(v.amt))}</b><button type="button" class="trash" data-cxrdel="${v.id}" aria-label="Excluir movimento" title="Excluir movimento">${TRASH}</button></div>`).join('')||'<p class="empty" style="margin:6px 0 0">Nenhum movimento neste mês.</p>';
+  const ok=cur>=0;$('cxrw').hidden=!ok;$('cxrok').hidden=!ok;
+  $('cxrv').value=ok&&cur>0?cur.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
+  $('cxrh').textContent=ok?'Ao salvar um valor diferente, o app cria só a diferença como "Ajuste de planilha" (guardar ou retirar). Exemplo: de 500,00 para 800,00 guarda mais 300,00.':'Neste mês saiu mais do que entrou na caixinha. Ajuste pelos movimentos acima.';
+  $('cxre').textContent='';
+}
+function cxrOpen(id,k){const x=S.cx.find(y=>y.id===+id);if(!x)return;cxrX=x;cxrK=k;cxrShow();$('cxrm').hidden=false}
+$('sh').addEventListener('click',e=>{const td=e.target.closest('td[data-cxr]');if(td)cxrOpen(td.dataset.cxr,td.dataset.k)});
+$('sh').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const td=e.target.closest&&e.target.closest('td[data-cxr]');if(td){e.preventDefault();cxrOpen(td.dataset.cxr,td.dataset.k)}});
+$('cxrc').addEventListener('click',()=>{$('cxrm').hidden=true});
+$('cxrl').addEventListener('click',e=>{const b=e.target.closest('[data-cxrdel]');if(!b)return;const x=cxrX,mv=x.mv.find(v=>String(v.id)===b.dataset.cxrdel);if(!mv)return;
+  askDel('Excluir este movimento?','O lançamento correspondente no caixa também é desfeito. Essa ação não pode ser desfeita.',[{t:'Excluir',fn:()=>{x.mv=x.mv.filter(v=>v!==mv);if(mv.tx)S.tx=S.tx.filter(t=>t.id!==mv.tx);save();render();renderCx();renderSheet();cxrShow()}}])});
+$('cxrok').addEventListener('click',()=>{
+  const x=cxrX,k=cxrK,cur=cxrCur(),raw=$('cxrv').value,nv=Math.round((raw?parse(raw):0)*100)/100,diff=Math.round((nv-cur)*100)/100;
+  if(!isFinite(nv)||nv<0){$('cxre').textContent='Digite um valor válido.';return}
+  if(!diff){$('cxrm').hidden=true;return}
+  if(diff<0&&-diff>cxSaved(x)+0.005){$('cxre').textContent='A caixinha "'+x.name+'" tem só '+fmt(cxSaved(x))+' guardado.';return}
+  const d=k===today().slice(0,7)?today():k+'-'+String(new Date(+k.slice(0,4),+k.slice(5,7),0).getDate()).padStart(2,'0');
+  cxMove(x,Math.abs(diff),d,'Ajuste de planilha: '+x.name,'Pix',diff>0);x.mv[x.mv.length-1].note='Ajuste de planilha';
+  save();render();renderCx();renderSheet();$('cxrm').hidden=true;
+  toast((diff>0?'Guardado mais ':'Retirado ')+fmt(Math.abs(diff))+' em "'+x.name+'" ('+mname(k)+').');
+});
+
 $('mvg').addEventListener('click',()=>{const L=mvLists(),to=L.fx.includes(mvC)?'vr':'fx';L.fx=L.fx.filter(c=>c!==mvC);L.vr=L.vr.filter(c=>c!==mvC);L[to].push(mvC);S.ord.fx=L.fx;S.ord.vr=L.vr;save();renderSheet();$('mvm').hidden=true;toast('"'+mvC+'" agora está em Gastos '+(to==='fx'?'fixos':'variáveis')+'.')});
 const mvStep=d=>{const L=mvLists(),g=L.fx.includes(mvC)?'fx':'vr',a=L[g],i=a.indexOf(mvC),j=i+d;if(i<0||j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];mvApply(L)};
 $('mvu').addEventListener('click',()=>mvStep(-1));$('mvd').addEventListener('click',()=>mvStep(1));

@@ -12,7 +12,7 @@ Sistema de finanças pessoais em página web, arquivo único `index.html`. Uso p
 - Resumo: `render` (cálculo do Sobrou em `bal`), `detail`, `renderFat`/`detailFat`, `renderOced`/`ocApply`.
 - Lançamentos: `openEt`/`etDel`, `parUI`/`parPrev`; ordenação `lsort` (declarada no topo).
 - Compromissos: `occ`/`fatOcc`, `renderComp`, `openForm`, `recvOf`.
-- Orçamentos: `renderSheet`, `setPlan`/`setCell`, `bAt`, `renameCat`, `dstart`/`dmove`/`dend`.
+- Orçamentos: `renderSheet`, `setPlan`/`setCell`, `bAt`, `renameCat`, `dstart`/`dmove`/`dend`; pop-up do Real da caixinha: `cxrOpen`/`cxrShow` (`#cxrm`; `#cxr` já é do Resumo).
 - Caixinhas: `cxMove`, `renderCx`, `cxOced`, `openCxNew`.
 - Conciliação/Pluggy: `renderRec`, `recImport`, `cpCands`/`cpSug`, `inst*`, `pgIngest`, `pgSkip`, `pgSync`, `pgAuto`, `pgShow`, `recUndoTx`.
 - Importar/exportar: `importText`, `parseCSV`/`parseOFX`. Nuvem/acesso: `startCloud`, `applyCloud`, `reinit`, `lockNow`, `wipeAll`. Tema: `setTema`/`applyTheme`.
@@ -29,18 +29,19 @@ Sistema de finanças pessoais em página web, arquivo único `index.html`. Uso p
 - Push: `FIREBASE_SERVICE_ACCOUNT` inválida/incompleta dá 500 "config" e nenhum aparelho é cadastrado: conferir primeiro e fazer Redeploy. Último envio em `push/{uid}` (`lastRun`/`lastResult`), mostrado na aba ⚙ ("Servidor"). Uma conta por aparelho (`pushUid`, `cfg.onUid`). Horário fixo, sem seletor.
 - Vercel Hobby: cron só 1x/dia, precisão ±1 h, log ~1 h, até 100 crons por projeto.
 - Convite: fora do código, `ADMIN_UID` na Vercel (Firebase > Authentication > Usuários > UID) e desligar "Enable create (sign-up)" no Firebase. Se `create` der PERMISSION_DENIED, a conta de serviço precisa do papel "Firebase Authentication Admin".
+- Planilha: Real dos gastos com Plan ganha pílula (`s-ok` < 70%, `s-warn` 70–100%, `s-over` acima; vars `--pk-*` por tema); linhas alternadas `.zb` (`RZ` zera em cada grupo). Ajuste no Real da caixinha cria `cxMove` com `note` "Ajuste de planilha".
 - Barras das despesas: verde < 70%, laranja de 70% a 100% (cheia e sem tracejado em 100%), vermelho escuro acima ("estourou"), cinza sem orçamento. Receitas e caixinhas ficam cheias ao atingir.
 - Variáveis da Vercel: `FIREBASE_SERVICE_ACCOUNT`, `CRON_SECRET`, `FIREBASE_API_KEY`, `PLUGGY_ENC_KEY`, `ADMIN_UID`. Notificações precisam ser ativadas no app (aba ⚙) em cada aparelho.
 
 ## Histórico
 - 11 a 14/11/2026: push diário às 9h e botão ⟳ do Pluggy; títulos acima dos campos; compromisso sugerido e desfazer na conciliação; caixinhas redesenhadas; Pagar pelo Resumo; dados isolados por conta; máscara de valor; cadastro só por convite; Lançamentos pela data da compra; scripts em `tools/`; revisão geral (ids únicos em lote, parcela excluída ajusta a planilha, backup completo, escape de HTML, `dOk` para datas, ícones (i)); TESTES.md, `tools/regressao.js` e suíte `--estresse`.
-- 14/11/2026: `pgAuto` reconsulta o Pluggy ao abrir se a última leitura tem mais de 1 h (antes 1x por dia); texto do ⟳ não promete mais "atualizar o banco" (MeuPluggy não aceita).
+- 14/11/2026: planilha de Orçamentos no modelo E (pílulas, linhas alternadas, nome largo, Plan tracejado); pop-up do Real das caixinhas (R94–R96); `pgAuto` reconsulta o Pluggy se a leitura tem mais de 1 h e o ⟳ não promete "atualizar o banco" (MeuPluggy não aceita).
 
 ## Pendências
 - Pluggy: itens "MeuPluggy" (proxy) não aceitam `PATCH /items`; atualizam 1x/dia no horário da conexão original, então o refresh do cron e do ⟳ não força nada (`refresh` em `lib/bank.js` só acompanha o status). Se a leitura vier velha, o limite é do Pluggy, não do app.
 - Conferir a linha "Servidor" na aba ⚙ para saber o que o cron das 9h fez.
-- Segurança: conferir as regras do Firestore (só `users/{uid}` com `request.auth.uid == uid`, o resto negado; `push/*` só pelo servidor) e apagar contas desconhecidas em Authentication e em Firestore > users. Opcional: restringir a API key do navegador por referrer (o servidor usa chave separada) e exigir senha mais forte.
-- Aguardando aprovação (visual): planilha de Orçamentos (estrutura de 13/11 + escolher cores A/B/C/D de 14/11); título acima de `#pin1` e `#bk-txt` (R72); lixeira vermelha na planilha (R74); `confirm()` nativos, "Remover" banco e "Esquecer" regra fora do padrão; menus (barra com 5 abas não cabe em 390 px; separar Conciliar de Configurações).
+- Segurança: conferir as regras do Firestore (só `users/{uid}` com o próprio uid; `push/*` só pelo servidor) e apagar contas desconhecidas. Opcional: restringir a API key por referrer e exigir senha mais forte.
+- Aguardando aprovação (visual): título acima de `#pin1` e `#bk-txt` (R72); lixeira vermelha na planilha (R74); `confirm()` nativos, "Remover" banco e "Esquecer" regra fora do padrão; menus (barra com 5 abas não cabe em 390 px; separar Conciliar de Configurações; busca em Lançamentos).
 - Estresse (TESTES.md parte 3): conciliação lenta acima de ~2.000 pendências; estado corrompido derruba a abertura (falta normalizar na carga); cabeçalhos de segurança no `vercel.json` (CSP, X-Frame-Options, nosniff).
 - Decidir se o backup deve levar as pendências da conciliação (`rec`).
 - Trocar `#052E16` fixo em `.oks` e `.svd` por `var(--on-in)` (o `verificar.sh` avisa; muda o tema rosa: pedir aprovação).

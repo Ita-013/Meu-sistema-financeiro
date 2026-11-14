@@ -109,5 +109,22 @@
     lview(true);const cb=$('cpv').querySelector('.inf');if(!cb)bad.push('compromissos: sem ícone');lview(false);['#tape','#vcard','#ocard','#rcard','#fcard','#f','#plan','#cxs','#pgc','#seg','#nfcard','#backup'].forEach(q=>{if(!document.querySelector(q+' .inf'))bad.push(q+': sem ícone')});
     return{ok:!bad.length,d:bad.join('; ')||document.querySelectorAll('.inf').length+' ícones'}});
   await t('R81','Textos de ajuda não afirmam coisas antigas (dados só no aparelho, fatura pelo mês da compra...)',()=>{const velho=[/ficam s[óo] neste aparelho/i,/Nada sai do seu aparelho/i,/chegam sozinhas ao abrir o sistema/i,/compras feitas no cartão no mês escolhido/i],bad=[...document.querySelectorAll('.inf[data-tip]')].filter(b=>velho.some(v=>v.test(b.dataset.tip))).map(b=>b.dataset.tip.slice(0,50));return{ok:!bad.length,d:bad.join(' | ')}});
+
+  // ---------- planilha: caixinhas editáveis e pílulas de status ----------
+  const cxMes=(id,k)=>r2(S.tx.filter(x=>x.cx===id&&x.date.slice(0,7)===k).reduce((a,x)=>a+(x.type==='out'?x.amount:-x.amount),0));
+  await t('R94','Real da caixinha na planilha: ajustar o total do mês cria só a diferença (guardar ou retirar) e o Real, o Sobrou e o histórico acompanham',()=>{reset();m=cur;$('m').value=cur;render();tab('plan');renderSheet();const td=document.querySelector('#sh td[data-cxr="201"][data-k="'+cur+'"]');if(!td)return'célula do Real da caixinha sem data-cxr';
+    td.click();if($('cxrm').hidden)return'pop-up não abriu';const a=cxMes(201,cur),nt=S.tx.length,sb0=$('bal').textContent;
+    $('cxrv').value='0,00';type($('cxrv'),'80000');$('cxrok').click();const b=cxMes(201,cur),ad=S.tx[S.tx.length-1];
+    const ok1=near(b,800)&&S.tx.length===nt+1&&ad.cat==='Caixinhas'&&near(ad.amount,800-a)&&S.cx[0].mv.some(v=>v.note==='Ajuste de planilha');
+    cxrOpen(201,cur);type($('cxrv'),'10000');$('cxrok').click();const c=cxMes(201,cur);
+    return{ok:ok1&&near(c,100)&&$('bal').textContent!==sb0,d:'antes '+a+', depois de 800: '+b+', depois de 100: '+c+', ajuste '+ad.amount}});
+  await t('R95','Excluir um movimento da caixinha pelo pop-up da planilha pede confirmação, remove o lançamento do caixa e atualiza o Real',()=>{reset();m=cur;tab('plan');renderSheet();cxrOpen(201,cur);const n=S.tx.length,mv=S.cx[0].mv.filter(v=>v.date.slice(0,7)===cur).length;if(!mv)return'sem movimento no mês';
+    const b=$('cxrl').querySelector('[data-cxrdel]');if(!b||!b.querySelector('svg')||!b.classList.contains('trash'))return'lixeira fora do padrão';b.click();
+    const cf=document.getElementById('cfm');if(!cf||cf.hidden)return'sem confirmação';if(S.tx.length!==n)return'excluiu sem confirmar';cf.querySelector('[data-cfm="0"]').click();
+    return{ok:S.tx.length===n-1&&S.cx[0].mv.filter(v=>v.date.slice(0,7)===cur).length===mv-1,d:'lançamentos '+n+' -> '+S.tx.length}});
+  await t('R96','Pílula de status no Real dos gastos: verde até 70% do Plan, laranja de 70% a 100%, vermelho acima; sem Plan não tem pílula',()=>{reset();m=cur;tab('plan');renderSheet();const bad=[];let n=0;
+    document.querySelectorAll('#sh tbody tr').forEach(tr=>{const ro=tr.querySelector('td.cur.ro'),pl=tr.querySelector('td.cur.pl input');if(!ro||!pl||tr.querySelector('td[data-cxr]'))return;const cat=tr.dataset.cat;if(!cat)return;const p=Math.abs(brl(pl.value)),v=Math.abs(brl(ro.textContent)),cls=['s-ok','s-warn','s-over'].filter(c=>ro.classList.contains(c));
+      const esp=!(p>0&&v>0)?'':v>p+.5?'s-over':v>=p*.7?'s-warn':'s-ok';if((cls[0]||'')!==esp)bad.push(cat+': '+(cls[0]||'nenhuma')+' x '+(esp||'nenhuma'));else if(esp)n++;if(esp&&getComputedStyle(ro,'::after').backgroundColor==='rgba(0, 0, 0, 0)')bad.push(cat+': pílula sem cor')});
+    return{ok:!bad.length&&n>0,d:bad.join('; ')||n+' linhas conferidas'}});
   return R;
 })()
