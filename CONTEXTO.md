@@ -9,7 +9,7 @@ Sistema de finanças pessoais em página web, arquivo único `index.html`. Uso p
 
 ## Mapa (nomes de função; ache com `grep -n "function nome" index.html`)
 - Base: `S`, `persist`, `norm`, `toast`, `askDel`, `fillCats`, `MONEY`/`num` (máscara de valor).
-- Resumo: `render` (cálculo do Sobrou em `bal`), `detail`, `renderFat`/`detailFat`, `renderOced`/`ocApply`.
+- Resumo: `render` (cálculo do Sobrou em `bal`), `detail`, `renderFat`/`detailFat`, `renderOced`/`ocApply` (card Despesas), `renderIced`/`icApply` (card Receitas).
 - Lançamentos: `openEt`/`etDel`, `parUI`/`parPrev`; ordenação `lsort` (declarada no topo).
 - Compromissos: `occ`/`fatOcc`, `renderComp`, `openForm`, `recvOf`.
 - Orçamentos: `renderSheet`, `setPlan`/`setCell`, `bAt`, `renameCat`, `dstart`/`dmove`/`dend`; pop-up do Real da caixinha: `cxrOpen`/`cxrShow` (`#cxrm`; `#cxr` já é do Resumo).
@@ -35,7 +35,7 @@ Sistema de finanças pessoais em página web, arquivo único `index.html`. Uso p
 
 ## Histórico
 - 11 a 14/11/2026: push diário às 9h e botão ⟳ do Pluggy; títulos acima dos campos; compromisso sugerido e desfazer na conciliação; caixinhas redesenhadas; Pagar pelo Resumo; dados isolados por conta; máscara de valor; cadastro só por convite; Lançamentos pela data da compra; scripts em `tools/`; revisão geral (ids únicos em lote, parcela excluída ajusta a planilha, backup completo, escape de HTML, `dOk` para datas, ícones (i)); TESTES.md, `tools/regressao.js` e suíte `--estresse`.
-- 14/11/2026: planilha de Orçamentos no modelo E (pílulas, linhas alternadas, nome largo, Plan tracejado); pop-up do Real das caixinhas (R94–R96); `pgAuto` reconsulta o Pluggy se a leitura tem mais de 1 h e o ⟳ não promete "atualizar o banco" (MeuPluggy não aceita). Planilha sem sinais + e − (`sgn` devolve vazio; cor diz positivo/negativo); lixeira vermelha padrão nas linhas; títulos em `#pin1`/`#bk-txt`; com senha definida o app bloqueia ao sair da tela (`visibilitychange`) e pede a senha toda vez (R97). Desbloqueio pelo celular via WebAuthn (`bioSetup`/`bioUnlock`, chave `caixa-bio`; confirmação só local; exige a senha do app como reserva; R98).
+- 14/11/2026: planilha de Orçamentos no modelo E (pílulas, linhas alternadas, nome largo, Plan tracejado); pop-up do Real das caixinhas (R94–R96); `pgAuto` reconsulta o Pluggy se a leitura tem mais de 1 h e o ⟳ não promete "atualizar o banco" (MeuPluggy não aceita). Planilha sem sinais + e − (`sgn` devolve vazio; cor diz positivo/negativo); lixeira vermelha padrão nas linhas; títulos em `#pin1`/`#bk-txt`; com senha definida o app bloqueia ao sair da tela (`visibilitychange`) e pede a senha toda vez (R97). Receitas ganham o botão Editar (emoji, nome, previsto do mês; `icApply`, R99) e o card "Orçado x realizado" virou "Despesas". Desbloqueio pelo celular via WebAuthn (`bioSetup`/`bioUnlock`, chave `caixa-bio`; confirmação só local; exige a senha do app como reserva; R98).
 
 ## Pendências
 - Pluggy: itens "MeuPluggy" (proxy) não aceitam `PATCH /items`; atualizam 1x/dia no horário da conexão original, então o refresh do cron e do ⟳ não força nada (`refresh` em `lib/bank.js` só acompanha o status). Se a leitura vier velha, o limite é do Pluggy, não do app.

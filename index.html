@@ -243,7 +243,7 @@ span.bem{cursor:default}
 .cxgl{display:flex;flex-direction:column;gap:6px;margin-top:10px}
 .cxgl button{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:0 12px;border:1px solid var(--ln);border-radius:10px;background:var(--sf2);color:inherit;font:inherit;text-align:left;cursor:pointer}
 .cxgl button b{margin-left:auto;font-family:var(--font-mono)}
-#ocard h2{display:flex;align-items:center;gap:8px}
+#ocard h2,#rcard h2{display:flex;align-items:center;gap:8px}
 .oced{margin-left:auto;display:flex;gap:8px;align-items:center}
 #cxs h2{display:flex;align-items:center;gap:8px}
 .cxe{display:flex;gap:8px;align-items:flex-end}
@@ -254,6 +254,7 @@ span.bem{cursor:default}
 .bname{flex:1;min-width:0;height:36px;min-height:0;padding:0 10px;font-weight:600;text-align:left}
 .edmode .bh{gap:8px}
 .edmode .bb{cursor:default}
+.xf{display:flex;flex-direction:column;gap:2px}.xf .fl{color:var(--mu);font-size:.72rem}
 .edhint{font-size:.8rem;color:var(--mu);margin:0 0 10px}
 .svd{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translate(-50%,-16px);z-index:90;background:var(--in);color:#052E16;font-weight:800;font-size:.9rem;padding:8px 16px;border-radius:999px;display:flex;align-items:center;gap:6px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;box-shadow:0 8px 20px rgba(0,0,0,.4)}
 .svd.on{opacity:1;transform:translate(-50%,0)}
@@ -536,13 +537,13 @@ body.dragging{-webkit-user-select:none;user-select:none}
 </section>
   <div class="card" id="vcard"><h2>Próximos vencimentos<button class="inf" type="button" aria-label="Ajuda" data-tip="As 5 contas em aberto mais próximas do vencimento: compromissos e faturas de cartão. No mês atual, as atrasadas de meses anteriores aparecem primeiro.&#10;Pagar em um compromisso cria o lançamento e marca como pago. Pagar em uma fatura marca a fatura como paga, e ela passa a contar em Despesas.&#10;Toque na linha para editar. A lista completa fica em Lançamentos > Compromissos.">i</button></h2><div id="vl"></div></div>
   <div class="card" id="ocard">
-    <h2>Orçado x realizado<button class="inf" type="button" aria-label="Ajuda" data-tipid="ocn">i</button><span class="oced" id="oced"></span></h2>
+    <h2>Despesas<button class="inf" type="button" aria-label="Ajuda" data-tipid="ocn">i</button><span class="oced" id="oced"></span></h2>
     <div class="top2" id="tp2"><div class="hd2"><div><div class="lab2">Resultado</div><small id="sdl"></small></div><b id="sd"></b></div><div class="rw2"><span>Gasto</span><b id="rt"></b></div><div class="rw2"><span>Orçado</span><b id="ot"></b></div></div>
     <span id="ocn" hidden></span>
     <ul id="cats"></ul>
   </div>
   <div class="card" id="rcard">
-    <h2>Receitas<button class="inf" type="button" aria-label="Ajuda" data-tip="Toque no nome de uma categoria para ver os lançamentos dela. O previsto vem das entradas da aba Orçamentos. Os ressarcimentos não entram aqui: eles abatem a despesa que você pagou por outras pessoas. Valores que voltam de caixinhas também ficam de fora.">i</button></h2>
+    <h2>Receitas<button class="inf" type="button" aria-label="Ajuda" data-tip="Toque no nome de uma categoria para ver os lançamentos dela. O previsto vem das entradas da aba Orçamentos. Os ressarcimentos não entram aqui: eles abatem a despesa que você pagou por outras pessoas. Valores que voltam de caixinhas também ficam de fora.&#10;Toque em Editar para mudar emoji, nome e previsto de cada receita (o previsto vale só para o mês escolhido).">i</button><span class="oced" id="iced"></span></h2>
     <div class="top2" id="tp3"><div class="hd2"><div><div class="lab2">Resultado</div><small id="dfl"></small></div><b id="di"></b></div><div class="rw2"><span>Recebido</span><b id="ri"></b></div><div class="rw2"><span>Previsto</span><b id="pi"></b></div></div>
     <ul id="icats"></ul>
   </div>
@@ -870,7 +871,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const parse=v=>{v=String(v).trim();if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');return parseFloat(v)};
 const num=n=>n?(+n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
 // Máscara de valor (R$): só dígitos, entram pela direita (2590 -> 25,90). Vale para todo campo de valor, inclusive os criados depois.
-const MONEY='#v,#etv,#cv,#pv,#rsv,#mdg,#cxrv,input[data-f=amt],input[data-dv],input[data-d=v]';
+const MONEY='#v,#etv,#cv,#pv,#rsv,#mdg,#cxrv,input[data-f=amt],input[data-dv],input[data-xv],input[data-d=v]';
 document.addEventListener('input',e=>{
   const t=e.target;if(!t.matches||!t.matches(MONEY))return;
   const d=t.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,11);
@@ -945,8 +946,11 @@ function render(){
   $('pi').textContent=pit?fmt(pit):'—';$('ri').textContent=fmt(incN);
   if(pit){const dd=incN-pit;$('dfl').textContent=dd<0?'falta receber':dd>0?'a mais que o previsto':'previsto alcançado';$('di').textContent=(dd<0?'−':'+')+fmt(Math.abs(dd));$('di').style.color=dd<0?'var(--am)':'var(--in)'}else{$('dfl').textContent='maior receita';$('di').textContent=topI?topI[0]:'—';$('di').style.color=''}
   $('tp3').className='top2'+(pit&&incN-pit<-0.005?' am':'');
-  const irows=ics.filter(c=>byI[c]||pv(c)).sort((a,b)=>(byI[b]||0)-(byI[a]||0));
+  const irows=ics.filter(c=>editIn||byI[c]||pv(c)).sort((a,b)=>(byI[b]||0)-(byI[a]||0));
+  $('icats').className=editIn?'edmode':'';renderIced();
   $('icats').innerHTML=irows.length?irows.map(c=>{
+    if(editIn){const dr=idraft[c]||(idraft[c]={n:c,e:(S.emo&&S.emo['in|'+c])||'',v:num(pv(c))});
+      return `<li class="bi nb"><div class="bh"><div class="xf"><small class="fl">Emoji</small><span class="bem"><input data-xe="${esc(c)}" value="${esc(dr.e)}" maxlength="16" placeholder="${EMO_DEF}"></span></div><div class="xf" style="flex:1;min-width:0"><small class="fl">Nome da receita</small><input class="bname" data-xn="${esc(c)}" value="${esc(dr.n)}" maxlength="30"></div><div class="xf"><small class="fl">Previsto (R$)</small><span class="bo"><input data-xv="${esc(c)}" inputmode="numeric" enterkeyhint="done" value="${esc(dr.v)}" placeholder="0,00"></span></div></div></li>`}
     const v=byI[c]||0,pp=pv(c),open=openIn===c,ek='in|'+c;
     const reached=pp>0&&v>=pp-0.005,p=pp?Math.min(100,v/pp*100):0,cl=pp?'':'nb'+(v?'':' z');
     const seg=(!pp||reached)?`<div class="ba" style="flex:1">${fmt(v)}</div>`:`<div class="ba${v?'':' e'}" style="flex:0 0 clamp(70px,${p.toFixed(1)}%,calc(100% - 80px))">${fmt(v)}</div><div class="bd">${nr(pp-v)}</div>`;
@@ -1705,7 +1709,7 @@ $('rc-all').addEventListener('click',e=>{const b=e.currentTarget,items=S.rec.fil
 
 $('rc-name').value=S.myname||'';$('rc-name').addEventListener('change',e=>{S.myname=e.target.value.trim();save()});
 
-let openCat=null,dsort='v',editCat=null,editEmo=null,editAll=false,odraft={};
+let openCat=null,dsort='v',editCat=null,editEmo=null,editAll=false,odraft={},editIn=false,idraft={};
 const OK_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>',X_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 function renderOced(){const el=$('oced');if(!el)return;el.innerHTML=editAll?`<button type="button" class="oks" data-oe="ok" aria-label="Salvar alterações" title="Salvar">${OK_SVG}</button><button type="button" class="oxs" data-oe="no" aria-label="Cancelar e desfazer" title="Cancelar">${X_SVG}</button>`:'<button type="button" class="edb" data-oe="start">Editar</button>'}
 function ocApply(){
@@ -1739,6 +1743,39 @@ document.addEventListener('input',e=>{
   if(d.dn!==undefined&&odraft[d.dn])odraft[d.dn].n=t.value;
   else if(d.dv!==undefined&&odraft[d.dv])odraft[d.dv].v=t.value;
   else if(d.de!==undefined&&odraft[d.de]){const v=emoClean(t.value);odraft[d.de].e=v;if(t.value!==v)t.value=v}
+});
+// Receitas: botão Editar (emoji, nome e previsto do mês), igual ao das Despesas
+function renderIced(){const el=$('iced');if(!el)return;el.innerHTML=editIn?`<button type="button" class="oks" data-ie="ok" aria-label="Salvar alterações das receitas" title="Salvar">${OK_SVG}</button><button type="button" class="oxs" data-ie="no" aria-label="Cancelar e desfazer" title="Cancelar">${X_SVG}</button>`:'<button type="button" class="edb" data-ie="start">Editar</button>'}
+function icApply(){
+  const cl=x=>String(x||'').replace(/\s+/g,' ').trim().slice(0,30),cur=Object.keys(idraft),names=cur.map(c=>cl(idraft[c].n));
+  for(let i=0;i<cur.length;i++){
+    const c=cur[i],nw=names[i];
+    if(!nw){toast('Dê um nome a todas as receitas.',true);return}
+    if(nw===c)continue;
+    if(norm(nw)==='caixinhas'){toast('Esse nome é reservado para as caixinhas.',true);return}
+    if(cur.some((o,j)=>j!==i&&(o===nw||names[j]===nw||norm(o)===norm(nw)||norm(names[j])===norm(nw)))||CATS.in.some(o=>o!==c&&norm(o)===norm(nw))){toast('Já existe uma receita chamada "'+nw+'".',true);return}
+  }
+  cur.forEach((c,i)=>{
+    const d=idraft[c];let fin=c;
+    if(names[i]!==c&&renameCat('in',c,names[i])==='ok')fin=names[i];
+    const em=emoClean(d.e);S.emo=S.emo||{};if(em)S.emo['in|'+fin]=em;else delete S.emo['in|'+fin];
+    const v=parse(d.v),nv=v>0?Math.round(v*100)/100:0;
+    setPlan('in',fin,m,nv);
+  });
+  editIn=false;idraft={};openIn=null;save();render();renderSheet();fillCats();renderRec();
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('[data-ie]');if(!b)return;
+  const a=b.dataset.ie;
+  if(a==='start'){editIn=true;idraft={};openIn=null;render()}
+  else if(a==='no'){editIn=false;idraft={};render()}
+  else if(a==='ok')icApply();
+});
+document.addEventListener('input',e=>{
+  const t=e.target,d=t.dataset;if(!d||!editIn)return;
+  if(d.xn!==undefined&&idraft[d.xn])idraft[d.xn].n=t.value;
+  else if(d.xv!==undefined&&idraft[d.xv])idraft[d.xv].v=t.value;
+  else if(d.xe!==undefined&&idraft[d.xe]){const v=emoClean(t.value);idraft[d.xe].e=v;if(t.value!==v)t.value=v}
 });
 function bAt(c,k){const b=S.budm[c];if(b){if(b.o&&k in b.o)return b.o[k];const st=(b.s||[]).filter(x=>x[0]<=k).sort((a,z)=>z[0].localeCompare(a[0]))[0];if(st)return st[1]}return S.bud[c]||0}
 function detail(c,ty){

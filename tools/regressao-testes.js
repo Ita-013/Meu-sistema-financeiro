@@ -24,7 +24,7 @@
   await t('R13','Fatura em aberto fica no A pagar e fora das Despesas; ao marcar como paga, vira Despesa e o Sobrou não muda',()=>{setM(cur);const e=esperado(cur);if(!(e.fat>0))return'sem fatura em aberto nos dados';const s0=$('bal').textContent,d0=brl($('exp').textContent),a0=brl($('cm').textContent);
     S.cards.forEach(c=>{if(c.cl&&c.dd){S.fp[c.id+'|'+cur]={d:T,v:1}}});render();const d1=brl($('exp').textContent),a1=brl($('cm').textContent);
     return{ok:$('bal').textContent===s0&&near(d1-d0,e.fat)&&near(a0-a1,e.fat),d:'despesas '+d0+' -> '+d1+', a pagar '+a0+' -> '+a1+', fatura '+e.fat}});
-  await t('R14','Guardar em caixinha baixa o Sobrou, não entra em Despesas nem no Gasto do orçado x realizado',()=>{setM(cur);const sb=()=>($('lbl').textContent.startsWith('Faltou')?-1:1)*brl($('bal').textContent),s0=sb(),d0=$('exp').textContent,g0=$('rt').textContent;cxMove(S.cx[0],123.45,T,'teste','Pix',true);render();
+  await t('R14','Guardar em caixinha baixa o Sobrou, não entra em Despesas nem no Gasto das Despesas',()=>{setM(cur);const sb=()=>($('lbl').textContent.startsWith('Faltou')?-1:1)*brl($('bal').textContent),s0=sb(),d0=$('exp').textContent,g0=$('rt').textContent;cxMove(S.cx[0],123.45,T,'teste','Pix',true);render();
     return{ok:near(s0-sb(),123.45)&&$('exp').textContent===d0&&$('rt').textContent===g0,d:'sobrou '+s0+' -> '+sb()}});
   await t('R15','Orçado do Resumo é o planejado da planilha (mesma fonte)',()=>{const bad=CATS.out.filter(c=>!near(sbm(c,cur),plan('out',c,cur)));return{ok:!bad.length,d:bad.join(', ')}});
   await t('R16','Lançamentos do mês em ordem pela data da compra (mais nova primeiro)',()=>{setM(cur);const L=S.tx.filter(x=>x.date.slice(0,7)===cur),ids=[...$('list').querySelectorAll('li[data-ed]')].map(l=>l.dataset.ed),d=ids.map(i=>{const x=L.find(y=>String(y.id)===i);return x.pd||x.date});
@@ -141,5 +141,17 @@
     h.classList.remove('locked');$('pin-off').click();const off=!localStorage.getItem('caixa-pin')&&!localStorage.getItem('caixa-bio');lim();
     const ok=a.join()==='false,true,false'&&b.join()==='true,false,true'&&c.join()==='true,false'&&off;
     return{ok,d:'sem celular '+a+' | com celular '+b+' | após usar senha '+c+' | remover senha limpa tudo: '+off}});
+  await t('R99','Receitas: botão Editar muda emoji, nome e previsto do mês (títulos fixos acima dos campos); cancelar não altera; nome repetido é recusado; título do card agora é Despesas',()=>{
+    reset();m=cur;$('m').value=cur;render();const ttl=document.querySelector('#ocard h2').firstChild.textContent.trim();
+    const cat=CATS.in.find(c=>S.tx.some(x=>x.type==='in'&&x.cat===c&&x.date.slice(0,7)===cur));if(!cat)return'sem receita no mês';
+    const nt=S.tx.filter(x=>x.cat===cat).length,pl0=S.sheet.filter(r=>r.k==='in').length;
+    document.querySelector('[data-ie=start]').click();const campos=document.querySelectorAll('#icats [data-xn]').length,sem=[...document.querySelectorAll('#icats input')].filter(i=>!(i.closest('.xf')&&i.closest('.xf').querySelector('small.fl'))).length;
+    const set=(sel,v)=>{const i=document.querySelector(sel);i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}))};
+    document.querySelector('[data-ie=no]').click();const cancel=!document.querySelector('#icats [data-xn]')&&CATS.in.includes(cat);
+    document.querySelector('[data-ie=start]').click();const outro=CATS.in.find(c=>c!==cat);set('#icats [data-xn="'+cat+'"]',outro);document.querySelector('[data-ie=ok]').click();const dup=CATS.in.includes(cat)&&!!document.querySelector('#icats [data-xn]');
+    set('#icats [data-xn="'+cat+'"]','Freela PJ');set('#icats [data-xe="'+cat+'"]','🎯');set('#icats [data-xv="'+cat+'"]','123456');document.querySelector('[data-ie=ok]').click();
+    const pv=S.sheet.filter(r=>r.k==='in'&&rowCat(r)==='Freela PJ').reduce((a,r)=>a+(r.v[cur]||0),0);
+    const ok=ttl==='Despesas'&&campos>=2&&sem===0&&cancel&&dup&&CATS.in.includes('Freela PJ')&&!CATS.in.includes(cat)&&S.tx.filter(x=>x.cat==='Freela PJ').length===nt&&S.emo['in|Freela PJ']==='🎯'&&near(pv,1234.56)&&!document.querySelector('#icats [data-xn]');
+    return{ok,d:'título '+ttl+'; campos '+campos+'; sem título '+sem+'; cancelar ok '+cancel+'; repetido barrado '+dup+'; previsto '+pv+'; lançamentos '+nt+' -> '+S.tx.filter(x=>x.cat==='Freela PJ').length}});
   return R;
 })()
