@@ -133,5 +133,13 @@
     h.classList.remove('locked');if(bk)localStorage.setItem('caixa-pin',bk);else localStorage.removeItem('caixa-pin');delete document.hidden;
     tab('plan');renderSheet();const sinais=[...document.querySelectorAll('#sh td.ro,#sh td.t,#sh td.pl input,#sh tfoot td')].filter(e=>/[+−-]/.test(e.value!==undefined?e.value:e.textContent)).length;
     return{ok:!semSenha&&comSenha&&sinais===0,d:'sem senha trava: '+semSenha+'; com senha trava: '+comSenha+'; células com sinal: '+sinais}});
+  await t('R98','Desbloqueio pelo celular: com ele ativo a tela de bloqueio mostra o botão do celular e esconde a senha até tocar em "Usar a senha do app"; sem ele só a senha; remover a senha desativa o celular',()=>{
+    const h=document.documentElement,bp=localStorage.getItem('caixa-pin'),bb=localStorage.getItem('caixa-bio'),vis=id=>getComputedStyle($(id)).display!=='none';
+    const lim=()=>{h.classList.remove('locked','lkbio','lkpw');if(bp)localStorage.setItem('caixa-pin',bp);else localStorage.removeItem('caixa-pin');if(bb)localStorage.setItem('caixa-bio',bb);else localStorage.removeItem('caixa-bio')};
+    localStorage.setItem('caixa-pin',JSON.stringify({s:'AAAA',h:'x'}));localStorage.removeItem('caixa-bio');lockNow();const a=[vis('lkbio'),vis('lkpw'),vis('lkuse')];
+    h.classList.remove('locked');localStorage.setItem('caixa-bio','AAAA');lockNow();const b=[vis('lkbio'),vis('lkpw'),vis('lkuse')];$('lkuse').click();const c=[vis('lkpw'),vis('lkuse')];
+    h.classList.remove('locked');$('pin-off').click();const off=!localStorage.getItem('caixa-pin')&&!localStorage.getItem('caixa-bio');lim();
+    const ok=a.join()==='false,true,false'&&b.join()==='true,false,true'&&c.join()==='true,false'&&off;
+    return{ok,d:'sem celular '+a+' | com celular '+b+' | após usar senha '+c+' | remover senha limpa tudo: '+off}});
   return R;
 })()

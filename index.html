@@ -401,6 +401,7 @@ span.bem{cursor:default}
 html.locked .lk{display:flex}
 html.noauth .au{display:flex}
 .lk .mbox,.au .mbox{box-shadow:none}
+.lk #lkbio,.lk #lkuse{display:none;width:100%}html.lkbio .lk #lkbio{display:block}html.lkbio:not(.lkpw) .lk #lkuse{display:block}html.lkbio:not(.lkpw) .lk #lkpw{display:none}
 .lk .lkf{margin-top:12px;border:0;background:none;color:var(--mu);text-decoration:underline;font-size:.82rem;min-height:32px;padding:0}
 #seg input{margin-bottom:10px}
 .le{flex:1;min-width:0;text-align:right;line-height:1.25;font-size:.76rem;color:var(--mu)}
@@ -492,10 +493,14 @@ body.dragging{-webkit-user-select:none;user-select:none}
 <div id="lk" class="lk" role="dialog" aria-modal="true" aria-labelledby="lkt">
   <div class="mbox">
     <h3 id="lkt">Meu caixa</h3>
-    <p class="mi">Digite sua senha para abrir.</p>
+    <p class="mi" id="lkmsg">Digite sua senha para abrir.</p>
+    <button class="go" id="lkbio" type="button">🔒 Desbloquear com o celular</button>
+    <button class="lkf" id="lkuse" type="button">Usar a senha do app</button>
+    <div id="lkpw">
     <input id="lkp" type="password" autocomplete="off" aria-label="Senha de acesso">
     <p id="lke" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
     <button class="go" id="lkb" type="button">Entrar</button>
+    </div>
     <button class="lkf" id="lkf" type="button">Esqueci a senha (apaga os dados deste aparelho)</button>
   </div>
 </div>
@@ -681,10 +686,11 @@ body.dragging{-webkit-user-select:none;user-select:none}
     </details>
   </div>
   <div class="card" id="seg">
-    <h2>Segurança<button class="inf" type="button" aria-label="Ajuda" data-tip="A senha daqui é a trava deste aparelho: bloqueia a tela do app sempre que você sai dele, e a senha é pedida toda vez que abrir. Ela é diferente da senha da sua conta (a do login) e vale só neste aparelho.&#10;&quot;Sair da conta&quot; tira os seus dados deste aparelho; eles continuam guardados na nuvem.">i</button></h2>
+    <h2>Segurança<button class="inf" type="button" aria-label="Ajuda" data-tip="A senha daqui é a trava deste aparelho: bloqueia a tela do app sempre que você sai dele, e a senha é pedida toda vez que abrir. Se o aparelho permitir, dá para trocar a senha pela confirmação do próprio celular (digital, rosto ou PIN); a senha do app fica como reserva. Ela é diferente da senha da sua conta (a do login) e vale só neste aparelho.&#10;&quot;Sair da conta&quot; tira os seus dados deste aparelho; eles continuam guardados na nuvem.">i</button></h2>
     <small id="cld" style="display:block;margin-bottom:6px"></small>
     <button class="sm" id="au-out" type="button" hidden style="width:100%;margin-bottom:12px">Sair da conta</button>
     <small id="pinm" style="display:block;margin-bottom:10px"></small>
+    <div id="biow" hidden><div class="rw"><span>Desbloqueio do celular</span><b id="biost"></b></div><small style="display:block;margin:6px 0 8px">Ao abrir, o celular pede digital, rosto ou PIN. Vale só neste aparelho; a senha do app fica como reserva.</small><button class="sm" id="bio-tg" type="button" style="width:100%;margin-bottom:12px"></button></div>
     <label class="fl" for="pin1"><small>Senha de bloqueio deste aparelho (mínimo 4 caracteres)</small></label>
     <input id="pin1" type="password" autocomplete="new-password" placeholder="Digite a senha">
     <div class="bk">
@@ -2050,7 +2056,7 @@ const b64=a=>btoa(String.fromCharCode(...new Uint8Array(a)));
 const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
 async function pinHash(p,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(p),'PBKDF2',false,['deriveBits']);return b64(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt,iterations:150000},k,256))}
 const getPin=()=>{try{return JSON.parse(localStorage.getItem(PINK))}catch(e){return null}};
-function updSec(){const p=getPin();$('pin-off').hidden=!p;$('pin-lock').hidden=!p;$('pin-set').textContent=p?'Alterar senha':'Definir senha';$('pinm').textContent=p?'Senha de acesso ativa. O sistema bloqueia sempre que você sai dele e pede a senha toda vez que abrir.':'Sem senha: quem abrir o endereço neste aparelho vê seus dados.'}
+function updSec(){const p=getPin();bioOK().then(ok=>{const b=!!getBio();$('biow').hidden=!(ok||b)||!p;$('biost').textContent=b?'Ativo ✓':'Desativado';$('bio-tg').textContent=b?'Desativar desbloqueio do celular':'Ativar desbloqueio do celular'});$('pin-off').hidden=!p;$('pin-lock').hidden=!p;$('pin-set').textContent=p?'Alterar senha':'Definir senha';$('pinm').textContent=p?'Senha de acesso ativa. O sistema bloqueia sempre que você sai dele e pede a senha toda vez que abrir.':'Sem senha: quem abrir o endereço neste aparelho vê seus dados.'}
 $('pin-set').addEventListener('click',async()=>{
   const v=$('pin1').value;
   if(v.length<4){toast('Use pelo menos 4 caracteres.',true);return}
@@ -2059,9 +2065,32 @@ $('pin-set').addEventListener('click',async()=>{
   try{localStorage.setItem(PINK,JSON.stringify({s:b64(salt),h:await pinHash(v,salt)}))}catch(e){toast('Não consegui salvar a senha.',true);return}
   $('pin1').value='';updSec();toast('Senha salva.');
 });
-$('pin-off').addEventListener('click',()=>{if(!confirm('Remover a senha de acesso?'))return;try{localStorage.removeItem(PINK)}catch(e){}updSec();toast('Senha removida.')});
+$('pin-off').addEventListener('click',()=>{if(!confirm('Remover a senha de acesso?'))return;try{localStorage.removeItem(PINK);localStorage.removeItem(BIOK)}catch(e){}updSec();toast('Senha removida.')});
 let fails=0,until=0,hid=0;
-function lockNow(){if(!getPin())return;document.documentElement.classList.add('locked');$('lkp').value='';$('lke').textContent='';setTimeout(()=>$('lkp').focus(),50)}
+// desbloqueio pelo celular (WebAuthn): o sistema do aparelho pede digital, rosto ou PIN; confirmação local, a senha do app é a reserva
+const BIOK='caixa-bio',getBio=()=>{try{return localStorage.getItem(BIOK)}catch(e){return null}};
+const bioOK=async()=>{try{return !!(window.PublicKeyCredential&&navigator.credentials&&PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())}catch(e){return false}};
+async function bioSetup(){
+  const c=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:'Meu Caixa'},user:{id:crypto.getRandomValues(new Uint8Array(16)),name:'meu-caixa',displayName:'Meu Caixa'},pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'discouraged'},timeout:60000}});
+  localStorage.setItem(BIOK,b64(c.rawId));
+}
+let bioBusy=false;
+async function bioUnlock(){
+  if(bioBusy||document.hidden||!getBio()||!document.documentElement.classList.contains('locked'))return;
+  bioBusy=true;
+  try{await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:'public-key',id:unb64(getBio())}],userVerification:'required',timeout:60000}});fails=0;$('lke').textContent='';document.documentElement.classList.remove('locked')}
+  catch(e){$('lke').textContent=''}
+  bioBusy=false;
+}
+function lkPrep(){const bio=!!getBio(),h=document.documentElement;h.classList.toggle('lkbio',bio);h.classList.remove('lkpw');$('lkp').value='';$('lke').textContent='';$('lkmsg').textContent=bio?'Confirme que é você para abrir.':'Digite sua senha para abrir.';if(bio)setTimeout(bioUnlock,200);else setTimeout(()=>$('lkp').focus(),50)}
+function lockNow(){if(!getPin())return;document.documentElement.classList.add('locked');lkPrep()}
+$('lkbio').addEventListener('click',bioUnlock);
+$('lkuse').addEventListener('click',()=>{document.documentElement.classList.add('lkpw');$('lkp').focus()});
+$('bio-tg').addEventListener('click',async()=>{
+  if(getBio()){try{localStorage.removeItem(BIOK)}catch(e){}updSec();toast('Desbloqueio do celular desativado.');return}
+  if(!getPin()){toast('Defina primeiro a senha do app: ela fica como reserva.',true);return}
+  try{await bioSetup();updSec();toast('Desbloqueio do celular ativado.')}catch(e){toast('Não consegui ativar o desbloqueio do celular neste aparelho.',true)}
+});
 async function tryUnlock(){
   const p=getPin();if(!p){document.documentElement.classList.remove('locked');return}
   const w=until-Date.now();if(w>0){$('lke').textContent='Aguarde '+Math.ceil(w/1000)+'s para tentar de novo.';return}
@@ -2073,8 +2102,8 @@ async function tryUnlock(){
 $('lkb').addEventListener('click',tryUnlock);
 $('lkp').addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock()});
 $('pin-lock').addEventListener('click',lockNow);
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&getPin())lockNow()});   // bloqueia ao sair do app: ao voltar (ou reabrir) a senha é pedida sempre
-function wipeAll(){_noSave=true;try{localStorage.removeItem('caixa-v1');localStorage.removeItem(PINK);localStorage.removeItem(PGK)}catch(e){}location.reload()}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(getPin())lockNow()}else if(getBio())setTimeout(bioUnlock,200)});   // bloqueia ao sair do app: ao voltar (ou reabrir) a senha é pedida sempre
+function wipeAll(){_noSave=true;try{localStorage.removeItem('caixa-v1');localStorage.removeItem(PINK);localStorage.removeItem(BIOK);localStorage.removeItem(PGK)}catch(e){}location.reload()}
 $('lkf').addEventListener('click',()=>{if(confirm('Isso remove a senha e os dados salvos neste aparelho. Os dados da nuvem não são apagados. Continuar?'))wipeAll()});
 $('wipe').addEventListener('click',async()=>{
   if(!confirm('Apagar TODOS os dados? Lançamentos, orçamentos, cartões e categorias'+(cu?', inclusive a cópia na nuvem.':' deste aparelho.')))return;
@@ -2083,7 +2112,7 @@ $('wipe').addEventListener('click',async()=>{
   if(cu){try{await FB.del(cu.uid)}catch(e){wiping=false;toast('Não consegui apagar a cópia da nuvem. Tente de novo com internet.',true);return}}
   _noSave=true;try{localStorage.removeItem('caixa-v1');localStorage.removeItem(PGK)}catch(e){}location.reload();
 });
-updSec();if(document.documentElement.classList.contains('locked'))setTimeout(()=>$('lkp').focus(),50);
+updSec();if(document.documentElement.classList.contains('locked'))lkPrep();
 
 // ----- nuvem (Firebase): login e sincronização -----
 var leReady=false,leBase=null,cu=null,pushT=null,pulling=false,wiping=false,localOnly=false,lastPull=0,cstat='';

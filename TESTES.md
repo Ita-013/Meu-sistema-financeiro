@@ -51,6 +51,7 @@ Regra: **bug novo corrigido = teste novo aqui e em `regressao-testes.js`**, com 
 | R90–R92 | Backup em arquivo e em texto restaura o mesmo estado; "Juntar" duas vezes não duplica | 13/11: backup em texto não levava compromissos; nenhum levava faturas pagas; "Juntar" ignorava compromissos |
 | R94–R96 | Planilha: ajustar o Real da caixinha cria só a diferença; excluir movimento pelo pop-up (lixeira + confirmação); pílulas de status 70%/100% | 14/11: Real das caixinhas era só leitura; cores da planilha incomodavam |
 | R97 | Senha: bloqueia ao sair da tela e pede toda vez que abrir; planilha sem sinais + e − | 14/11: bloqueava só depois de 1 minuto fora |
+| R98 | Tela de bloqueio com e sem desbloqueio pelo celular; remover a senha desativa o celular | 14/11: pedido de usar o desbloqueio do aparelho |
 
 As duas falhas de hoje (R72 e R74) são mudanças visuais: esperam aprovação.
 
@@ -68,6 +69,7 @@ As duas falhas de hoje (R72 e R74) são mudanças visuais: esperam aprovação.
 | M08 | Depois de subir: abrir o site e conferir que `/CLAUDE.md`, `/MEMORIA.md`, `/CONTEXTO.md`, `/TESTES.md` e `/tools/` dão 404 | `.vercelignore` |
 | M09 | Planilha de Orçamentos no celular: arrastar um gasto entre fixos e variáveis e reordenar | 28/10: arrastar e soltar |
 | M10 | Pluggy: abrir o app, tocar no ⟳ e conferir o horário "atualizado em" de cada banco; reabrir depois de mais de 1 h e ver se consulta sozinho | 14/11: consultava só 1x por dia |
+| M11 | No celular: ativar o desbloqueio do celular em ⚙ > Segurança, fechar e reabrir o app: deve pedir digital/rosto/PIN; testar também "Usar a senha do app" | 14/11: WebAuthn só se prova no aparelho real |
 
 ## Parte 3: estresse e segurança (`node tools/regressao.js --estresse`)
 
