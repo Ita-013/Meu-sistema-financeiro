@@ -7,6 +7,7 @@ Rodar a cada atualização, antes de oferecer subir na main.
 ```
 sh tools/verificar.sh        # sintaxe JS + cores fixas
 node tools/regressao.js      # 40 testes automáticos (precisa de Node 22+ e Chrome)
+node tools/regressao.js --estresse   # 15 testes de estresse e de segurança do navegador (~1 min); rodar quando mexer em importação, telas ou formato dos dados
 ```
 O `regressao.js` abre o app no Chrome sem login, carrega dados fictícios em volume (`tools/regressao-dados.js`: ~1.600 lançamentos em 14 meses, 3 cartões, parcelas, compromissos recorrentes/pagos/ignorados/atrasados, caixinhas), **recarrega a página com esses dados** e roda `tools/regressao-testes.js`. Sai com código 1 se algo falhar. Nenhum dado real é tocado.
 
@@ -64,3 +65,23 @@ As duas falhas de hoje (R72 e R74) são mudanças visuais: esperam aprovação.
 | M07 | Celular: alterar algo, fechar o app na hora, reabrir: a alteração está lá e a data de "Última alteração" mudou | 09/11: gravação adiada (0,3 s) |
 | M08 | Depois de subir: abrir o site e conferir que `/CLAUDE.md`, `/MEMORIA.md`, `/CONTEXTO.md`, `/TESTES.md` e `/tools/` dão 404 | `.vercelignore` |
 | M09 | Planilha de Orçamentos no celular: arrastar um gasto entre fixos e variáveis e reordenar | 28/10: arrastar e soltar |
+
+## Parte 3: estresse e segurança (`node tools/regressao.js --estresse`)
+
+| Id | O que confere | Resultado em 14/11/2026 |
+|---|---|---|
+| E01 | 20.000 lançamentos (5 anos): telas em menos de 1,5 s | Passa (menos de 0,1 s) |
+| E02 | Quantos lançamentos cabem no limite de 1 MB do documento da nuvem | Passa: ~127 bytes por lançamento, cerca de 8.000 lançamentos |
+| E03 | 5.000 pendências na conciliação desenham em menos de 2 s | **Falha:** 21 s (até 1.000 pendências leva 0,2 s). Corrigir com lista paginada |
+| E04 | 300 categorias, 100 caixinhas, 40 cartões | Passa |
+| E05 | 2.000 lançamentos seguidos pelo formulário, ids únicos | Passa |
+| E10–E12 | Centavos exatos, valores de bilhões, datas de 1999 a 2099, ano bissexto | Passa |
+| E20 | 14 backups malformados são recusados sem erro | Passa (corrigido: item nulo no backup derrubava a restauração) |
+| E21 | Backup com `__proto__`/`constructor` não contamina o sistema | Passa |
+| E22 | Backup de 50.000 lançamentos restaura em menos de 5 s | Passa |
+| E23 | Extratos CSV/OFX quebrados não geram pendência inválida | Passa (corrigido: 31/02 e mês 99 viravam pendência) |
+| E30 | Texto com HTML/script em todo campo de nome aparece só como texto | Passa (corrigido: nome do cartão, forma de pagamento e emojis entravam sem escape) |
+| E31 | Dados da nuvem com campo faltando ou de tipo errado não derrubam as telas | **Falha:** lançamento sem data, caixinha sem histórico e pendência sem valor quebram a tela |
+| E40 | Dados locais corrompidos: o app abre mesmo assim | **Falha** em 4 de 12 casos (listas nulas ou de tipo trocado). JSON inválido já é tratado |
+
+E31 e E40 pedem uma "limpeza na carga" (normalizar o estado ao abrir). Não foi feita porque descartar item inválido em silêncio pode apagar dado real: decidir a regra antes.

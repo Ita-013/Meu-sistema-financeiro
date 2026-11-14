@@ -1,9 +1,11 @@
 // Teste de regressão automático: carrega dados fictícios em volume, RECARREGA o app com eles (pega erro de ordem de
 // carregamento) e roda os testes de tools/regressao-testes.js. Roteiro e motivo de cada teste: TESTES.md.
 // Uso: node tools/regressao.js [saida.png]     (precisa de Node 22+ e Chrome; variável CHROME aponta o executável)
+//      node tools/regressao.js --estresse     (testes de estresse e de segurança do navegador; demora ~1 min)
 // Sai com código 1 se algum teste falhar. Não toca em dado real: usa um perfil temporário do Chrome, sem login.
 const { spawn, spawnSync } = require('child_process'), fs = require('fs'), path = require('path'), http = require('http'), os = require('os');
-const png = process.argv[2];
+const EST = process.argv.includes('--estresse');   // roda tools/estresse-testes.js (volume extremo, entradas quebradas, injeção)
+const png = process.argv.slice(2).find(a => !a.startsWith('--'));
 const exe = process.env.CHROME || ['google-chrome', 'chromium', 'chromium-browser', 'chrome'].find(c => { try { return spawnSync(c, ['--version']).status === 0 } catch (e) { return false } }) || 'google-chrome';
 const port = 9300 + Math.floor(Math.random() * 500), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mc-'));
 const url = 'file://' + path.resolve(__dirname, '..', 'index.html').replace(/\\/g, '/');
@@ -27,9 +29,16 @@ const rd = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
     const seed = await ev(rd('regressao-dados.js'));            // 1) dados fictícios gravados no navegador
     await send('Page.reload'); await sleep(2500);               // 2) recarrega: o app sobe já com tudo isso
     const boot = errs.splice(0);
-    res = await ev(rd('regressao-testes.js'));                  // 3) testes
-    res.unshift({ id: 'R01', n: 'Carregar com dados completos sem erro na página', ok: !boot.length, d: boot.join(' | ') || seed });
+    res = await ev(rd(EST ? 'estresse-testes.js' : 'regressao-testes.js'));   // 3) testes
+    if (!EST) res.unshift({ id: 'R01', n: 'Carregar com dados completos sem erro na página', ok: !boot.length, d: boot.join(' | ') || seed });
     if (png) { await ev("document.querySelector('nav [data-t=plan]').click()"); await sleep(500); fs.writeFileSync(png, Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64')) }
+    // estresse: dados locais corrompidos. Para cada caso grava o texto no navegador, recarrega e exige que o app abra sem erro.
+    const cor = res.find(x => x.id === 'E40');
+    if (cor && cor.casos) { const bad = []; errs.splice(0);
+      for (const [nome, txt] of cor.casos) { await ev('localStorage.setItem("caixa-v1",' + JSON.stringify(txt) + ')'); await send('Page.reload'); await sleep(1800);
+        let vivo = false; try { vivo = await ev("!!document.querySelector('nav [data-t=res]')&&typeof render==='function'&&(render(),renderSheet(),true)") } catch (e) { errs.push(String(e.message).split('\n')[0]) }
+        const e2 = errs.splice(0); if (!vivo || e2.length) bad.push(nome + ': ' + (e2[0] || 'não abriu')) }
+      cor.ok = !bad.length; cor.d = bad.join(' | ') || cor.casos.length + ' casos'; delete cor.casos }
     if (errs.length) res.push({ id: 'R99', n: 'Nenhum erro de JavaScript durante os testes', ok: false, d: [...new Set(errs)].join(' | ') });
   } catch (e) { fatal = String(e.message || e) }
   ch.kill();

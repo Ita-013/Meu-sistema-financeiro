@@ -34,12 +34,14 @@ Sistema de finanças pessoais em página web, arquivo único `index.html`. Uso p
 
 ## Histórico
 - 11 e 12/11/2026: push diário às 9h com refresh do Pluggy e botão ⟳; títulos acima dos campos; compromisso sugerido e desfazer na conciliação; caixinhas redesenhadas; Pagar pelo Resumo; dados isolados por conta; máscara de valor; cadastro só por convite; Lançamentos pela data da compra; scripts em `tools/`.
-- 13/11/2026: revisão geral. Corrigidos: ids repetidos ao lançar em lote (`uid()`), parcela excluída pela lista sem ajustar a planilha, backup sem compromissos (texto) e sem faturas pagas, cabeçalho de Compromissos estourando a largura. Ícones (i) revisados e 7 novos. Criados TESTES.md e `tools/regressao.js`.
+- 13 e 14/11/2026: revisão geral. Corrigidos: ids repetidos ao lançar em lote (`uid()`), parcela excluída pela lista sem ajustar a planilha, backup incompleto, cabeçalho de Compromissos estourando a largura, HTML sem escape em nome de cartão/forma de pagamento/emojis (`payLabel`, `emoOf`), datas impossíveis em extrato (`dOk`). Ícones (i) revisados. Criados TESTES.md, `tools/regressao.js` e a suíte `--estresse`.
 
 ## Pendências
-- Confirmar o push real das 9h de 12/11 (aba ⚙, linha "Servidor": deve mostrar "Pluggy: x/y atualizado(s)").
+- Pluggy não traz movimentações sozinho (diagnóstico de 14/11, aguardando aprovação): `pgAuto` só consulta 1x por dia, então quem abre o app antes de o banco atualizar fica sem as novas até o ⟳. Proposta: reconsultar se a última leitura tem mais de 1 h. Os itens são "MeuPluggy" (proxy): pela documentação não aceitam `PATCH /items` (atualizam 1x/dia por conta própria), então o refresh do cron e do ⟳ não força nada neles; `refresh` em `lib/bank.js` trata 400/409 como "já atualizando" e pode mostrar "atualizado" sem ter atualizado.
+- Conferir a linha "Servidor" na aba ⚙ para saber o que o cron das 9h fez.
 - Segurança: conferir as regras do Firestore (só `users/{uid}` com `request.auth.uid == uid`, o resto negado; `push/*` só pelo servidor) e apagar contas desconhecidas em Authentication e em Firestore > users. Opcional: restringir a API key do navegador por referrer (o servidor usa chave separada) e exigir senha mais forte.
-- Aguardando aprovação (visual): nova planilha de Orçamentos (protótipo de 13/11); título acima de `#pin1` e `#bk-txt` (R72); lixeira vermelha na planilha (R74); `confirm()` nativos, "Remover" banco e "Esquecer" regra fora do pop-up/lixeira padrão.
+- Aguardando aprovação (visual): planilha de Orçamentos (estrutura de 13/11 + escolher cores A/B/C/D de 14/11); título acima de `#pin1` e `#bk-txt` (R72); lixeira vermelha na planilha (R74); `confirm()` nativos, "Remover" banco e "Esquecer" regra fora do padrão; menus (barra com 5 abas não cabe em 390 px; separar Conciliar de Configurações).
+- Estresse (TESTES.md parte 3): conciliação lenta acima de ~2.000 pendências; estado corrompido derruba a abertura (falta normalizar na carga); cabeçalhos de segurança no `vercel.json` (CSP, X-Frame-Options, nosniff).
 - Decidir se o backup deve levar as pendências da conciliação (`rec`).
 - Trocar `#052E16` fixo em `.oks` e `.svd` por `var(--on-in)` (o `verificar.sh` avisa; muda o tema rosa: pedir aprovação).
 - Remover `pluggy.js` da raiz e a tag `<script src="pluggy.js">`.

@@ -804,7 +804,7 @@ const CPAL=['#EF4444','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6'],CPN=['V
 const cardCol=c=>{if(!c)return '#475569';if(c.col&&CPAL.includes(c.col))return c.col;let h=0;String(c.id).split('').forEach(ch=>h=(h*31+ch.charCodeAt(0))>>>0);return CPAL[(h+4)%6]};
 const cardIcon=(c,sz)=>`<span class="pic cdx" style="background:${cardCol(c)};width:${sz||24}px;height:${sz||24}px" aria-hidden="true">${CARDIC.replace(/width="18" height="18"/,'width="14" height="14"')}</span>`;
 const nr=n=>fmt(n).replace(/^R\$[\s\u00a0]*/,'');
-const emoOf=(c,k)=>(S.emo&&S.emo[(k==='in'?'in|':'')+c])||EMO_DEF;
+const emoOf=(c,k)=>esc((S.emo&&S.emo[(k==='in'?'in|':'')+c])||EMO_DEF);
 const emoClean=v=>{v=String(v||'').trim();if(!v)return '';try{if(window.Intl&&Intl.Segmenter){const g=[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(v)];return g.length?g[0].segment.slice(0,16):''}}catch(e){}return Array.from(v)[0]||''};
 let _sv=0,_t0=Date.now();
 const flashSaved=()=>{if(Date.now()-_t0<2500)return;const el=document.getElementById('svd');if(!el)return;el.classList.add('on');clearTimeout(_sv);_sv=setTimeout(()=>el.classList.remove('on'),1600)};
@@ -844,7 +844,7 @@ let lastC='';
 function fillCats(){
   const t=document.querySelector('input[name=tp]:checked').value,cur=$('c').value;
   let h=CATS[t].map(c=>`<option value="${esc(c)}">${emoOf(c,t)} ${esc(c)}</option>`).join('');
-  if(t==='out'&&S.cx.length)h+='<optgroup label="Investimentos (caixinhas)">'+S.cx.map(x=>`<option value="cx:${x.id}">${x.emo||EMO_CX} ${esc(x.name)}</option>`).join('')+'</optgroup>';
+  if(t==='out'&&S.cx.length)h+='<optgroup label="Investimentos (caixinhas)">'+S.cx.map(x=>`<option value="cx:${x.id}">${esc(x.emo||EMO_CX)} ${esc(x.name)}</option>`).join('')+'</optgroup>';
   h+='<option value="__new">+ Nova categoria…</option>';
   $('c').innerHTML=h;if([...$('c').options].some(o=>o.value===cur&&o.value!=='__new'))$('c').value=cur;lastC=$('c').value;
 }
@@ -885,7 +885,7 @@ function render(){
   if(S.cards.some(c=>c.cl&&c.dd))$('ocn').textContent+=' O realizado inclui as compras no cartão; no topo, a fatura só entra em Despesas depois de paga.';
   const gy=by['Caixinhas']||0,gp=S.sheet.filter(r=>r.cx&&S.cx.some(x=>x.id===r.cx)).reduce((a,r)=>a+(r.v[m]||0),0);
   const cxMes=S.cx.map(x=>{const mv=tx.filter(t=>t.cx===x.id);return mv.length?{x,v:Math.round(mv.reduce((a,t)=>a+(t.type==='out'?t.amount:-t.amount),0)*100)/100}:null}).filter(Boolean);   // líquido do mês (guardado − retirado) por caixinha
-  const cxGo=cxMes.map(o=>`<button type="button" data-cxgo="${o.x.id}" aria-label="Abrir a caixinha ${esc(o.x.name)}"><span aria-hidden="true">${o.x.emo||EMO_CX}</span><span>${esc(o.x.name)}</span><b>${o.v<0?'−':''}${fmt(Math.abs(o.v))}</b><span aria-hidden="true">›</span></button>`).join('');
+  const cxGo=cxMes.map(o=>`<button type="button" data-cxgo="${o.x.id}" aria-label="Abrir a caixinha ${esc(o.x.name)}"><span aria-hidden="true">${esc(o.x.emo||EMO_CX)}</span><span>${esc(o.x.name)}</span><b>${o.v<0?'−':''}${fmt(Math.abs(o.v))}</b><span aria-hidden="true">›</span></button>`).join('');
   const capLi=(gy||gp)?`<li class="bi nb"><div class="bh"><span class="bem" aria-hidden="true">${EMO_CX}</span><button type="button" class="cn" data-cxgo="all">Guardado em caixinhas <span aria-hidden="true">›</span></button><b class="bsd">${fmt(gy)}</b></div>${gp?`<small class="bsub">Planejado ${fmt(gp)}</small>`:''}${cxGo?`<div class="cxgl">${cxGo}</div>`:''}</li>`:'';
   $('cats').className=editAll?'edmode':'';renderOced();
   $('cats').innerHTML=[...cs].sort((a,b)=>(by[b]||0)-(by[a]||0)).map(c=>{
@@ -1045,11 +1045,11 @@ function importText(txt){
   let o;
   try{o=JSON.parse(txt)}catch(err){o=null}
   if(!o||o.app!=='meu-caixa'||!Array.isArray(o.tx)){msg('Backup inválido. Use um arquivo ou texto gerado por este sistema.',true);return}
-  const ok=o.tx.map((t,i)=>({id:Number.isFinite(t.id)?t.id:Date.now()+i,type:t.type,amount:Number(t.amount),desc:String(t.desc||t.cat||'').slice(0,120),cat:String(t.cat||'Outros').slice(0,40),date:String(t.date||''),pay:['Pix','Dinheiro','Cartão'].includes(t.pay)?t.pay:'',cx:Number.isFinite(t.cx)?t.cx:undefined,cxm:Number.isFinite(t.cxm)?t.cxm:undefined,sid:Number.isFinite(t.sid)?t.sid:undefined,gross:Number(t.gross)>0?Number(t.gross):undefined,res:rsClean(t.res),card:Number.isFinite(t.card)?t.card:undefined,pd:/^\d{4}-\d\d-\d\d$/.test(t.pd||'')?t.pd:undefined}))
-    .filter(t=>(t.type==='in'||t.type==='out')&&t.amount>0&&isFinite(t.amount)&&/^\d{4}-\d{2}-\d{2}$/.test(t.date));
+  const ok=o.tx.filter(t=>t&&typeof t==='object').map((t,i)=>({id:Number.isFinite(t.id)?t.id:Date.now()+i,type:t.type,amount:Number(t.amount),desc:String(t.desc||t.cat||'').slice(0,120),cat:String(t.cat||'Outros').slice(0,40),date:String(t.date||''),pay:['Pix','Dinheiro','Cartão'].includes(t.pay)?t.pay:'',cx:Number.isFinite(t.cx)?t.cx:undefined,cxm:Number.isFinite(t.cxm)?t.cxm:undefined,sid:Number.isFinite(t.sid)?t.sid:undefined,gross:Number(t.gross)>0?Number(t.gross):undefined,res:rsClean(t.res),card:Number.isFinite(t.card)?t.card:undefined,pd:/^\d{4}-\d\d-\d\d$/.test(t.pd||'')?t.pd:undefined}))
+    .filter(t=>(t.type==='in'||t.type==='out')&&t.amount>0&&isFinite(t.amount)&&/^\d{4}-\d{2}-\d{2}$/.test(t.date)&&dOk(t.date));
   const bud={};CATS.out.forEach(c=>{const v=Number(o.bud&&o.bud[c]);if(v>0)bud[c]=v});
   const g=o.goal||{},goal={name:String(g.name||'').slice(0,60),target:Number(g.target)>0?Number(g.target):0,saved:Number(g.saved)>0?Number(g.saved):0};
-  const sh=(Array.isArray(o.sheet)?o.sheet:[]).map((r,i)=>{const v={};Object.entries(r.v||{}).forEach(([k,x])=>{x=Number(x);if(/^\d{4}-\d{2}$/.test(k)&&x>0&&isFinite(x))v[k]=x});return{id:Number.isFinite(r.id)?r.id:Date.now()+i+1000,name:String(r.name||'').slice(0,60),v,cat:(typeof r.cat==='string'&&r.cat.length<=30)?r.cat:undefined,k:r.k==='in'?'in':undefined,p:r.p?1:undefined,cx:Number.isFinite(r.cx)?r.cx:undefined,sid:Number.isFinite(r.sid)?r.sid:undefined}});
+  const sh=(Array.isArray(o.sheet)?o.sheet:[]).filter(r=>r&&typeof r==='object').map((r,i)=>{const v={};Object.entries(r.v||{}).forEach(([k,x])=>{x=Number(x);if(/^\d{4}-\d{2}$/.test(k)&&x>0&&isFinite(x))v[k]=x});return{id:Number.isFinite(r.id)?r.id:Date.now()+i+1000,name:String(r.name||'').slice(0,60),v,cat:(typeof r.cat==='string'&&r.cat.length<=30)?r.cat:undefined,k:r.k==='in'?'in':undefined,p:r.p?1:undefined,cx:Number.isFinite(r.cx)?r.cx:undefined,sid:Number.isFinite(r.sid)?r.sid:undefined}});
   const bm={};Object.entries(o.budm||{}).forEach(([c,b])=>{if(!b||typeof b!=='object')return;const s2=(Array.isArray(b.s)?b.s:[]).filter(x=>Array.isArray(x)&&/^\d{4}-\d{2}$/.test(x[0])&&Number(x[1])>0).map(x=>[x[0],Number(x[1])]),o2={};Object.entries(b.o||{}).forEach(([k,x])=>{if(/^\d{4}-\d{2}$/.test(k)&&Number(x)>=0&&isFinite(Number(x)))o2[k]=Number(x)});if(s2.length||Object.keys(o2).length)bm[String(c).slice(0,40)]={s:s2,o:o2}});
   const cxs=(Array.isArray(o.cx)?o.cx:[]).map((x,i)=>({id:Number.isFinite(x.id)?x.id:Date.now()+i+5000,name:String(x.name||'Caixinha').slice(0,40),...(typeof x.emo==='string'&&x.emo?{emo:emoClean(x.emo)}:{}),target:Number(x.target)>0?Number(x.target):0,mv:(Array.isArray(x.mv)?x.mv:[]).map((v,q)=>({id:Number.isFinite(v.id)?v.id:Date.now()+q+9000,date:/^\d{4}-\d{2}-\d{2}$/.test(v.date)?v.date:today(),amt:Number(v.amt),note:v.note?String(v.note).slice(0,40):undefined,tx:Number.isFinite(v.tx)?v.tx:undefined})).filter(v=>isFinite(v.amt)&&v.amt!==0)}));
   const okc=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'&&x.trim()&&norm(x)!=='caixinhas').map(x=>x.trim().slice(0,30)):[];
@@ -1359,7 +1359,9 @@ const KW=[[/ifood|restaurante|padaria|lanchonete|mercado|supermerc|atacad|feira|
 const rkey=d=>norm(d).replace(/^(pagamento com qr pix|pagamento com pix|pagamento|pix enviado|pix recebido|compra no debito|compra no credito|transferencia (recebida|enviada))\s*/,'').replace(/[0-9]+/g,' ').replace(/[^a-z ]/g,' ').split(/\s+/).filter(w=>w.length>2).slice(0,3).join(' ');
 function learnRule(desc,cat,pay,card){const k=rkey(String(desc||''));if(!k||!cat||cat==='Caixinhas')return;S.rules=S.rules||{};const r={cat,pay:pay||''};if(pay==='Cartão'&&card)r.card=card;S.rules[k]=r}
 const rmsg=(t,bad)=>{$('rcm').textContent=t;$('rcm').style.color=bad?'var(--out)':'var(--in)'};
-function toISO(x){x=String(x).trim().replace(/"/g,'');let a;
+const dOk=d=>{const t=new Date(d+'T12:00:00Z');return !isNaN(t)&&t.toISOString().slice(0,10)===d?d:''};   // recusa 31/02, mês 99 etc.
+function toISO(x){return dOk(toISO0(x))}
+function toISO0(x){x=String(x).trim().replace(/"/g,'');let a;
   if(a=x.match(/^(\d{4})(\d{2})(\d{2})/))return a[1]+'-'+a[2]+'-'+a[3];
   if(a=x.match(/^(\d{4})-(\d{2})-(\d{2})/))return a[0];
   if(a=x.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/))return (a[3].length===2?'20'+a[3]:a[3])+'-'+a[2].padStart(2,'0')+'-'+a[1].padStart(2,'0');
@@ -1794,7 +1796,7 @@ function renderCx(){
       :`<div class="ba${sv?'':' e'}" style="flex:0 0 clamp(70px,${pp.toFixed(1)}%,calc(100% - 80px))">${fmt(sv)}</div><div class="bd">${nr(t-sv)}</div>`;
     const bo=!t?'<span class="bo">sem meta</span>':done?'<b class="bsd in">Meta atingida</b>':`<span class="bo">de <b>${fmt(t)}</b></span>`;
     const body=ex?`<div class="g2" style="margin-top:10px"><div class="etf"><small class="fl">Valor (R$)</small><input data-f="amt" inputmode="numeric" placeholder="0,00" aria-label="Valor para ${esc(x.name)}"></div><div class="etf"><small class="fl">Data</small><input data-f="dt" type="date" value="${today()}" aria-label="Data"></div></div><div class="bk"><button class="pri" type="button" data-a="dep">Guardar</button><button type="button" data-a="ret">Retirar</button></div><details class="adv" data-x="${x.id}"${cxOpen.has(x.id)?' open':''}><summary>Histórico</summary><div class="cxh">${cxOpen.has(x.id)?cxHist(x):''}</div></details>`:'';
-    return `<div class="cxi cxc bi${cl}" data-x="${x.id}"><div class="bh"><span class="bem" aria-hidden="true">${x.emo||EMO_CX}</span><button type="button" class="cn" data-a="tg" aria-expanded="${ex}">${esc(x.name)} <span aria-hidden="true">${ex?'▾':'▸'}</span></button>${bo}</div><div class="bl"><div class="bb" data-a="tg">${seg}</div></div>${body}</div>`}).join(''):'<p class="empty" style="margin:10px 0 0">Nenhuma caixinha ainda. Toque em "Novo" para criar a primeira.</p>';
+    return `<div class="cxi cxc bi${cl}" data-x="${x.id}"><div class="bh"><span class="bem" aria-hidden="true">${esc(x.emo||EMO_CX)}</span><button type="button" class="cn" data-a="tg" aria-expanded="${ex}">${esc(x.name)} <span aria-hidden="true">${ex?'▾':'▸'}</span></button>${bo}</div><div class="bl"><div class="bb" data-a="tg">${seg}</div></div>${body}</div>`}).join(''):'<p class="empty" style="margin:10px 0 0">Nenhuma caixinha ainda. Toque em "Novo" para criar a primeira.</p>';
 }
 $('cxl').addEventListener('click',e=>{
   const btn=e.target.closest('[data-a]'),a=btn&&btn.dataset.a,card=e.target.closest('.cxc');if(!a||!card)return;
@@ -1927,7 +1929,7 @@ $('cvun').addEventListener('click',()=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape')['rsm','cvm','rpm','mvm'].forEach(id=>$(id).hidden=true)});
 // ----- cartões e faturas -----
 const cardName=id=>{const c=S.cards.find(x=>x.id===id);return c?c.name:''};
-const payLabel=t=>(t.pay==='Cartão'&&t.card&&cardName(t.card))?'Cartão '+cardName(t.card):(t.pay||'');
+const payLabel=t=>esc((t.pay==='Cartão'&&t.card&&cardName(t.card))?'Cartão '+cardName(t.card):(t.pay||''));   // sempre escapado: nome de cartão pode vir do banco
 function fillCards(){
   const opts=ph=>'<option value="">'+ph+'</option>'+S.cards.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')+'<option value="__newcard">+ Novo cartão…</option>';
   [['cardsel','cardedit','Escolha o cartão'],['rc-card','rc-cardedit','Cartão desta fatura']].forEach(([sid,bid,ph])=>{
