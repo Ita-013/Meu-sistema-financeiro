@@ -50,6 +50,7 @@ Regra: **bug novo corrigido = teste novo aqui e em `regressao-testes.js`**, com 
 | R81 | Textos de ajuda sem afirmações antigas | 13/11: "dados ficam só neste aparelho", fatura "pelo mês da compra" |
 | R90–R92 | Backup em arquivo e em texto restaura o mesmo estado; "Juntar" duas vezes não duplica | 13/11: backup em texto não levava compromissos; nenhum levava faturas pagas; "Juntar" ignorava compromissos |
 | R94–R96 | Planilha: ajustar o Real da caixinha cria só a diferença; excluir movimento pelo pop-up (lixeira + confirmação); pílulas de status 70%/100% | 14/11: Real das caixinhas era só leitura; cores da planilha incomodavam |
+| R97 | Senha: bloqueia ao sair da tela e pede toda vez que abrir; planilha sem sinais + e − | 14/11: bloqueava só depois de 1 minuto fora |
 
 As duas falhas de hoje (R72 e R74) são mudanças visuais: esperam aprovação.
 

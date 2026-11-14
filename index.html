@@ -592,7 +592,7 @@ body.dragging{-webkit-user-select:none;user-select:none}
 
 <section id="plan" role="tabpanel" hidden>
   <div class="card">
-    <div class="rw"><h2 style="margin:0">Orçamentos<button class="inf" type="button" aria-label="Ajuda" data-tip="Real é o que aconteceu, vindo dos seus lançamentos. Plan é o planejado: toque na célula para editar.&#10;O Plan é o mesmo &quot;Orçado&quot; do Resumo, e vale a última alteração feita em qualquer um dos dois. Ao preencher um mês vazio, o valor vale dali até dezembro; ao editar um mês já preenchido, muda só aquele mês.&#10;Linhas: são as mesmas categorias dos lançamentos. Toque no nome para renomear; o + cria uma nova; a lixeira exclui (só se não houver lançamentos). Segure o nome de um gasto e arraste, ou use ⇅, para mudar entre fixos e variáveis ou reordenar. Cada caixinha aparece em &quot;Investimentos&quot;.&#10;Cor do Real nos gastos com Plan: verde até 70% do Plan, laranja de 70% a 100%, vermelho acima. O Real dos gastos não leva sinal; a pílula mostra o estado.&#10;Toque no Real de uma caixinha para ver e ajustar o guardado do mês.&#10;Os valores são arredondados na tela. &quot;Transformar real em planejado&quot; copia o Real para o Plan dos meses que já terminaram.">i</button></h2>
+    <div class="rw"><h2 style="margin:0">Orçamentos<button class="inf" type="button" aria-label="Ajuda" data-tip="Real é o que aconteceu, vindo dos seus lançamentos. Plan é o planejado: toque na célula para editar.&#10;O Plan é o mesmo &quot;Orçado&quot; do Resumo, e vale a última alteração feita em qualquer um dos dois. Ao preencher um mês vazio, o valor vale dali até dezembro; ao editar um mês já preenchido, muda só aquele mês.&#10;Linhas: são as mesmas categorias dos lançamentos. Toque no nome para renomear; o + cria uma nova; a lixeira exclui (só se não houver lançamentos). Segure o nome de um gasto e arraste, ou use ⇅, para mudar entre fixos e variáveis ou reordenar. Cada caixinha aparece em &quot;Investimentos&quot;.&#10;Cor do Real nos gastos com Plan: verde até 70% do Plan, laranja de 70% a 100%, vermelho acima. A planilha não usa + nem −: nos totais, verde é positivo e vermelho é negativo.&#10;Toque no Real de uma caixinha para ver e ajustar o guardado do mês.&#10;Os valores são arredondados na tela. &quot;Transformar real em planejado&quot; copia o Real para o Plan dos meses que já terminaram.">i</button></h2>
       <div class="yr"><button id="yp" type="button" aria-label="Ano anterior">‹</button><b id="yl"></b><button id="yn" type="button" aria-label="Próximo ano">›</button></div></div>
     <div class="sh" id="shw"><table id="sh"></table></div>
     <button class="sm" id="cvb" type="button" style="width:100%">Transformar real em planejado</button>
@@ -681,11 +681,12 @@ body.dragging{-webkit-user-select:none;user-select:none}
     </details>
   </div>
   <div class="card" id="seg">
-    <h2>Segurança<button class="inf" type="button" aria-label="Ajuda" data-tip="A senha daqui é a trava deste aparelho: bloqueia a tela do app depois de 1 minuto fora dele. Ela é diferente da senha da sua conta (a do login) e vale só neste aparelho.&#10;&quot;Sair da conta&quot; tira os seus dados deste aparelho; eles continuam guardados na nuvem.">i</button></h2>
+    <h2>Segurança<button class="inf" type="button" aria-label="Ajuda" data-tip="A senha daqui é a trava deste aparelho: bloqueia a tela do app sempre que você sai dele, e a senha é pedida toda vez que abrir. Ela é diferente da senha da sua conta (a do login) e vale só neste aparelho.&#10;&quot;Sair da conta&quot; tira os seus dados deste aparelho; eles continuam guardados na nuvem.">i</button></h2>
     <small id="cld" style="display:block;margin-bottom:6px"></small>
     <button class="sm" id="au-out" type="button" hidden style="width:100%;margin-bottom:12px">Sair da conta</button>
     <small id="pinm" style="display:block;margin-bottom:10px"></small>
-    <input id="pin1" type="password" autocomplete="new-password" placeholder="Nova senha (mínimo 4 caracteres)" aria-label="Nova senha">
+    <label class="fl" for="pin1"><small>Senha de bloqueio deste aparelho (mínimo 4 caracteres)</small></label>
+    <input id="pin1" type="password" autocomplete="new-password" placeholder="Digite a senha">
     <div class="bk">
       <button class="pri" id="pin-set" type="button">Definir senha</button>
       <button id="pin-lock" type="button" hidden>Bloquear agora</button>
@@ -723,7 +724,8 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <details class="adv"><summary>Se a restauração por arquivo não funcionar</summary>
       <div class="chkrow"><small>Backup por texto</small><button class="inf" type="button" aria-label="Ajuda" data-tip="Mesmo conteúdo do arquivo de backup, em forma de texto. Toque em copiar, guarde o texto onde quiser (uma nota, um e-mail para você) e cole aqui depois para restaurar.">i</button></div>
       <div class="bk"><button id="bk-cp" type="button">Copiar texto do backup</button><button id="bk-txt-go" type="button">Restaurar do texto</button></div>
-      <textarea id="bk-txt" rows="4" placeholder="Cole aqui o texto do backup" aria-label="Texto do backup"></textarea>
+      <label class="fl" for="bk-txt"><small>Texto do backup</small></label>
+      <textarea id="bk-txt" rows="4" placeholder="Cole aqui o texto copiado do backup"></textarea>
     </details>
     <div class="opt" role="radiogroup" aria-label="Ao restaurar">
       <label><input type="radio" name="bm" value="merge" checked>Juntar com os dados atuais</label>
@@ -1179,7 +1181,7 @@ function syncCats(){
 let RC=new Map(),RZ=0;
 const nocx=r=>!r.cx;
 const plan=(kind,c,k)=>(kind==='cx'?S.sheet.filter(r=>r.cx===+c):S.sheet.filter(r=>nocx(r)&&(r.k==='in')===(kind==='in')&&rowCat(r)===c)).reduce((a,r)=>a+(r.v[k]||0),0);
-const sgn=kind=>kind==='in'?'+':'−';
+const sgn=kind=>'';   // a planilha não usa sinais + e −: a cor (verde/vermelho) e a coluna já dizem entrada ou saída
 function setPlan(kind,c,k,nv){
   const isIn=kind==='in',isCx=kind==='cx';
   const rows=isCx?S.sheet.filter(r=>r.cx===+c):S.sheet.filter(r=>nocx(r)&&(r.k==='in')===isIn&&rowCat(r)===c),cur=rows.reduce((a,r)=>a+(r.v[k]||0),0);
@@ -1199,10 +1201,10 @@ function setPlan(kind,c,k,nv){
 }
 function setCell(id,v,t){
   const el=$(id);if(!el)return;const z=Math.abs(v)<0.5;let txt,cls='';
-  if(t==='in'){txt=z?'0':'+'+fz(v);cls=z?'':'pos'}
-  else if(t==='out'){txt=z?'0':'−'+fz(v);cls=z?'':'neg'}
-  else if(t==='sv'){txt=z?'0':(v>0?'−':'+')+fz(Math.abs(v));cls=z?'':(v>0?'neg':'pos')}
-  else{txt=z?'0':(v>0?'+':'−')+fz(Math.abs(v));cls=z?'':(v>0?'pos':'neg')}
+  if(t==='in'){txt=z?'0':fz(v);cls=z?'':'pos'}
+  else if(t==='out'){txt=z?'0':fz(v);cls=z?'':'neg'}
+  else if(t==='sv'){txt=z?'0':fz(Math.abs(v));cls=z?'':(v>0?'neg':'pos')}
+  else{txt=z?'0':fz(Math.abs(v));cls=z?'':(v>0?'pos':'neg')}
   el.textContent=txt;el.classList.remove('pos','neg');if(cls)el.classList.add(cls);
 }
 function totals(){
@@ -1228,10 +1230,10 @@ function dataRow(kind,key,label,nameCell,actCell){
   const cx=kind==='cx',rv=MES.map((_,i)=>RC.get((cx?'cx|':kind+'|')+key+'|'+mk(i))||0),pv=MES.map((_,i)=>plan(kind,key,mk(i))),mx=Math.max(1,...rv.map(Math.abs));
   const sg=sgn(kind),cl=kind==='in'?'pos':'neg',col=kind==='in'?'--heat-in':'--heat-out',tcl=kind==='in'?'in':'out';
   let h=`<tr${(RZ++%2)?' class="zb"':''}>${nameCell}`;
-  MES.forEach((_,i)=>{const k=mk(i),cur=k===m?' cur':'',v=rv[i],c2=cx&&v<0?'pos':cl,sg2=(kind==='out'||(cx&&v>0))?'':(cx&&v<0?'+':sg);
+  MES.forEach((_,i)=>{const k=mk(i),cur=k===m?' cur':'',v=rv[i],c2=cx&&v<0?'pos':cl,sg2='';
     h+=`<td class="g ro ${c2}${mp(i)}${cur}${kind==='out'&&pv[i]>0&&v>0?(v>pv[i]+.5?' s-over':v>=pv[i]*.7?' s-warn':' s-ok'):''}${cx?' cxc':''}"${cx?` data-cxr="${esc(key)}" data-k="${k}" role="button" tabindex="0" aria-label="Editar o guardado de ${esc(label)} em ${MES[i]}"`:''}>${v?sg2+fz(Math.abs(v)):''}</td><td class="pl ${tcl}${mp(i)}${cur}"><input data-kd="${kind}" data-pc="${esc(key)}" data-k="${k}" inputmode="decimal" value="${pv[i]?sg+fz(pv[i]):''}" placeholder="0" aria-label="Planejado de ${esc(label)} em ${MES[i]}"></td>`});
   const tr=rv.reduce((a,x)=>a+x,0),tp=pv.reduce((a,x)=>a+x,0);
-  return h+`<td class="g t ${tr<0?'pos':cl}">${tr?(tr<0?'+':(kind==='out'||cx?'':sg))+fz(Math.abs(tr)):''}</td><td class="t ${cl}" data-tp="${esc(kind+'|'+key)}">${tp?sg+fz(tp):''}</td><td class="act">${actCell}</td></tr>`;
+  return h+`<td class="g t ${tr<0?'pos':cl}">${tr?fz(Math.abs(tr)):''}</td><td class="t ${cl}" data-tp="${esc(kind+'|'+key)}">${tp?sg+fz(tp):''}</td><td class="act">${actCell}</td></tr>`;
 }
 const catRow=(kind,c)=>dataRow(kind,c,c,`<td class="nm">${kind==='out'?`<div class="nmf"><textarea rows="1" spellcheck="false" data-ren="${kind}" data-old="${esc(c)}" aria-label="Nome da linha ${esc(c)}">${esc(c)}</textarea><button type="button" class="mvb" data-mvcat="${esc(c)}" aria-label="Mover ${esc(c)} entre gastos fixos e variáveis">⇅</button></div>`:`<textarea rows="1" spellcheck="false" data-ren="${kind}" data-old="${esc(c)}" aria-label="Nome da linha ${esc(c)}">${esc(c)}</textarea>`}</td>`,c==='Outros'?'':`<button class="trash" type="button" data-delcat="${kind}" data-c="${esc(c)}" aria-label="Excluir linha ${esc(c)}">${TRASH}</button>`);
 const cxRow=x=>dataRow('cx',String(x.id),x.name,`<td class="nm wrap">${esc(x.name)}</td>`,'');
@@ -2048,7 +2050,7 @@ const b64=a=>btoa(String.fromCharCode(...new Uint8Array(a)));
 const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
 async function pinHash(p,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(p),'PBKDF2',false,['deriveBits']);return b64(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt,iterations:150000},k,256))}
 const getPin=()=>{try{return JSON.parse(localStorage.getItem(PINK))}catch(e){return null}};
-function updSec(){const p=getPin();$('pin-off').hidden=!p;$('pin-lock').hidden=!p;$('pin-set').textContent=p?'Alterar senha':'Definir senha';$('pinm').textContent=p?'Senha de acesso ativa. O sistema bloqueia sozinho depois de 1 minuto fora da tela.':'Sem senha: quem abrir o endereço neste aparelho vê seus dados.'}
+function updSec(){const p=getPin();$('pin-off').hidden=!p;$('pin-lock').hidden=!p;$('pin-set').textContent=p?'Alterar senha':'Definir senha';$('pinm').textContent=p?'Senha de acesso ativa. O sistema bloqueia sempre que você sai dele e pede a senha toda vez que abrir.':'Sem senha: quem abrir o endereço neste aparelho vê seus dados.'}
 $('pin-set').addEventListener('click',async()=>{
   const v=$('pin1').value;
   if(v.length<4){toast('Use pelo menos 4 caracteres.',true);return}
@@ -2071,7 +2073,7 @@ async function tryUnlock(){
 $('lkb').addEventListener('click',tryUnlock);
 $('lkp').addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock()});
 $('pin-lock').addEventListener('click',lockNow);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)hid=Date.now();else if(hid&&getPin()&&Date.now()-hid>60000)lockNow()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&getPin())lockNow()});   // bloqueia ao sair do app: ao voltar (ou reabrir) a senha é pedida sempre
 function wipeAll(){_noSave=true;try{localStorage.removeItem('caixa-v1');localStorage.removeItem(PINK);localStorage.removeItem(PGK)}catch(e){}location.reload()}
 $('lkf').addEventListener('click',()=>{if(confirm('Isso remove a senha e os dados salvos neste aparelho. Os dados da nuvem não são apagados. Continuar?'))wipeAll()});
 $('wipe').addEventListener('click',async()=>{

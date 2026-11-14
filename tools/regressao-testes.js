@@ -126,5 +126,12 @@
     document.querySelectorAll('#sh tbody tr').forEach(tr=>{const ro=tr.querySelector('td.cur.ro'),pl=tr.querySelector('td.cur.pl input');if(!ro||!pl||tr.querySelector('td[data-cxr]'))return;const cat=tr.dataset.cat;if(!cat)return;const p=Math.abs(brl(pl.value)),v=Math.abs(brl(ro.textContent)),cls=['s-ok','s-warn','s-over'].filter(c=>ro.classList.contains(c));
       const esp=!(p>0&&v>0)?'':v>p+.5?'s-over':v>=p*.7?'s-warn':'s-ok';if((cls[0]||'')!==esp)bad.push(cat+': '+(cls[0]||'nenhuma')+' x '+(esp||'nenhuma'));else if(esp)n++;if(esp&&getComputedStyle(ro,'::after').backgroundColor==='rgba(0, 0, 0, 0)')bad.push(cat+': pílula sem cor')});
     return{ok:!bad.length&&n>0,d:bad.join('; ')||n+' linhas conferidas'}});
+  await t('R97','Com senha definida, o app bloqueia assim que sai da tela (a senha é pedida toda vez que abrir); sem senha não bloqueia; planilha sem sinais + e −',()=>{
+    const h=document.documentElement,bk=localStorage.getItem('caixa-pin');const hide=v=>{Object.defineProperty(document,'hidden',{get:()=>v,configurable:true});document.dispatchEvent(new Event('visibilitychange'))};
+    h.classList.remove('locked');localStorage.removeItem('caixa-pin');hide(true);const semSenha=h.classList.contains('locked');hide(false);
+    localStorage.setItem('caixa-pin',JSON.stringify({s:'AAAA',h:'x'}));hide(true);const comSenha=h.classList.contains('locked');hide(false);
+    h.classList.remove('locked');if(bk)localStorage.setItem('caixa-pin',bk);else localStorage.removeItem('caixa-pin');delete document.hidden;
+    tab('plan');renderSheet();const sinais=[...document.querySelectorAll('#sh td.ro,#sh td.t,#sh td.pl input,#sh tfoot td')].filter(e=>/[+−-]/.test(e.value!==undefined?e.value:e.textContent)).length;
+    return{ok:!semSenha&&comSenha&&sinais===0,d:'sem senha trava: '+semSenha+'; com senha trava: '+comSenha+'; células com sinal: '+sinais}});
   return R;
 })()
