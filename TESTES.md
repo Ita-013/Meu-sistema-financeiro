@@ -65,6 +65,7 @@ As duas falhas de hoje (R72 e R74) são mudanças visuais: esperam aprovação.
 | M07 | Celular: alterar algo, fechar o app na hora, reabrir: a alteração está lá e a data de "Última alteração" mudou | 09/11: gravação adiada (0,3 s) |
 | M08 | Depois de subir: abrir o site e conferir que `/CLAUDE.md`, `/MEMORIA.md`, `/CONTEXTO.md`, `/TESTES.md` e `/tools/` dão 404 | `.vercelignore` |
 | M09 | Planilha de Orçamentos no celular: arrastar um gasto entre fixos e variáveis e reordenar | 28/10: arrastar e soltar |
+| M10 | Pluggy: abrir o app, tocar no ⟳ e conferir o horário "atualizado em" de cada banco; reabrir depois de mais de 1 h e ver se consulta sozinho | 14/11: consultava só 1x por dia |
 
 ## Parte 3: estresse e segurança (`node tools/regressao.js --estresse`)
 
