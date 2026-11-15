@@ -4,7 +4,7 @@
   const R=[],T=today(),cur=T.slice(0,7),brl=s=>parseFloat(String(s).replace(/[^\d,−-]/g,'').replace('−','-').replace(/\./g,'').replace(',','.'))||0,
     near=(a,b)=>Math.abs(a-b)<.006,r2=n=>Math.round(n*100)/100,sum=(l,f)=>r2(l.reduce((a,x)=>a+f(x),0)),wait=ms=>new Promise(r=>setTimeout(r,ms));
   const snap=JSON.stringify(S),reset=()=>{Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,JSON.parse(snap));syncCats();document.querySelectorAll('.mdl').forEach(e=>e.hidden=true);m=cur;$('m').value=m;fillCats();render();renderSheet();renderCx();renderRec()};
-  const t=async(id,n,f)=>{try{const r=await f();R.push({id,n,ok:r===true||(r&&r.ok===true),d:r===true?'':(r&&r.d!==undefined?r.d:String(r))})}catch(e){R.push({id,n,ok:false,d:'erro: '+String(e&&e.message||e)})}try{reset()}catch(e){}};
+  const t=async(id,n,f)=>{if((window.__APOSENTADOS||[]).includes(id)){R.push({id,n,ok:true,skip:true});return}try{const r=await f();R.push({id,n,ok:r===true||(r&&r.ok===true),d:r===true?'':(r&&r.d!==undefined?r.d:String(r))})}catch(e){R.push({id,n,ok:false,d:'erro: '+String(e&&e.message||e)})}try{reset()}catch(e){}};
   const setM=k=>{m=k;$('m').value=k;render()},tab=x=>document.querySelector('nav [data-t='+x+']').click(),type=(el,v)=>{el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}))},radio=(n,v)=>{const r=document.querySelector('input[name='+n+'][value="'+v+'"]');r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}))};
   window.confirm=()=>true;reset();
 

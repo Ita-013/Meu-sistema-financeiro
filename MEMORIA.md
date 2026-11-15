@@ -7,6 +7,10 @@ Só regras que valem sempre. Procedimento: CLAUDE.md. Contexto técnico e histó
 - Depois de subir na main, eu testo no celular.
 - A Vercel não publica CLAUDE.md, MEMORIA.md, CONTEXTO.md nem tools/ (ficam no `.vercelignore`).
 
+## Testes automáticos (contagem por teste)
+- `tools/regressao.js` guarda em `tools/regressao-estado.json`, por teste: execuções, falhas e sucessos seguidos. Teste que falha: registra a falha ("falha nº N em M execuções") e zera os sucessos seguidos. 3 sucessos seguidos: o teste é aposentado e deixa de rodar. `--tudo` roda também os aposentados; falhou de novo, volta à ativa.
+- O arquivo de estado vai no mesmo commit da mudança. Mexeu em área de teste aposentado e quer garantia: `node tools/regressao.js --tudo`.
+
 ## Regras de design
 - Todo delete: lixeira vermelha pequena padrão, sempre com confirmação.
 - Em blocos de orçamento, o valor orçado fica abaixo ou à direita do realizado.

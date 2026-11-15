@@ -2,9 +2,14 @@
 // carregamento) e roda os testes de tools/regressao-testes.js. Roteiro e motivo de cada teste: TESTES.md.
 // Uso: node tools/regressao.js [saida.png]     (precisa de Node 22+ e Chrome; variável CHROME aponta o executável)
 //      node tools/regressao.js --estresse     (testes de estresse e de segurança do navegador; demora ~1 min)
+//      node tools/regressao.js --tudo         (roda também os testes aposentados; ver tools/regressao-estado.json)
 // Sai com código 1 se algum teste falhar. Não toca em dado real: usa um perfil temporário do Chrome, sem login.
 const { spawn, spawnSync } = require('child_process'), fs = require('fs'), path = require('path'), http = require('http'), os = require('os');
 const EST = process.argv.includes('--estresse');   // roda tools/estresse-testes.js (volume extremo, entradas quebradas, injeção)
+const TUDO = process.argv.includes('--tudo');   // ignora a lista de aposentados
+const EF = path.join(__dirname, 'regressao-estado.json');   // contagem por teste: execucoes, falhas, seguidos (sucessos seguidos), aposentado
+let EC = {}; try { EC = JSON.parse(fs.readFileSync(EF, 'utf8')) } catch (e) {}
+const APOS = TUDO ? [] : Object.keys(EC).filter(k => EC[k].aposentado);
 const png = process.argv.slice(2).find(a => !a.startsWith('--'));
 const exe = process.env.CHROME || ['google-chrome', 'chromium', 'chromium-browser', 'chrome'].find(c => { try { return spawnSync(c, ['--version']).status === 0 } catch (e) { return false } }) || 'google-chrome';
 const port = 9300 + Math.floor(Math.random() * 500), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mc-'));
@@ -29,7 +34,9 @@ const rd = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
     const seed = await ev(rd('regressao-dados.js'));            // 1) dados fictícios gravados no navegador
     await send('Page.reload'); await sleep(2500);               // 2) recarrega: o app sobe já com tudo isso
     const boot = errs.splice(0);
+    await ev('window.__APOSENTADOS=' + JSON.stringify(APOS));
     res = await ev(rd(EST ? 'estresse-testes.js' : 'regressao-testes.js'));   // 3) testes
+    res = res.map(x => APOS.includes(x.id) && !x.skip ? { id: x.id, n: x.n, ok: true, skip: true } : x);   // aposentado que rodou fora do helper t
     if (!EST) res.unshift({ id: 'R01', n: 'Carregar com dados completos sem erro na página', ok: !boot.length, d: boot.join(' | ') || seed });
     if (png) { await ev("document.querySelector('nav [data-t=plan]').click()"); await sleep(500); fs.writeFileSync(png, Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64')) }
     // estresse: dados locais corrompidos. Para cada caso grava o texto no navegador, recarrega e exige que o app abra sem erro.
@@ -46,10 +53,24 @@ const rd = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
   const srv = res.find(x => x.id === 'R40');
   if (srv && srv.S) { try { const { compute } = require('../lib/plan'); const r = compute(JSON.parse(srv.S), srv.t); const a = r.late.map(x => x.id).sort().join(','), b = srv.late.slice().sort().join(','); srv.ok = a === b && r.due.length === srv.due; srv.d = 'servidor ' + r.late.length + ' atrasadas/' + r.due.length + ' hoje; app ' + srv.late.length + '/' + srv.due + (a === b ? '' : ' (listas diferentes)') } catch (e) { srv.ok = false; srv.d = String(e.message) } delete srv.S }
   // 5) servidor: webhook do Pluggy (api/hook.js) com respostas falsas, sem internet
-  if (!EST) { try { res.push(...await require('./hook-teste')()) } catch (e) { res.push({ id: 'R101', n: 'Testes do webhook', ok: false, d: String(e && e.stack || e).slice(0, 300) }) } }
-  let bad = 0;
-  res.forEach(x => { if (!x.ok) bad++; console.log((x.ok ? 'ok   ' : 'FALHA') + ' ' + x.id + ' ' + x.n + (x.d ? '  [' + String(x.d).slice(0, 300) + ']' : '')) });
+  if (!EST) { try { if (APOS.includes('R101') && APOS.includes('R102')) res.push(...['R101', 'R102'].map(i => ({ id: i, n: 'Webhook (aposentado)', ok: true, skip: true }))); else res.push(...await require('./hook-teste')()) } catch (e) { res.push({ id: 'R101', n: 'Testes do webhook', ok: false, d: String(e && e.stack || e).slice(0, 300) }) } }
+  let bad = 0, pulou = 0, novos = [];
+  res.forEach(x => {
+    if (x.skip) { pulou++; return }
+    if (!x.ok) bad++;
+    // contagem por teste (R01 e R00 não entram: são verificações da própria execução, baratas)
+    let aviso = '';
+    if (!fatal && !/^R0[01]$/.test(x.id)) {
+      const c = EC[x.id] = EC[x.id] || { execucoes: 0, falhas: 0, seguidos: 0, aposentado: false };
+      c.execucoes++;
+      if (x.ok) { c.seguidos++; if (c.seguidos >= 3 && !c.aposentado) { c.aposentado = true; novos.push(x.id) } }
+      else { c.falhas++; c.seguidos = 0; c.aposentado = false; aviso = '  <falha nº ' + c.falhas + ' em ' + c.execucoes + ' execuções; sucessos seguidos zerados>' }
+    }
+    console.log((x.ok ? 'ok   ' : 'FALHA') + ' ' + x.id + ' ' + x.n + (x.d ? '  [' + String(x.d).slice(0, 300) + ']' : '') + aviso);
+  });
+  if (!fatal) { fs.writeFileSync(EF, JSON.stringify(EC, null, 1) + '\n'); if (novos.length) console.log('\nAposentado(s) (3 sucessos seguidos): ' + novos.join(', ')) }
+  if (pulou) console.log(pulou + ' teste(s) aposentado(s) não rodaram (use --tudo para rodar todos)');
   if (fatal) { console.log('ERRO NO ROTEIRO: ' + fatal); bad++ }
-  console.log(bad ? '\n' + bad + ' falha(s) de ' + res.length : '\nTudo certo: ' + res.length + ' testes');
+  console.log(bad ? '\n' + bad + ' falha(s) de ' + (res.length - pulou) : '\nTudo certo: ' + (res.length - pulou) + ' testes');
   process.exit(bad ? 1 : 0);
 })();

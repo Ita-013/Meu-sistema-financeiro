@@ -7,6 +7,7 @@ Rodar a cada atualização, antes de oferecer subir na main.
 ```
 sh tools/verificar.sh        # sintaxe JS + cores fixas
 node tools/regressao.js      # 40 testes automáticos (precisa de Node 22+ e Chrome)
+node tools/regressao.js --tudo       # inclui os testes aposentados (3 sucessos seguidos); estado em tools/regressao-estado.json
 node tools/regressao.js --estresse   # 15 testes de estresse e de segurança do navegador (~1 min); rodar quando mexer em importação, telas ou formato dos dados
 ```
 O `regressao.js` abre o app no Chrome sem login, carrega dados fictícios em volume (`tools/regressao-dados.js`: ~1.600 lançamentos em 14 meses, 3 cartões, parcelas, compromissos recorrentes/pagos/ignorados/atrasados, caixinhas), **recarrega a página com esses dados** e roda `tools/regressao-testes.js`. Sai com código 1 se algo falhar. Nenhum dado real é tocado.

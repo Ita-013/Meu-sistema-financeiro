@@ -3,7 +3,7 @@
 (async()=>{
   const R=[],T=today(),cur=T.slice(0,7),wait=ms=>new Promise(r=>setTimeout(r,ms)),r2=n=>Math.round(n*100)/100,p2=n=>String(n).padStart(2,'0');
   const snap=JSON.stringify(S),reset=()=>{Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,JSON.parse(snap));syncCats();document.querySelectorAll('.mdl').forEach(e=>e.hidden=true);m=cur;$('m').value=m;fillCats();render();renderSheet();renderCx();renderRec()};
-  const t=async(id,n,f)=>{try{const r=await f();R.push({id,n,ok:r===true||(r&&r.ok===true),d:r===true?'':(r&&r.d!==undefined?r.d:String(r))})}catch(e){R.push({id,n,ok:false,d:'erro: '+String(e&&e.message||e)})}try{reset()}catch(e){}};
+  const t=async(id,n,f)=>{if((window.__APOSENTADOS||[]).includes(id)){R.push({id,n,ok:true,skip:true});return}try{const r=await f();R.push({id,n,ok:r===true||(r&&r.ok===true),d:r===true?'':(r&&r.d!==undefined?r.d:String(r))})}catch(e){R.push({id,n,ok:false,d:'erro: '+String(e&&e.message||e)})}try{reset()}catch(e){}};
   const tab=x=>document.querySelector('nav [data-t='+x+']').click(),ms=f=>{const a=performance.now();f();return Math.round(performance.now()-a)},bytes=s=>new TextEncoder().encode(s).length;
   const radio=(n,v)=>{const r=document.querySelector('input[name='+n+'][value="'+v+'"]');r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}))};
   window.confirm=()=>true;window._noSave=true;try{_noSave=true}catch(e){}   // não grava os dados gigantes no navegador
