@@ -423,6 +423,9 @@ html.noauth .au{display:flex}
 .sh td.pl input:not(:placeholder-shown){text-decoration:underline dashed var(--dash);text-underline-offset:4px}
 .sh tr.grp .nm small{display:block;font-weight:400;text-transform:none;letter-spacing:0;margin-top:2px}
 .sh tr.grp .addl{margin-left:8px;vertical-align:middle}
+.sh tbody tr.gsum td{background:var(--sf2);box-shadow:none;color:var(--ink);font-weight:800;height:38px;padding:0 5px;border-top:2px solid var(--mu);border-bottom:2px solid var(--mu)}
+.sh tbody tr.gsum td.nm{font-size:.72rem;line-height:1.15;white-space:normal;padding:0 6px}
+.sh tbody tr.gsum td.cur{box-shadow:inset 0 0 0 999px var(--cur2)}
 .sh .m0,.sh .m1{background-color:transparent}
 .sh thead th.m0,.sh thead th.m1{background-image:none}
 .sh th.cur,.sh td.cur{box-shadow:inset 0 0 0 999px var(--cur2)}
@@ -1217,7 +1220,15 @@ function setCell(id,v,t){
   else{txt=z?'0':fz(Math.abs(v));cls=z?'':(v>0?'pos':'neg')}
   el.textContent=txt;el.classList.remove('pos','neg');if(cls)el.classList.add(cls);
 }
+function gsTotals(){
+  const G={in:['in',CATS.in],fx:['out',outList('fx')],vr:['out',outList('vr')],cx:['cx',S.cx.map(x=>String(x.id))]};
+  Object.keys(G).forEach(g=>{const [kd,ks]=G[g],pre=kd==='cx'?'cx|':kd+'|';let tr=0,tp=0;
+    MES.forEach((_,i)=>{const k=mk(i),r=ks.reduce((a,c)=>a+(RC.get(pre+c+'|'+k)||0),0),p=ks.reduce((a,c)=>a+plan(kd,c,k),0);tr+=r;tp+=p;
+      const a=$('gs'+g+'R'+i),b=$('gs'+g+'P'+i);if(a)a.textContent=fz(Math.abs(r));if(b)b.textContent=fz(p)});
+    const a=$('gs'+g+'Rg'),b=$('gs'+g+'Pg');if(a)a.textContent=fz(Math.abs(tr));if(b)b.textContent=fz(tp)});
+}
 function totals(){
+  gsTotals();
   const vis=tp=>S.sheet.filter(r=>nocx(r)&&(r.k==='in')===(tp==='in')&&CATS[tp].includes(rowCat(r)));
   const cxr=S.sheet.filter(r=>r.cx&&S.cx.some(x=>x.id===r.cx));
   const real=(tp,i)=>{let a=0;const k=mk(i);S.tx.forEach(t=>{if(t.type===tp&&t.cat!=='Caixinhas'&&t.date.slice(0,7)===k)a+=t.amount});return a};
@@ -1257,10 +1268,10 @@ function renderSheet(){
   const h1='<tr><th class="nm" rowspan="2">Categorias</th>'+MES.map((x,i)=>`<th class="g${mp(i)}${cu(i)}" colspan="2">${x}</th>`).join('')+'<th class="g" colspan="2">Total</th><th class="sub" rowspan="2"></th></tr>';
   const h2='<tr>'+MES.map((_,i)=>`<th class="g sub${mp(i)}${cu(i)}">Real</th><th class="sub${mp(i)}${cu(i)}">Plan</th>`).join('')+'<th class="g sub">Real</th><th class="sub">Plan</th></tr>';
   const grp=(t,kd)=>(RZ=0,'')+`<tr class="grp"><td class="nm">${t}${kd?`<button type="button" class="addl" data-addkind="${kd}" aria-label="Adicionar linha de ${t.toLowerCase()}">+</button>`:''}</td><td colspan="27"></td></tr>`;
-  const gsum=g=>fmt(S.sheet.filter(r=>nocx(r)&&r.k!=='in'&&outList(g).includes(rowCat(r))).reduce((a,r)=>a+(r.v[m]||0),0));
-  const gh=(t,g,kd)=>(RZ=0,'')+`<tr class="grp" data-grp="${g}"><td class="nm">${t}${kd?`<button type="button" class="addl" data-addkind="${kd}" aria-label="Adicionar linha de ${t.toLowerCase()}">+</button>`:''}<small>Planejado em ${MES[+m.slice(5,7)-1].toLowerCase()}: ${gsum(g)}</small></td><td colspan="27"></td></tr>`;
+  const gsr=(g,lab)=>`<tr class="gsum"><td class="nm">${lab}</td>`+MES.map((_,i)=>`<td class="g${mp(i)}${cu(i)}" id="gs${g}R${i}"></td><td class="${(mp(i)+cu(i)).trim()}" id="gs${g}P${i}"></td>`).join('')+`<td class="g" id="gs${g}Rg"></td><td id="gs${g}Pg"></td><td></td></tr>`;
+  const gh=(t,g,kd)=>(RZ=0,'')+`<tr class="grp" data-grp="${g}"><td class="nm">${t}${kd?`<button type="button" class="addl" data-addkind="${kd}" aria-label="Adicionar linha de ${t.toLowerCase()}">+</button>`:''}</td><td colspan="27"></td></tr>`;
   const foot=(id,lab)=>`<tr><td class="nm">${lab}</td>`+MES.map((_,i)=>`<td class="g${mp(i)}${cu(i)}" id="${id}R${i}"></td><td class="${(mp(i)+cu(i)).trim()}" id="${id}P${i}"></td>`).join('')+`<td class="g" id="${id}Rg"></td><td id="${id}Pg"></td><td></td></tr>`;
-  $('sh').innerHTML='<thead>'+h1+h2+'</thead><tbody>'+grp('Entradas','in')+CATS.in.map(c=>catRow('in',c)).join('')+gh('Gastos fixos','fx','')+outList('fx').map(c=>catRow('out',c)).join('')+gh('Gastos variáveis','vr','out')+outList('vr').map(c=>catRow('out',c)).join('')+(S.cx.length?grp('Investimentos (caixinhas)')+S.cx.map(cxRow).join(''):'')+'</tbody><tfoot>'+foot('ti','Total de entradas')+foot('to','Total de saídas')+foot('tg','Guardado em caixinhas')+foot('td','Saldo do período')+foot('ta','Resultado acumulado')+'</tfoot>';
+  $('sh').innerHTML='<thead>'+h1+h2+'</thead><tbody>'+grp('Entradas','in')+CATS.in.map(c=>catRow('in',c)).join('')+gsr('in','Total de entradas')+gh('Gastos fixos','fx','')+outList('fx').map(c=>catRow('out',c)).join('')+gsr('fx','Total de gastos fixos')+gh('Gastos variáveis','vr','out')+outList('vr').map(c=>catRow('out',c)).join('')+gsr('vr','Total de gastos variáveis')+(S.cx.length?grp('Investimentos (caixinhas)')+S.cx.map(cxRow).join('')+gsr('cx','Total de investimentos'):'')+'</tbody><tfoot>'+foot('ti','Total de entradas')+foot('to','Total de saídas')+foot('tg','Guardado em caixinhas')+foot('td','Saldo do período')+foot('ta','Resultado acumulado')+'</tfoot>';
   document.querySelectorAll('#sh textarea[data-ren="out"]').forEach(t=>{t.closest('tr').dataset.cat=t.dataset.old});
   totals();monthScroll();autosizeAll();
 }

@@ -53,6 +53,7 @@ Regra: **bug novo corrigido = teste novo aqui e em `regressao-testes.js`**, com 
 | R97 | Senha: bloqueia ao sair da tela e pede toda vez que abrir; planilha sem sinais + e − | 14/11: bloqueava só depois de 1 minuto fora |
 | R98 | Tela de bloqueio com e sem desbloqueio pelo celular; remover a senha desativa o celular | 14/11: pedido de usar o desbloqueio do aparelho |
 | R99 | Receitas: Editar (emoji, nome, previsto), cancelar, nome repetido barrado; título Despesas | 14/11: Receitas não tinha o Editar das Despesas |
+| R100 | Planilha: linha de total destacada no fim de cada grupo bate com a soma das linhas; sem "Planejado em" no cabeçalho | 16/11: pedido de total por grupo |
 
 As duas falhas de hoje (R72 e R74) são mudanças visuais: esperam aprovação.
 

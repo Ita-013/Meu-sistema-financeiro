@@ -153,5 +153,14 @@
     const pv=S.sheet.filter(r=>r.k==='in'&&rowCat(r)==='Freela PJ').reduce((a,r)=>a+(r.v[cur]||0),0);
     const ok=ttl==='Despesas'&&campos>=2&&sem===0&&cancel&&dup&&CATS.in.includes('Freela PJ')&&!CATS.in.includes(cat)&&S.tx.filter(x=>x.cat==='Freela PJ').length===nt&&S.emo['in|Freela PJ']==='🎯'&&near(pv,1234.56)&&!document.querySelector('#icats [data-xn]');
     return{ok,d:'título '+ttl+'; campos '+campos+'; sem título '+sem+'; cancelar ok '+cancel+'; repetido barrado '+dup+'; previsto '+pv+'; lançamentos '+nt+' -> '+S.tx.filter(x=>x.cat==='Freela PJ').length}});
+  await t('R100','Planilha: cada grupo (entradas, fixos, variáveis, investimentos) termina numa linha de total destacada que bate com a soma das linhas, e o cabeçalho não traz mais o "Planejado em"',()=>{
+    reset();m=cur;tab('plan');renderSheet();const nv=x=>parseFloat(String(x).replace(/\./g,'').replace(',','.'))||0,rows=[...document.querySelectorAll('#sh tbody tr')],bad=[];let acc=[],nT=0;
+    rows.forEach(tr=>{if(tr.classList.contains('gsum')){nT++;const r=[...tr.querySelectorAll('td')].slice(1,-1);
+        for(let i=0;i<13;i++){const tr_=nv(r[i*2].textContent),tp=nv(r[i*2+1].textContent),sr=Math.abs(acc.reduce((a,x)=>a+(x.r[i]||0),0)),sp=acc.reduce((a,x)=>a+(x.p[i]||0),0);
+          if(Math.abs(tr_-sr)>acc.length||Math.abs(tp-sp)>acc.length)bad.push(tr.cells[0].textContent+' col '+i+': '+tr_+'/'+tp+' x '+sr+'/'+sp)}
+        acc=[]}
+      else if(tr.querySelector('td.ro')){const r=[...tr.querySelectorAll('td.ro')].map(c=>nv(c.textContent)*(c.classList.contains('cxc')&&c.classList.contains('pos')?-1:1)),p=[...tr.querySelectorAll('td.pl input')].map(c=>nv(c.value));r.push(nv(tr.querySelector('td.g.t').textContent)*(tr.querySelector('td.cxc')&&tr.querySelector('td.g.t').classList.contains('pos')?-1:1));p.push(nv(tr.querySelector('td.t:not(.g)').textContent));acc.push({r,p})}});
+    const hd=document.querySelector('#sh').textContent.includes('Planejado em'),est=getComputedStyle(document.querySelector('#sh tr.gsum td')).backgroundColor;
+    return{ok:nT>=3&&!bad.length&&!hd&&est!=='rgba(0, 0, 0, 0)',d:'linhas de total '+nT+'; divergências '+bad.length+(bad[0]?' ('+bad[0]+')':'')+'; texto antigo '+hd+'; fundo '+est}});
   return R;
 })()
