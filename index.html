@@ -236,6 +236,8 @@ span.bem{cursor:default}
 .ba{display:flex;align-items:center;justify-content:center;color:#fff;background:var(--b-ok);font-family:var(--font-mono);font-size:.8rem;font-weight:700;white-space:nowrap;transition:flex-basis .3s}
 .warn .ba{background:var(--b-warn)}.over .ba{background:var(--b-over)}.nb .ba{background:var(--b-nb)}
 .ba.e{background:transparent;color:var(--mu)}
+.bd.t{min-width:0;flex:1 1 0}
+.bres{text-align:right;margin-top:6px;font-family:var(--font-mono);font-weight:700;font-size:.8rem;color:var(--in)}
 .bd{flex:1;min-width:80px;display:flex;align-items:center;justify-content:center;color:var(--bd-ink);font-family:var(--font-mono);font-size:.86rem;font-weight:700;white-space:nowrap;border-left:1px dashed var(--dash);background:repeating-linear-gradient(135deg,var(--str1) 0 4px,var(--str2) 4px 8px)}
 #cats .bd input,#cxl .bd input{width:100%;height:100%;min-height:0;border:0;border-radius:0;background:transparent;text-align:center;font-family:var(--font-mono);font-size:.8rem;font-weight:600;color:var(--ink);padding:0 4px;outline:none}
 .bp{flex:none;width:30px;height:30px;min-height:0;padding:0;border-radius:9px;border:1px solid var(--ln);background:var(--sf2);color:var(--mu);display:flex;align-items:center;justify-content:center;cursor:pointer}
@@ -936,14 +938,15 @@ function render(){
   $('cats').innerHTML=[...cs].sort((a,b)=>(by[b]||0)-(by[a]||0)).map(c=>{
     const sp=by[c]||0,lim=eff(c),over=lim>0&&sp>lim+0.005,p=lim?Math.min(100,sp/lim*100):0,cl=lim?(over?'over':sp/lim>=.7?'warn':''):'nb'+(sp?'':' z');
     const ed=editAll,open=!ed&&openCat===c,det=open?detail(c):'',dr=ed?(odraft[c]||(odraft[c]={n:c,e:(S.emo&&S.emo[c])||'',v:num(lim)})):null;
+    const tight=lim>0&&!over&&sp<lim-0.005&&p>=85;
     const seg=!lim?`<div class="ba" style="flex:1">${fmt(sp)}</div>`
       :(over||sp>=lim-0.005)?`<div class="ba" style="flex:1">${fmt(sp)}</div>`   // estourou ou usou 100%: barra cheia, sem o trecho tracejado
-      :`<div class="ba${sp?'':' e'}" style="flex:0 0 clamp(70px,${p.toFixed(1)}%,calc(100% - 80px))">${fmt(sp)}</div><div class="bd">${nr(lim-sp)}</div>`;
+      :`<div class="ba${sp?'':' e'}" style="flex:0 0 clamp(70px,${p.toFixed(2)}%,100%)">${fmt(sp)}</div>${tight?'<div class="bd t"></div>':`<div class="bd">${nr(lim-sp)}</div>`}`;   // largura real do usado; a partir de 85% o tracejado é estreito demais para o número: o saldo vai abaixo da barra (.bres)
     const eb=ed?`<span class="bem"><input data-de="${esc(c)}" value="${esc(dr.e)}" maxlength="16" placeholder="${EMO_DEF}" aria-label="Emoji de ${esc(c)}"></span>`:`<span class="bem" aria-hidden="true">${emoOf(c)}</span>`;
     const nm=ed?`<input class="bname" data-dn="${esc(c)}" value="${esc(dr.n)}" maxlength="30" aria-label="Nome do orçamento ${esc(c)}">`:`<button type="button" class="cn" data-d="${esc(c)}" aria-expanded="${open}">${esc(c)} <span aria-hidden="true">${open?'▾':'▸'}</span></button>`;
     const bo=ed?`<span class="bo"><input data-dv="${esc(c)}" inputmode="numeric" enterkeyhint="done" value="${esc(dr.v)}" placeholder="0,00" aria-label="Orçado para ${esc(c)}"></span>`
       :`<span class="bo">${lim?'de <b>'+fmt(lim)+'</b>':'sem orçamento'}</span>`;
-    return `<li class="bi ${cl}"><div class="bh">${eb}${nm}${bo}</div><div class="bl"><div class="bb"${ed?'':` data-d="${esc(c)}"`}>${seg}</div></div>${over?`<div class="bov">estourou ${fmt(sp-lim)}</div>`:''}${det}</li>`}).join('')+capLi;
+    return `<li class="bi ${cl}"><div class="bh">${eb}${nm}${bo}</div><div class="bl"><div class="bb"${ed?'':` data-d="${esc(c)}"`}>${seg}</div></div>${over?`<div class="bov">estourou ${fmt(sp-lim)}</div>`:''}${tight?`<div class="bres">+ ${fmt(lim-sp)}</div>`:''}${det}</li>`}).join('')+capLi;
   const byI={};tx.filter(t=>t.type==='in').forEach(t=>byI[t.cat]=(byI[t.cat]||0)+t.amount);
   const ics=[...CATS.in,...Object.keys(byI).filter(c=>!CATS.in.includes(c)&&c!=='Caixinhas')],incN=inc-(byI['Caixinhas']||0);
   const pv=c=>S.sheet.filter(r=>r.k==='in'&&rowCat(r)===c).reduce((a,r)=>a+(r.v[m]||0),0);

@@ -32,7 +32,7 @@ Sistema de finanças pessoais em página web, arquivo único `index.html`. Uso p
 - Vercel Hobby: cron só 1x/dia, precisão ±1 h, log ~1 h, até 100 crons por projeto.
 - Convite: fora do código, `ADMIN_UID` na Vercel (Firebase > Authentication > Usuários > UID) e desligar "Enable create (sign-up)" no Firebase. Se `create` der PERMISSION_DENIED, a conta de serviço precisa do papel "Firebase Authentication Admin".
 - Planilha: Real dos gastos com Plan ganha pílula (`s-ok` < 70%, `s-warn` 70–100%, `s-over` acima; vars `--pk-*` por tema); linhas alternadas `.zb` (`RZ` zera em cada grupo). Ajuste no Real da caixinha cria `cxMove` com `note` "Ajuste de planilha".
-- Barras das despesas: verde < 70%, laranja de 70% a 100% (cheia e sem tracejado em 100%), vermelho escuro acima ("estourou"), cinza sem orçamento. Receitas e caixinhas ficam cheias ao atingir.
+- Barras das despesas: verde < 70%, laranja de 70% a 100% (cheia e sem tracejado em 100%), vermelho escuro acima ("estourou"), cinza sem orçamento. Receitas e caixinhas ficam cheias ao atingir. O laranja tem a largura real (`flex-basis` = %, mín. 70 px); a partir de 85% o tracejado fica vazio (`.bd.t`) e o saldo vai abaixo da barra (`.bres`, verde), porque o número não cabe.
 - Variáveis da Vercel: `FIREBASE_SERVICE_ACCOUNT`, `CRON_SECRET`, `FIREBASE_API_KEY`, `PLUGGY_ENC_KEY`, `ADMIN_UID`. Notificações precisam ser ativadas no app (aba ⚙) em cada aparelho.
 
 ## Histórico
@@ -40,6 +40,7 @@ Sistema de finanças pessoais em página web, arquivo único `index.html`. Uso p
 - 14/11/2026: planilha de Orçamentos no modelo E (pílulas, linhas alternadas, nome largo, Plan tracejado); pop-up do Real das caixinhas (R94–R96); `pgAuto` reconsulta o Pluggy se a leitura tem mais de 1 h e o ⟳ não promete "atualizar o banco" (MeuPluggy não aceita). Planilha sem sinais + e − (`sgn` devolve vazio; cor diz positivo/negativo); lixeira vermelha padrão nas linhas; títulos em `#pin1`/`#bk-txt`; com senha definida o app bloqueia ao sair da tela (`visibilitychange`) e pede a senha toda vez (R97). Receitas ganham o botão Editar (emoji, nome, previsto do mês; `icApply`, R99) e o card "Orçado x realizado" virou "Despesas". Conciliação por mês do topo (R103); webhook do Pluggy para push na hora (R101–R102). Desbloqueio pelo celular via WebAuthn (`bioSetup`/`bioUnlock`, chave `caixa-bio`; confirmação só local; exige a senha do app como reserva; R98).
 - 14/11/2026 (noite): testes ganham contagem por teste e aposentadoria após 3 sucessos seguidos (`regressao-estado.json`, `--tudo`).
 - 16/11/2026: planilha de Orçamentos com linha de total destacada (cinza, `tr.gsum`, `gsTotals()` chamada por `totals()`) no fim de Entradas, Gastos fixos, Gastos variáveis e Investimentos; some o "Planejado em" do cabeçalho do grupo (R100).
+- 17/11/2026: barra do orçado x realizado mostra o uso real perto do limite (antes o tracejado tinha 80 px fixos e 209,97 de 210 parecia ~80%); saldo abaixo da barra a partir de 85% (R104).
 
 ## Pendências
 - Pluggy: itens "MeuPluggy" (proxy) não aceitam `PATCH /items`; atualizam 1x/dia no horário da conexão original, então o refresh do cron e do ⟳ não força nada (`refresh` em `lib/bank.js` só acompanha o status). Se a leitura vier velha, o limite é do Pluggy, não do app.

@@ -171,5 +171,14 @@
     out.querySelector('[data-rcgo]').click();const l1=[...document.querySelectorAll('#rcl li[data-r]')].map(li=>li.dataset.r).join(),mOk=m===k1,ig1=!$('rc-ig').hidden;
     setPer(cur);
     return{ok:l0===2&&/⚙ 3/.test(nav)&&outOk&&ig0&&pb1==='pend'&&mOk&&l1==='p:b1'&&ig1,d:'mês atual '+l0+' itens; aba "'+nav+'"; outros meses: '+out.textContent+'; b1 após Lançar sugeridas: '+pb1+'; no mês anterior: '+l1}});
+  await t('R104','Barra do orçado x realizado: o laranja tem a largura real do usado (209,97 de 210 fica quase cheio); a partir de 85% o saldo vai abaixo da barra, antes disso fica dentro do tracejado',()=>{
+    reset();m=cur;$('m').value=cur;tab('res');const c=CATS.out[0];S.tx=S.tx.filter(x=>!(x.cat===c&&x.date.slice(0,7)===cur));
+    const caso=(plano,gasto)=>{S.tx=S.tx.filter(x=>x.id!=='r104');S.tx.push({id:'r104',type:'out',amount:gasto,desc:'r104',cat:c,date:cur+'-10',pay:'Pix'});setPlan('out',c,cur,plano);render();
+      const li=[...document.querySelectorAll('#cats li')].find(l=>{const b=l.querySelector('button.cn');return b&&b.dataset.d===c});if(!li)return null;
+      const bb=li.querySelector('.bb').getBoundingClientRect().width,ba=li.querySelector('.ba').getBoundingClientRect().width,bd=li.querySelector('.bd'),bres=li.querySelector('.bres');
+      return{f:ba/bb,bd:bd?bd.getBoundingClientRect().width:-1,bdTxt:bd?bd.textContent.trim():'',bres:bres?bres.textContent.replace(/\s+/g,' ').trim():''}};
+    const a=caso(210,209.97),b=caso(1100,983.44),d=caso(300,210);if(!a||!b||!d)return'categoria não apareceu';
+    const ok=a.f>.97&&a.bd<5&&/0,03/.test(a.bres)&&!a.bdTxt&&Math.abs(b.f-.894)<.03&&/116,56/.test(b.bres)&&!b.bdTxt&&d.bres===''&&/90,00/.test(d.bdTxt)&&Math.abs(d.f-.7)<.12;
+    return{ok,d:'209,97/210: preenchido '+Math.round(a.f*100)+'% saldo "'+a.bres+'" | 983,44/1100: '+Math.round(b.f*100)+'% saldo "'+b.bres+'" | 210/300: '+Math.round(d.f*100)+'% tracejado "'+d.bdTxt+'"'}});
   return R;
 })()
