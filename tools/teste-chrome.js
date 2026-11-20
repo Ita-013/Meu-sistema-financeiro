@@ -3,7 +3,7 @@
 // O cenário é um arquivo com UMA expressão JS (ex.: uma função autoexecutável que devolve texto ou objeto), rodada dentro do app.
 // Dentro dele valem as variáveis do app: S (estado), m (mês), $, render(), cxMove(...). Exemplo:
 //   (()=>{ m='2026-11'; $('m').value=m; S.tx=[{id:1,type:'out',amount:50,desc:'x',cat:'Mercado',date:'2026-11-10',pay:'Pix'}]; render(); return $('exp').textContent })()
-// Com saida.png, tira um print em tela de celular (390 px). O erro inofensivo "module is not defined" (pluggy.js antigo) é ignorado.
+// Com saida.png, tira um print em tela de celular (390 px).
 const { spawn } = require('child_process'), fs = require('fs'), path = require('path'), http = require('http');
 const [, , cen, png] = process.argv;
 if (!cen) { console.log('uso: node tools/teste-chrome.js cenario.js [saida.png]'); process.exit(1); }
