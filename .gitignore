@@ -1,1 +1,5 @@
 .vercel
+
+# dados pessoais gerados pela migração (nunca commitar)
+dados-*.sql
+caixa-estado*.json

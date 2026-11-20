@@ -5,6 +5,7 @@ Só regras que valem sempre. Procedimento: CLAUDE.md. Contexto técnico e histó
 - Respostas diretas e técnicas; explicar o porquê das decisões (estou aprendendo sistemas e análise de dados).
 - A main do GitHub é a versão mais atual, pois eu também edito: partir sempre dela.
 - Depois de subir na main, eu testo no celular.
+- Sempre que houver próximos passos ou decisões (subir na main, começar a próxima fase, escolher entre opções), oferecer como botões de sugestão no Claude (pergunta com opções clicáveis), não só em texto.
 - A Vercel não publica CLAUDE.md, MEMORIA.md, CONTEXTO.md nem tools/ (ficam no `.vercelignore`).
 
 ## Testes automáticos (contagem por teste)
