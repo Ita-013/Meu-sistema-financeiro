@@ -180,5 +180,26 @@
     const a=caso(210,209.97),b=caso(1100,983.44),d=caso(300,210);if(!a||!b||!d)return'categoria não apareceu';
     const ok=a.f>.97&&a.bd<5&&/0,03/.test(a.bres)&&!a.bdTxt&&Math.abs(b.f-.894)<.03&&/116,56/.test(b.bres)&&!b.bdTxt&&d.bres===''&&/90,00/.test(d.bdTxt)&&Math.abs(d.f-.7)<.12;
     return{ok,d:'209,97/210: preenchido '+Math.round(a.f*100)+'% saldo "'+a.bres+'" | 983,44/1100: '+Math.round(b.f*100)+'% saldo "'+b.bres+'" | 210/300: '+Math.round(d.f*100)+'% tracejado "'+d.bdTxt+'"'}});
+  await t('R105','Supabase: editar envia só a diferença, o snapshot só avança se o envio der certo, recarregar reconstrói o mesmo estado e a ordem das listas vale por id',async()=>{
+    // banco falso em memória: apply guarda as linhas por chave primária; load devolve cada tabela ordenada como o load_all
+    const M=Mapa,db={},calls=[];let falha=false;
+    const aplica=p=>{M.TABELAS.forEach(tb=>{(p.upserts[tb]||[]).forEach(r=>{db[tb]=db[tb]||new Map();db[tb].set(M.PK[tb].map(k=>r[k]).join('|'),r)})});M.TABELAS.slice().reverse().forEach(tb=>{(p.deletes[tb]||[]).forEach(r=>db[tb]&&db[tb].delete(M.PK[tb].map(k=>r[k]).join('|')))})};
+    window.SB={apply:async p=>{if(falha)throw new Error('offline');calls.push(p);aplica(p)},load:async()=>Object.fromEntries(M.TABELAS.map(tb=>[tb,[...(db[tb]||new Map()).values()].sort((a,b)=>M.stable(a[M.PK[tb].filter(k=>k!=='user_id')[0]])<M.stable(b[M.PK[tb].filter(k=>k!=='user_id')[0]])?-1:1)]))};
+    const bakUSE=USE_SB,bakCu=cu,bakSnap=sbSnap,bakLO=localOnly;
+    try{
+      USE_SB=true;cu={uid:'u-teste',email:'t@t'};sbSnap={};localOnly=false;
+      await sendSB();const n0=calls[0]&&Object.values(calls[0].upserts).reduce((a,l)=>a+l.length,0);   // carga inicial: tudo sobe
+      const antes=S.tx.length,id=S.tx[0].id;
+      S.tx[0].amount=Math.round((S.tx[0].amount+1)*100)/100;await sendSB();
+      const c1=calls[1],soUma=c1&&c1.upserts.transactions&&c1.upserts.transactions.length===1&&Object.values(c1.upserts).reduce((a,l)=>a+l.length,0)===1&&!Object.values(c1.deletes).some(l=>l.length);
+      const nc=calls.length;await sendSB();const semMudanca=calls.length===nc;   // nada mudou: nada é enviado
+      falha=true;S.tx.pop();let erro=false;try{await sendSB()}catch(e){erro=true}
+      const pend=isDirty();falha=false;await sendSB();const ok2=!isDirty()&&calls[calls.length-1].deletes.transactions.length===1;   // falhou: continua pendente; depois vai
+      const esperado=canon(Object.assign(blankS(),M.fromRows(M.toRows(core()).tables)));   // o banco guarda 2 casas: 5,6899999 vira 5,69
+      S=Object.assign(blankS(),M.fromRows(await SB.load()));const volta=canon(S)===esperado;   // recarregar reproduz o estado
+      const ids=S.tx.map(x=>x.id),ordem=ids.every((x,i)=>!i||ids[i-1]<x);
+      const ok=n0>100&&soUma&&semMudanca&&erro&&pend&&ok2&&volta&&ordem&&S.tx.length===antes-1;
+      return{ok,d:'carga '+n0+' linhas; edição=1 linha:'+soUma+'; sem mudança=0 envios:'+semMudanca+'; falha mantém pendente:'+(erro&&pend)+'; reenvio apaga 1:'+ok2+'; recarga igual:'+volta+'; ordem por id:'+ordem}
+    }finally{USE_SB=bakUSE;cu=bakCu;sbSnap=bakSnap;localOnly=bakLO;delete window.SB}});
   return R;
 })()

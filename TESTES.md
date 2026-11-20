@@ -57,6 +57,7 @@ Regra: **bug novo corrigido = teste novo aqui e em `regressao-testes.js`**, com 
 | R100 | Planilha: linha de total destacada no fim de cada grupo bate com a soma das linhas; sem "Planejado em" no cabeçalho | 16/11: pedido de total por grupo |
 | R101–R103 | Conciliação pelo mês do topo (R103); webhook recusa sem assinatura, avisa só as novas e não repete | 14/11: aviso das movimentações só chegou ao abrir o app (17h) |
 | R104 | Barra do orçado x realizado com uso quase no limite: laranja na largura real, saldo abaixo da barra a partir de 85% | 17/11: 209,97 de 210 parecia ~80% (tracejado tinha 80 px fixos) |
+| R105 | Supabase (`sendSB`/`pullSB`): editar envia só a diferença; envio que falha continua pendente e depois vai; recarregar reproduz o estado; listas voltam em ordem de id | 20/11: troca do Firestore (JSON inteiro) por Postgres (diff por linha) |
 
 As duas falhas de hoje (R72 e R74) são mudanças visuais: esperam aprovação.
 

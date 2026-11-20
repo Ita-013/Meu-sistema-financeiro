@@ -47,12 +47,16 @@ declare
   ordem text[] := array['cards','cashboxes','cashbox_movements','transactions','tx_reimbursements',
     'commitments','recurring_commitments','invoice_payments','budget_rows','budget_plan',
     'reconciliation','rules','categories','user_settings'];
-  t text; r jsonb; res jsonb := '{}'::jsonb;
+  t text; r jsonb; res jsonb := '{}'::jsonb; ob text;
 begin
   if auth.uid() is null then raise exception 'não autenticado'; end if;
   foreach t in array ordem loop
+    -- ordem de leitura = chave primária sem user_id (o app espera as listas em ordem crescente de id)
+    select coalesce(string_agg(quote_ident(a.attname), ', ' order by a.attnum), '1') into ob
+      from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
+     where i.indrelid = ('public.' || quote_ident(t))::regclass and i.indisprimary and a.attname <> 'user_id';
     execute format(
-      'select coalesce(jsonb_agg(to_jsonb(x) - ''user_id'' - ''created_at'' - ''updated_at''), ''[]''::jsonb) from public.%I x', t)
+      'select coalesce(jsonb_agg(to_jsonb(x) - ''user_id'' - ''created_at'' - ''updated_at'' order by %s), ''[]''::jsonb) from public.%I x', ob, t)
       into r;
     res := res || jsonb_build_object(t, r);
   end loop;
