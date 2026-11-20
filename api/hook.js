@@ -6,6 +6,7 @@
 // O cadastro do webhook no Pluggy é feito pelo app (api/pluggy.js, action 'hook'), com a chave da própria conta.
 // Variáveis de ambiente: CRON_SECRET (assinatura), FIREBASE_SERVICE_ACCOUNT, PLUGGY_ENC_KEY.
 const g = require('../lib/google');
+const store = require('../lib/store');
 const { hoje } = require('../lib/plan');
 const { novas } = require('../lib/bank');
 const { okSig, EVENTS } = require('../lib/hook');
@@ -29,13 +30,12 @@ module.exports = async (req, res) => {
   const t = hoje();
   let why = '';
   try {
-    const doc = await g.fsGet('push/' + uid);
+    const doc = await store.getPush(uid);
     const tokens = Array.isArray(doc && doc.tokens) ? doc.tokens.filter(x => typeof x === 'string' && x) : [];
     const seen = Array.isArray(doc && doc.seen) ? doc.seen : [];
-    const u = await g.fsGet('users/' + uid);
-    if (!u || !u.data) why = 'sem dados do app';
+    const S = await store.getState(uid);
+    if (!S) why = 'sem dados do app';
     else {
-      const S = JSON.parse(u.data);
       if (body.itemId && !(S.pgItems || []).some(i => String(i.id) === String(body.itemId))) why = 'banco que não é desta conta';
       else {
         const b = await novas(S, uid, t, { refresh: false, seen });
@@ -48,9 +48,9 @@ module.exports = async (req, res) => {
           const msg = { title: 'Meu caixa', body: n + (n === 1 ? ' movimentação nova do banco para conciliar.' : ' movimentações novas do banco para conciliar.'), tag: 'caixa-banco', day: t };
           let ok = 0; const dead = [];
           for (const tk of tokens) { const s = await g.fcmSend(tk, msg); if (s.ok) ok++; else if (s.dead) dead.push(tk); }
-          if (dead.length) await g.setPush(uid, tokens.filter(x => !dead.includes(x)));
+          if (dead.length) await store.setPush(uid, tokens.filter(x => !dead.includes(x)));
           // guarda os ids avisados (os mais recentes) para o próximo aviso não repetir as mesmas
-          if (ok) await g.setFields(uid, { seen: [...seen, ...b.fresh].slice(-400) });
+          if (ok) await store.setFields(uid, { seen: [...seen, ...b.fresh].slice(-400) });
           why = n + ' nova(s), push ' + ok + ' de ' + tokens.length + ' aparelho(s)';
         }
       }
@@ -59,6 +59,6 @@ module.exports = async (req, res) => {
     why = 'erro: ' + String(e && e.message || e).slice(0, 100);
   }
   console.log('[hook] ' + ev + ' ' + uid.slice(0, 6) + ' ' + why);
-  try { await g.setFields(uid, { lastHook: Date.now(), lastHookResult: fmtHora() + ' · ' + ev + ' · ' + why }); } catch (e) {}
+  try { await store.setFields(uid, { lastHook: Date.now(), lastHookResult: fmtHora() + ' · ' + ev + ' · ' + why }); } catch (e) {}
   res.status(200).json({ ok: true });
 };

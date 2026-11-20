@@ -19,17 +19,6 @@ function limited(uid, max) {
   return false;
 }
 
-async function whoami(idToken) {
-  const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + process.env.FIREBASE_API_KEY, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ idToken })
-  });
-  if (!r.ok) return null;
-  const u = ((await r.json()).users || [])[0];
-  return u && u.localId ? { uid: u.localId } : null;
-}
-
 const same = (a, b) => {
   const x = Buffer.from(String(a)), y = Buffer.from(String(b));
   return x.length === y.length && crypto.timingSafeEqual(x, y);
@@ -48,7 +37,7 @@ module.exports = async (req, res) => {
   if (need.length) return res.status(500).json({ error: 'config', missing: need });
 
   const tok = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const user = tok ? await whoami(tok) : null;
+  const user = tok ? await require('../lib/store').whoami(tok) : null;
   if (!user) return res.status(401).json({ error: 'unauthorized' });
   const admin = same(user.uid, process.env.ADMIN_UID);
 

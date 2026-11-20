@@ -5,6 +5,7 @@
 // Variáveis de ambiente: CRON_SECRET, FIREBASE_SERVICE_ACCOUNT (ver lib/google.js), PLUGGY_ENC_KEY (ver lib/bank.js)
 const crypto = require('crypto');
 const g = require('../lib/google');
+const store = require('../lib/store');
 const { compute, linhas, hoje } = require('../lib/plan');
 const { novas } = require('../lib/bank');
 
@@ -20,7 +21,7 @@ module.exports = async (req, res) => {
   const t = hoje();
   const out = { day: t, users: 0, sent: 0, failed: 0, skipped: 0 };
   try {
-    const docs = await g.fsList('push');
+    const docs = await store.listPush();
     for (const d of docs) {
       const tokens = Array.isArray(d.tokens) ? d.tokens.filter(x => typeof x === 'string' && x) : [];
       let why = '';   // o que aconteceu com este usuário; fica gravado em push/{uid} para o app mostrar
@@ -28,10 +29,9 @@ module.exports = async (req, res) => {
       else {
         out.users++;
         try {
-          const u = await g.fsGet('users/' + d.id);
-          if (!u || !u.data) { out.skipped++; why = 'sem dados do app'; }
+          const S = await store.getState(d.id);
+          if (!S) { out.skipped++; why = 'sem dados do app'; }
           else {
-            const S = JSON.parse(u.data);
             const r = compute(S, t);
             const seen = Array.isArray(d.seen) ? d.seen : [];
             const b = await novas(S, d.id, t, { seen });
@@ -47,8 +47,8 @@ module.exports = async (req, res) => {
                 const s = await g.fcmSend(tk, msg);
                 if (s.ok) { out.sent++; ok++; } else { out.failed++; codes.push(s.code || s.status); if (s.dead) dead.push(tk); }
               }
-              if (dead.length) await g.setPush(d.id, tokens.filter(x => !dead.includes(x)));
-              if (ok && b.ids && b.ids.length) { try { await g.setFields(d.id, { seen: [...new Set([...seen, ...b.ids])].slice(-400) }); } catch (e) {} }   // o webhook não repete o que já foi avisado aqui
+              if (dead.length) await store.setPush(d.id, tokens.filter(x => !dead.includes(x)));
+              if (ok && b.ids && b.ids.length) { try { await store.setFields(d.id, { seen: [...new Set([...seen, ...b.ids])].slice(-400) }); } catch (e) {} }   // o webhook não repete o que já foi avisado aqui
               why = ok + ' de ' + tokens.length + ' aparelho(s) enviado(s)' + (codes.length ? ' · erro FCM: ' + [...new Set(codes)].join(', ') : '') + (dead.length ? ' · removido(s) ' + dead.length + ' inválido(s)' : '');
             }
             // o que o refresh do Pluggy fez, para aparecer em "último envio" na aba ⚙
@@ -60,7 +60,7 @@ module.exports = async (req, res) => {
         }
       }
       console.log('[daily] ' + t + ' ' + d.id.slice(0, 6) + ' ' + why);   // aparece no log da Vercel (guarda ~1h no plano Hobby)
-      try { await g.setRun(d.id, t + ' · ' + why); } catch (e) {}   // o registro que fica: o app lê por /api/push (action status)
+      try { await store.setRun(d.id, t + ' · ' + why); } catch (e) {}   // o registro que fica: o app lê por /api/push (action status)
     }
     console.log('[daily] resumo ' + JSON.stringify(out));
     res.status(200).json(out);

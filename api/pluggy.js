@@ -63,17 +63,6 @@ async function pg(path, key) {
   return r.json();
 }
 
-async function whoami(idToken) {
-  const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + process.env.FIREBASE_API_KEY, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ idToken })
-  });
-  if (!r.ok) return null;
-  const u = ((await r.json()).users || [])[0];
-  return u && u.localId ? { uid: u.localId, email: String(u.email || '').toLowerCase() } : null;
-}
-
 const top = m => { let b = '', n = 0; for (const [k, v] of m) if (v > n) { b = k; n = v; } return b; };
 const isId = s => /^[0-9a-f-]{36}$/i.test(s);
 
@@ -89,7 +78,7 @@ module.exports = async (req, res) => {
   if (need.length) return res.status(500).json({ error: 'config', missing: need });
 
   const tok = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const user = tok ? await whoami(tok) : null;
+  const user = tok ? await require('../lib/store').whoami(tok) : null;
   if (!user) return res.status(401).json({ error: 'unauthorized' });
 
   let body = {};

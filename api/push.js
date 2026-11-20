@@ -3,6 +3,7 @@
 //
 // Variáveis de ambiente: FIREBASE_API_KEY (a mesma do index.html) e FIREBASE_SERVICE_ACCOUNT (ver lib/google.js)
 const g = require('../lib/google');
+const store = require('../lib/store');
 const hits = new Map();   // limite de uso por usuário
 
 function limited(uid, max) {
@@ -11,17 +12,6 @@ function limited(uid, max) {
   a.push(now); hits.set(uid, a);
   if (hits.size > 5000) hits.clear();
   return false;
-}
-
-async function whoami(idToken) {
-  const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + process.env.FIREBASE_API_KEY, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ idToken })
-  });
-  if (!r.ok) return null;
-  const u = ((await r.json()).users || [])[0];
-  return u && u.localId ? { uid: u.localId } : null;
 }
 
 const okToken = t => typeof t === 'string' && /^[\w:.\-]{20,4096}$/.test(t);
@@ -38,7 +28,7 @@ module.exports = async (req, res) => {
   if (need.length) return res.status(500).json({ error: 'config', missing: need });
 
   const tok = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const user = tok ? await whoami(tok) : null;
+  const user = tok ? await store.whoami(tok) : null;
   if (!user) return res.status(401).json({ error: 'unauthorized' });
   if (limited(user.uid, 30)) return res.status(429).json({ error: 'rate' });
 
@@ -46,18 +36,18 @@ module.exports = async (req, res) => {
   try { body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {}); } catch (e) {}
 
   try {
-    const doc = await g.fsGet('push/' + user.uid);
+    const doc = await store.getPush(user.uid);
     let tokens = Array.isArray(doc && doc.tokens) ? doc.tokens.filter(okToken) : [];
 
     if (body.action === 'register') {
       if (!okToken(body.token)) return res.status(400).json({ error: 'badtoken' });
       tokens = tokens.filter(t => t !== body.token).concat(body.token).slice(-5);   // até 5 aparelhos, os mais recentes
-      await g.setPush(user.uid, tokens);
+      await store.setPush(user.uid, tokens);
       // um aparelho só recebe o push de uma conta: tira este token das outras (ex.: quem usou o aparelho antes e saiu sem internet)
       try {
-        for (const d of await g.fsList('push')) {
+        for (const d of await store.listPush()) {
           const t = Array.isArray(d.tokens) ? d.tokens : [];
-          if (d.id !== user.uid && t.includes(body.token)) await g.setPush(d.id, t.filter(x => x !== body.token));
+          if (d.id !== user.uid && t.includes(body.token)) await store.setPush(d.id, t.filter(x => x !== body.token));
         }
       } catch (e) {}
       return res.status(200).json({ ok: true, devices: tokens.length });
@@ -69,7 +59,7 @@ module.exports = async (req, res) => {
 
     if (body.action === 'unregister') {
       if (!okToken(body.token)) return res.status(400).json({ error: 'badtoken' });
-      await g.setPush(user.uid, tokens.filter(t => t !== body.token));
+      await store.setPush(user.uid, tokens.filter(t => t !== body.token));
       return res.status(200).json({ ok: true });
     }
 
@@ -80,7 +70,7 @@ module.exports = async (req, res) => {
         const r = await g.fcmSend(t, { title: 'Meu caixa', body: 'Teste do push do servidor: está funcionando.', tag: 'caixa-teste' });
         if (r.ok) sent++; else { if (r.dead) dead.push(t); code = code || r.code || String(r.status); }
       }
-      if (dead.length) await g.setPush(user.uid, tokens.filter(t => !dead.includes(t)));
+      if (dead.length) await store.setPush(user.uid, tokens.filter(t => !dead.includes(t)));
       return res.status(200).json({ ok: true, sent, failed: tokens.length - sent, error: sent ? undefined : code || 'fcm' });
     }
 

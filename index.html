@@ -2510,6 +2510,7 @@ const canon=v=>JSON.stringify(v,(k,x)=>x&&typeof x==='object'&&!Array.isArray(x)
 const core=()=>{const o=Object.assign({},S);delete o.ts;delete o.cts;delete o.sh;delete o.sbh;return o};
 const cstate=()=>canon(core());
 const isDirty=()=>cstate()!==(USE_SB?S.sbh:S.sh);
+const authTok=()=>(USE_SB?SB:FB).token();   // o servidor (api/*) aceita o token dos dois logins
 const isSynced=()=>(USE_SB?S.sbh:S.sh)!==undefined;
 const store=()=>{try{localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}};
 function updCloud(){$('cld').textContent=cu?'Conta: '+cu.email+(cstat?' · '+cstat:''):'Sem conta conectada: os dados ficam só neste aparelho.';$('au-out').hidden=!cu}
@@ -2606,7 +2607,7 @@ async function doAuth(kind){
 }
 /* convite por e-mail: o cartão da aba ⚙ só aparece para o administrador (o servidor confere o UID; ver api/invite.js) */
 async function inviteApi(body){
-  const tk=await FB.token();
+  const tk=await authTok();
   const r=await fetch(PGBASE+'/api/invite',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify(body)});
   let d={};try{d=await r.json()}catch(e){}
   return{ok:r.ok,st:r.status,d}}
@@ -2648,8 +2649,8 @@ $('au-out').addEventListener('click',async()=>{
 });
 document.addEventListener('visibilitychange',()=>{if(!cu)return;if(document.hidden){if(isSynced()&&isDirty()){clearTimeout(pushT);flush()}}else if(Date.now()-lastPull>20000)pull()});
 addEventListener('online',()=>{if(cu){if(isSynced()&&isDirty())flush();else pull()}});
-function startCloud(){(USE_SB?SB:FB).onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();checkRosa();if(!USE_SB)inviteInit(u);if(u){await pull();if(!USE_SB&&window.pgAuto)pgAuto();if(typeof pgShow==='function')pgShow();if(!USE_SB&&window.nfStatus)nfStatus()}})}
-// no teste com Supabase, banco/push/convite ficam de fora até o servidor migrar (fase B): ele ainda valida token do Firebase
+function startCloud(){(USE_SB?SB:FB).onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();checkRosa();if(!USE_SB)inviteInit(u);if(u){await pull();if(window.pgAuto)pgAuto();if(typeof pgShow==='function')pgShow();if(window.nfStatus)nfStatus()}})}
+// no modo Supabase o convite continua desligado (falta a tela de criar senha, fase C); banco e push usam o token do Supabase
 if(USE_SB)addEventListener('sb-ready',()=>{if(window.SB)startCloud();else toast('Não consegui carregar o Supabase.',true)},{once:true});
 else if(window.FB)startCloud();else addEventListener('fb-ready',startCloud,{once:true});
 updCloud();
@@ -2957,7 +2958,7 @@ async function pgSync(manual,force){
   pgBusy=true;pgMsg(force?'Consultando o Pluggy... pode levar até 30 segundos.':'Consultando o banco...');
   if(force)$('pgrf').classList.add('spin');
   try{
-    const tk=await FB.token();
+    const tk=await authTok();
     let r,d=null;
     try{r=await fetch(PGBASE+'/api/pluggy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify({from,items:S.pgItems?S.pgItems.map(i=>i.id):undefined,cred:S.pgCred||undefined,refresh:force?true:undefined})});d=await r.json()}catch(e){if(!r)throw new Error('net')}
     if(!r.ok||!d){
@@ -2985,10 +2986,10 @@ async function pgSync(manual,force){
 // avisos na hora: cadastra no Pluggy da conta o webhook que chama /api/hook quando um banco atualiza (uma vez por versão)
 const HOOK_V=1;let hookTry=0;
 async function pgHook(){
-  if(!cu||!S.pgCred||!S.pgCred.enc||(S.pgHook&&S.pgHook.v===HOOK_V)||Date.now()-hookTry<6*36e5)return;
+  if(!cu||!S.pgCred||!S.pgCred.enc||(S.pgHook&&S.pgHook.v===HOOK_V&&(S.pgHook.u===cu.uid||(S.pgHook.u===undefined&&!USE_SB)))||Date.now()-hookTry<6*36e5)return;
   hookTry=Date.now();
-  try{const tk=await FB.token(),r=await fetch(PGBASE+'/api/pluggy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify({action:'hook',cred:S.pgCred})});
-    const d=await r.json().catch(()=>({}));if(r.ok&&d.ok){S.pgHook={v:HOOK_V,at:Date.now()};save()}}catch(e){}
+  try{const tk=await authTok(),r=await fetch(PGBASE+'/api/pluggy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify({action:'hook',cred:S.pgCred})});
+    const d=await r.json().catch(()=>({}));if(r.ok&&d.ok){S.pgHook={v:HOOK_V,at:Date.now(),u:cu.uid};save()}}catch(e){}
 }
 window.pgAuto=function(){
   pgHook();
@@ -3012,7 +3013,7 @@ $('pgconn').addEventListener('click',async()=>{
   if(!window.FB||!cu){pgMsg('Entre na sua conta antes de conectar o Pluggy.',true);return}
   $('pgconn').disabled=true;pgMsg('Verificando no Pluggy...');
   try{
-    const tk=await FB.token();let r,d=null;
+    const tk=await authTok();let r,d=null;
     try{r=await fetch(PGBASE+'/api/pluggy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify({action:'connect',clientId:id,clientSecret:sec})});d=await r.json()}catch(e){if(!r)throw new Error('net')}
     if(!r.ok||!d||!d.enc)throw new Error(pgErr(r.status,d));
     const trocou=!!(S.pgCred&&S.pgCred.id!==d.clientId);
@@ -3084,7 +3085,7 @@ window.compReady=true;render();
     const sw=await swState(),la=cfg.lastAt?new Date(cfg.lastAt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'nenhuma ainda';
     $('nfd').textContent='Permissão: '+({granted:'concedida',denied:'bloqueada',default:'não pedida',unsupported:'sem suporte'}[p]||p)+' · Service worker: '+sw+' · Push: '+(pushMine()?'ativo':'inativo')+' · Última enviada: '+la;
     $('nfr').textContent=srvTxt;
-    if(nfOn()&&window.FB&&FB.token&&cu&&Date.now()-srvAt>3e5)srvStatus()}
+    if(nfOn()&&window.FB&&cu&&Date.now()-srvAt>3e5)srvStatus()}
   // último envio do servidor (cron das 9h), lido de /api/push: mostra se rodou, quantos aparelhos recebeu e por que não enviou
   let srvTxt='',srvAt=0;
   async function srvStatus(){
@@ -3137,7 +3138,7 @@ window.compReady=true;render();
   // push do servidor (Firebase Cloud Messaging): registra este aparelho para receber o aviso diário com o app fechado
   const VAPID='BFTpSAn3VGN1j_wQ0712jT5UNX7AS-S1yTaE1AbBCNNiUUTCTV6rrivsqg0MWBBnV5zjejhUGRxnCyqfL3uW6oU';
   async function pushApi(body){
-    const tk=await FB.token();
+    const tk=await authTok();
     const r=await fetch(PGBASE+'/api/push',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify(body)});
     let d={};try{d=await r.json()}catch(e){}
     return{ok:r.ok,st:r.status,d}}

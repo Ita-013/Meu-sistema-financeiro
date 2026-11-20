@@ -8,3 +8,4 @@ node -e "const fs=require('fs');const s=fs.readFileSync('index.html','utf8');fs.
 sh tools/checar-cores.sh 2>&1 | cut -c1-110 | tail -4
 
 node tools/embutir-mapa.js --check || exit 1
+node tools/servidor-testes.js | tail -1 || exit 1
