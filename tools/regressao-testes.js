@@ -201,5 +201,20 @@
       const ok=n0>100&&soUma&&semMudanca&&erro&&pend&&ok2&&volta&&ordem&&S.tx.length===antes-1;
       return{ok,d:'carga '+n0+' linhas; edição=1 linha:'+soUma+'; sem mudança=0 envios:'+semMudanca+'; falha mantém pendente:'+(erro&&pend)+'; reenvio apaga 1:'+ok2+'; recarga igual:'+volta+'; ordem por id:'+ordem}
     }finally{USE_SB=bakUSE;cu=bakCu;sbSnap=bakSnap;localOnly=bakLO;delete window.SB}});
+  await t('R106','Supabase: link do e-mail (convite/nova senha) abre a tela de criar senha; valida 8 caracteres e igualdade; link vencido é reconhecido',async()=>{
+    const a=sbLinkInfo('#access_token=abc&type=recovery&expires_in=3600'),b=sbLinkInfo('#access_token=abc&type=invite'),c=sbLinkInfo('#error=access_denied&error_code=otp_expired'),d=sbLinkInfo('#access_token=abc&type=magiclink'),e=sbLinkInfo('');
+    const links=a&&a.type==='recovery'&&b&&b.type==='invite'&&c&&c.expired===true&&d===null&&e===null;
+    const v=pwErr('abc','abc')==='Use pelo menos 8 caracteres.'&&pwErr('12345678','1234567')==='As senhas não são iguais.'&&pwErr('12345678','12345678')==='';
+    const bakUSE=USE_SB,bakCu=cu,bakLink=window.SBLINK,bakSB=window.SB;let gravou=null;
+    try{
+      USE_SB=true;cu={uid:'u',email:'a@a'};window.SB={setPassword:async p=>{gravou=p},load:async()=>Object.fromEntries(Mapa.TABELAS.map(x=>[x,[]])),apply:async()=>{}};
+      window.SBLINK={type:'invite'};document.documentElement.classList.add('setpw');
+      const vis=getComputedStyle($('pw')).display==='flex'&&getComputedStyle($('au')).display==='none';
+      $('anp').value='curta';$('anp2').value='curta';$('anb').click();await wait(50);
+      const m1=$('anm').textContent;const semGravar=gravou===null&&document.documentElement.classList.contains('setpw');
+      $('anp').value='senhaboa123';$('anp2').value='senhaboa123';$('anb').click();await wait(300);
+      const fechou=!document.documentElement.classList.contains('setpw')&&gravou==='senhaboa123'&&window.SBLINK===null&&$('anp').value==='';
+      return{ok:links&&v&&vis&&m1==='Use pelo menos 8 caracteres.'&&semGravar&&fechou,d:'links:'+links+' validação:'+v+' tela visível:'+vis+' erro curto:"'+m1+'" não gravou:'+semGravar+' fechou e gravou:'+fechou}
+    }finally{USE_SB=bakUSE;cu=bakCu;window.SBLINK=bakLink;window.SB=bakSB;document.documentElement.classList.remove('setpw');$('anp').value='';$('anp2').value='';$('anm').textContent=''}});
   return R;
 })()

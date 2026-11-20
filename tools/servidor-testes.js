@@ -107,6 +107,37 @@ const t = async (n, f) => { calls.length = 0; try { await f(); ok++ } catch (e) 
     rota = () => resp(M.toRows({ tx: [{ id: 7, type: 'in', amount: 1, desc: 'x', cat: 'Salário', date: '2026-11-01' }] }).tables);
     assert.strictEqual((await store.getState('aaaaaaaa-1111-2222-3333-444444444444')).tx[0].id, 7);
   });
+  await t('convite (Supabase): invite manda e-mail e redirect fixo; e-mail já existente cai no recover', async () => {
+    rota = url => /invite/.test(url) ? resp({ error_code: 'email_exists', msg: 'A user with this email address has already been registered' }, 422) : resp({}, 200);
+    const r = await sb.invite('a@b.com', 'https://app/?backend=supabase');
+    assert.ok(!r.ok && r.exists && r.status === 422);
+    assert.ok(calls[0].url.includes('/auth/v1/invite?redirect_to=' + encodeURIComponent('https://app/?backend=supabase')));
+    assert.strictEqual(JSON.parse(calls[0].init.body).email, 'a@b.com');
+    assert.ok((await sb.recover('a@b.com', 'https://app/')).ok); assert.ok(calls[1].url.includes('/auth/v1/recover'));
+  });
+  const handler = async (token, body, env = {}) => {
+    const inv = require('../api/invite'), antes = {}; Object.keys(env).forEach(k => { antes[k] = process.env[k]; process.env[k] = env[k]; });
+    const out = { h: {} }; const res = { setHeader() {}, status(c) { out.code = c; return this }, json(b) { out.body = b; return this }, end() { return this } };
+    await inv({ method: 'POST', headers: { authorization: 'Bearer ' + token }, body }, res);
+    Object.keys(env).forEach(k => { if (antes[k] === undefined) delete process.env[k]; else process.env[k] = antes[k] });
+    return out;
+  };
+  const SBTOK = jwt('https://abc.supabase.co/auth/v1'), ADM = 'aaaaaaaa-1111-2222-3333-444444444444';
+  await t('api/invite: administrador do Supabase convida; quem não é admin leva 403; sem login 401', async () => {
+    rota = url => /auth\/v1\/user/.test(url) ? resp({ id: ADM, email: 'adm@x' }) : resp({}, 200);
+    const ok1 = await handler(SBTOK, { action: 'invite', email: 'Nova@Pessoa.com' }, { ADMIN_UID: 'fbuid,' + ADM });
+    assert.strictEqual(ok1.code, 200); assert.deepStrictEqual(ok1.body, { ok: true, existed: false });
+    assert.ok(calls.some(c => c.url.includes('/auth/v1/invite')) && JSON.parse(calls.find(c => c.url.includes('/auth/v1/invite')).init.body).email === 'nova@pessoa.com');
+    const st = await handler(SBTOK, { action: 'status' }, { ADMIN_UID: 'fbuid,' + ADM }); assert.deepStrictEqual(st.body, { admin: true });
+    const no = await handler(SBTOK, { action: 'invite', email: 'x@y.com' }, { ADMIN_UID: 'outro-uid' }); assert.strictEqual(no.code, 403);
+    rota = () => resp({}, 401);
+    const sem = await handler(SBTOK, { action: 'status' }, { ADMIN_UID: ADM }); assert.strictEqual(sem.code, 401);
+  });
+  await t('api/invite: convite repetido reenvia o link (recover) em vez de falhar', async () => {
+    rota = url => /auth\/v1\/user/.test(url) ? resp({ id: ADM, email: 'adm@x' }) : /invite/.test(url) ? resp({ error_code: 'email_exists' }, 422) : resp({}, 200);
+    const r = await handler(SBTOK, { action: 'invite', email: 'ja@tem.com' }, { ADMIN_UID: ADM });
+    assert.deepStrictEqual(r.body, { ok: true, existed: true }); assert.ok(calls.some(c => c.url.includes('/auth/v1/recover')));
+  });
   console.log(falhas ? 'FALHOU: ' + falhas + ' (de ' + (ok + falhas) + ')' : 'TUDO CERTO (' + ok + ' testes)');
   process.exit(falhas ? 1 : 0);
 })();

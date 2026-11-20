@@ -10,6 +10,9 @@
 //   FIREBASE_API_KEY, FIREBASE_SERVICE_ACCOUNT (ver lib/google.js)
 const crypto = require('crypto');
 const g = require('../lib/google');
+const store = require('../lib/store');
+const sb = require('../lib/supabase');
+const APP_URL = 'https://meu-sistema-pink.vercel.app/?backend=supabase';   // destino do link do e-mail (fixo: nunca vem do pedido)
 
 const hits = new Map();
 function limited(uid, max) {
@@ -33,13 +36,13 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
 
-  const need = ['FIREBASE_API_KEY', 'FIREBASE_SERVICE_ACCOUNT', 'ADMIN_UID'].filter(k => !process.env[k]);
+  const need = ['ADMIN_UID'].filter(k => !process.env[k]);
   if (need.length) return res.status(500).json({ error: 'config', missing: need });
 
   const tok = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const user = tok ? await require('../lib/store').whoami(tok) : null;
+  const user = tok ? await store.whoami(tok) : null;
   if (!user) return res.status(401).json({ error: 'unauthorized' });
-  const admin = same(user.uid, process.env.ADMIN_UID);
+  const admin = String(process.env.ADMIN_UID).split(',').some(x => same(user.uid, x.trim()));   // aceita vários (Firebase e Supabase) separados por vírgula
 
   let body = {};
   try { body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {}); } catch (e) {}
@@ -53,6 +56,15 @@ module.exports = async (req, res) => {
   const email = String(body.email || '').trim().toLowerCase();
   if (!okMail(email)) return res.status(400).json({ error: 'badmail' });
 
+  if (store.isSb(user.uid)) {   // administrador no Supabase: o Supabase cria o usuário e envia o link para criar a senha
+    if (!sb.on()) return res.status(500).json({ error: 'config', missing: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'] });
+    const c = await sb.invite(email, APP_URL).catch(e => ({ ok: false, status: 0, code: String(e.message || e).slice(0, 80) }));
+    if (c.ok) return res.status(200).json({ ok: true, existed: false });
+    if (!c.exists) return res.status(502).json({ error: 'create', status: c.status, detail: c.code });
+    const m = await sb.recover(email, APP_URL).catch(e => ({ ok: false, status: 0, code: String(e.message || e).slice(0, 80) }));
+    return m.ok ? res.status(200).json({ ok: true, existed: true }) : res.status(502).json({ error: 'mail', status: m.status, detail: m.code, created: false });
+  }
+  if (!process.env.FIREBASE_API_KEY || !process.env.FIREBASE_SERVICE_ACCOUNT) return res.status(500).json({ error: 'config', missing: ['FIREBASE_API_KEY', 'FIREBASE_SERVICE_ACCOUNT'] });
   // senha aleatória: ninguém a conhece; a pessoa define a dela pelo link do e-mail
   const c = await g.authCreate(email, crypto.randomBytes(24).toString('base64url')).catch(e => ({ ok: false, status: 0, code: String(e.message || e).slice(0, 80) }));
   if (!c.ok && !c.exists) return res.status(502).json({ error: 'create', status: c.status, detail: c.code });

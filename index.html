@@ -404,6 +404,7 @@ span.bem{cursor:default}
 .au{z-index:105}
 html.locked .lk{display:flex}
 html.noauth .au{display:flex}
+.au.pw{z-index:106}html.noauth .au.pw{display:none}html.setpw .au.pw{display:flex}html.setpw #au{display:none}
 .lk .mbox,.au .mbox{box-shadow:none}
 .lk #lkbio,.lk #lkuse{display:none;width:100%}html.lkbio .lk #lkbio{display:block}html.lkbio:not(.lkpw) .lk #lkuse{display:block}html.lkbio:not(.lkpw) .lk #lkpw{display:none}
 .lk .lkf{margin-top:12px;border:0;background:none;color:var(--mu);text-decoration:underline;font-size:.82rem;min-height:32px;padding:0}
@@ -463,6 +464,17 @@ body.dragging{-webkit-user-select:none;user-select:none}
     <button class="go" id="aub" type="button">Entrar</button>
     <div class="bk"><button class="full" id="aur" type="button">Esqueci a senha</button></div>
     <small style="display:block;margin-top:10px;text-align:center;color:var(--mu)">Acesso somente por convite. Peça um convite a quem administra o sistema.</small>
+  </div>
+</div>
+<div id="pw" class="au pw" role="dialog" aria-modal="true" aria-labelledby="pwt">
+  <div class="mbox">
+    <h3 id="pwt">Crie sua senha</h3>
+    <p class="mi">Defina a senha que você vai usar para entrar no Meu caixa.</p>
+    <div class="etf"><label class="fl" for="anp"><small>Nova senha</small></label><input id="anp" type="password" autocomplete="new-password"></div>
+    <small style="display:block;margin:4px 0 8px;color:var(--mu)">Mínimo de 8 caracteres</small>
+    <div class="etf"><label class="fl" for="anp2"><small>Repetir a senha</small></label><input id="anp2" type="password" autocomplete="new-password"></div>
+    <p id="anm" role="alert" style="color:var(--out);font-size:.88rem;min-height:1.2em;margin:6px 0"></p>
+    <button class="go" id="anb" type="button">Salvar senha</button>
   </div>
 </div>
 <div class="mdl" id="cpm" hidden><div class="mbox"><div class="mhd"><h3 id="cmt">Novo compromisso</h3><button id="cdel" type="button" hidden></button></div>
@@ -2511,6 +2523,10 @@ const core=()=>{const o=Object.assign({},S);delete o.ts;delete o.cts;delete o.sh
 const cstate=()=>canon(core());
 const isDirty=()=>cstate()!==(USE_SB?S.sbh:S.sh);
 const authTok=()=>(USE_SB?SB:FB).token();   // o servidor (api/*) aceita o token dos dois logins
+/* link do e-mail do Supabase (convite ou nova senha): #access_token=...&type=invite|recovery; vencido: #error_code=otp_expired */
+const sbLinkInfo=h=>{const p=new URLSearchParams(String(h||'').replace(/^#/,''));if(p.get('error')||p.get('error_code'))return{expired:true};const t=p.get('type');return(t==='recovery'||t==='invite')&&p.get('access_token')?{type:t}:null};
+const pwErr=(a,b)=>!a||a.length<8?'Use pelo menos 8 caracteres.':a!==b?'As senhas não são iguais.':'';
+window.SBLINK=sbLinkInfo(location.hash);
 const isSynced=()=>(USE_SB?S.sbh:S.sh)!==undefined;
 const store=()=>{try{localStorage.setItem('caixa-v1',JSON.stringify(S))}catch(e){}};
 function updCloud(){$('cld').textContent=cu?'Conta: '+cu.email+(cstat?' · '+cstat:''):'Sem conta conectada: os dados ficam só neste aparelho.';$('au-out').hidden=!cu}
@@ -2598,7 +2614,7 @@ async function doAuth(kind){
   const em=$('aue').value.trim(),pw=$('aup').value;
   if(!em){aumsg('Digite seu e-mail.');return}
   try{
-    if(kind==='reset'){if(USE_SB){aumsg('No teste com Supabase a senha é definida pelo administrador.');return}await FB.reset(em);aumsg('Se esse e-mail tiver conta, enviamos um link para criar uma nova senha.',true);return}
+    if(kind==='reset'){await (USE_SB?SB:FB).reset(em);aumsg('Se esse e-mail tiver conta, enviamos um link para criar uma nova senha.',true);return}
     if(!pw){aumsg('Digite a senha.');return}
     aumsg('');
     await (USE_SB?SB:FB).signIn(em,pw);
@@ -2649,8 +2665,24 @@ $('au-out').addEventListener('click',async()=>{
 });
 document.addEventListener('visibilitychange',()=>{if(!cu)return;if(document.hidden){if(isSynced()&&isDirty()){clearTimeout(pushT);flush()}}else if(Date.now()-lastPull>20000)pull()});
 addEventListener('online',()=>{if(cu){if(isSynced()&&isDirty())flush();else pull()}});
-function startCloud(){(USE_SB?SB:FB).onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();checkRosa();if(!USE_SB)inviteInit(u);if(u){await pull();if(window.pgAuto)pgAuto();if(typeof pgShow==='function')pgShow();if(window.nfStatus)nfStatus()}})}
-// no modo Supabase o convite continua desligado (falta a tela de criar senha, fase C); banco e push usam o token do Supabase
+const afterAuth=async()=>{await pull();if(window.pgAuto)pgAuto();if(typeof pgShow==='function')pgShow();if(window.nfStatus)nfStatus()};
+const anmsg=t=>{$('anm').textContent=t};
+async function doSetPw(){
+  const a=$('anp').value,b=$('anp2').value,m=pwErr(a,b);
+  if(m){anmsg(m);return}
+  anmsg('');
+  try{await SB.setPassword(a)}catch(e){anmsg(e&&e.expired?'Esse link venceu. Peça um novo e tente de novo.':'Não consegui salvar a senha. Tente de novo.');return}
+  window.SBLINK=null;try{history.replaceState(null,'',location.pathname+'?backend=supabase')}catch(e){}
+  document.documentElement.classList.remove('setpw');$('anp').value=$('anp2').value='';toast('Senha salva');
+  inviteInit(cu);await afterAuth();
+}
+$('anb').addEventListener('click',doSetPw);
+$('anp2').addEventListener('keydown',e=>{if(e.key==='Enter')doSetPw()});
+function startCloud(){(USE_SB?SB:FB).onAuthStateChanged(async u=>{cu=u;document.documentElement.classList.toggle('noauth',!u);updCloud();checkRosa();
+  if(USE_SB&&window.SBLINK&&window.SBLINK.expired&&!u){aumsg('Esse link venceu. Peça um novo e tente de novo.');window.SBLINK=null}
+  if(USE_SB&&u&&window.SBLINK&&window.SBLINK.type){document.documentElement.classList.add('setpw');return}   // link do e-mail: criar a senha antes de abrir os dados
+  inviteInit(u);if(u)await afterAuth()})}
+// no modo Supabase, login, convite, banco e push usam o token do Supabase
 if(USE_SB)addEventListener('sb-ready',()=>{if(window.SB)startCloud();else toast('Não consegui carregar o Supabase.',true)},{once:true});
 else if(window.FB)startCloud();else addEventListener('fb-ready',startCloud,{once:true});
 updCloud();
@@ -3210,7 +3242,7 @@ push:async(reg,key)=>{const m=await import("https://www.gstatic.com/firebasejs/1
 window.dispatchEvent(new Event("fb-ready"));
 if(window.SBMODE)(async()=>{try{
 const{createClient}=await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
-const c=createClient(window.SB_URL,window.SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+const c=createClient(window.SB_URL,window.SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const nu=s=>s&&s.user?{uid:s.user.id,email:s.user.email}:null;
 const erro=e=>{const k=e&&e.code||'',m=String(e&&e.message||'');const code=k==='invalid_credentials'||/invalid login/i.test(m)?'auth/invalid-credential':/rate limit|over_/i.test(k+m)?'auth/too-many-requests':/fetch|network/i.test(m)||e&&e.name==='AuthRetryableFetchError'?'auth/network-request-failed':'auth/unknown';return{code,message:m}};
 const ok=async p=>{const{data,error}=await p;if(error)throw error;return data};
@@ -3218,6 +3250,8 @@ let last;
 window.SB={
 onAuthStateChanged:f=>{const go=u=>{const k=u?u.uid:'';if(k===last)return;last=k;f(u)};c.auth.getSession().then(({data})=>go(nu(data.session)));c.auth.onAuthStateChange((ev,s)=>{if(ev==='SIGNED_IN'||ev==='SIGNED_OUT')go(nu(s))})},
 signIn:async(e,p)=>{try{await ok(c.auth.signInWithPassword({email:e,password:p}))}catch(x){throw erro(x)}},
+reset:async e=>{try{await ok(c.auth.resetPasswordForEmail(e,{redirectTo:location.origin+"/?backend=supabase"}))}catch(x){throw erro(x)}},
+setPassword:async p=>{const{error}=await c.auth.updateUser({password:p});if(error){const x=new Error(error.message);x.expired=/session|expired|jwt|token/i.test(error.message);throw x}},
 signOut:()=>c.auth.signOut(),
 token:async()=>{const{data}=await c.auth.getSession();return data.session?data.session.access_token:null},
 load:()=>ok(c.rpc("load_all")),
