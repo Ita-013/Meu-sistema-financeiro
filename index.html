@@ -2511,10 +2511,10 @@ $('wipe').addEventListener('click',async()=>{
 updSec();if(document.documentElement.classList.contains('locked'))lkPrep();
 
 // ----- nuvem (Firebase): login e sincronização -----
-// Backend de teste: abrir com ?backend=supabase liga o Supabase neste aparelho (fica gravado); ?backend=firebase volta.
-// Sem a chave, nada muda. URL e anon key são públicas por desenho (o RLS do banco protege os dados).
+// Backend: Supabase é o padrão. ?backend=firebase volta ao Firebase neste aparelho (fica gravado; saída de emergência);
+// ?backend=supabase desfaz. URL e anon key são públicas por desenho (o RLS do banco protege os dados).
 window.SB_URL='https://oabxmzubzkkdzqaoynlg.supabase.co';window.SB_KEY='sb_publishable_FowZR0FJy5Az6vyVRb9Xzg_2my9wOxQ';
-let USE_SB=window.SBMODE=(()=>{try{const q=location.search.match(/[?&]backend=(\w+)/);if(q)localStorage.setItem('caixa-backend',q[1]);return localStorage.getItem('caixa-backend')==='supabase'}catch(e){return false}})();
+let USE_SB=window.SBMODE=(()=>{try{const q=location.search.match(/[?&]backend=(\w+)/);if(q)localStorage.setItem('caixa-backend',q[1]);return localStorage.getItem('caixa-backend')!=='firebase'}catch(e){return true}})();
 var leReady=false,leBase=null,cu=null,pushT=null,pulling=false,wiping=false,localOnly=false,lastPull=0,cstat='';
 const blankS=()=>({tx:[],bud:{},goal:{name:'',target:0,saved:0},sheet:[],rec:[],rules:{},myname:'',budm:{},cx:[],mig:0,cats:null,lastConv:null,cards:[],lastCard:null,cmig:0,comp:[],cfix:[],ord:{fx:[],vr:[]},emo:{}});
 const emptyS=x=>!(x.tx&&x.tx.length)&&!Object.keys(x.bud||{}).length&&!(x.sheet&&x.sheet.length)&&!(x.cx&&x.cx.length)&&!(x.cards&&x.cards.length)&&!Object.keys(x.budm||{}).length&&!(x.goal&&x.goal.target);
