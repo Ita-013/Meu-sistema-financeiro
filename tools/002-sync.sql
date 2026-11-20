@@ -149,6 +149,16 @@ end $$;
 revoke all on function public.load_all(), public.apply_changes(jsonb), public.wipe_my_data(), public.touch_updated_at() from public, anon;
 grant execute on function public.load_all(), public.apply_changes(jsonb), public.wipe_my_data() to authenticated;
 
+-- Tabelas: quem está logado precisa de permissão de tabela (o RLS depois limita a linhas próprias).
+-- Projetos novos do Supabase podem não conceder isso sozinhos; sem isso o load_all responde 403.
+grant usage on schema public to authenticated;
+do $$ declare t text; begin
+  foreach t in array array['cards','cashboxes','cashbox_movements','transactions','tx_reimbursements','commitments',
+    'recurring_commitments','invoice_payments','budget_rows','budget_plan','reconciliation','rules','categories','user_settings'] loop
+    execute format('grant select, insert, update, delete on public.%I to authenticated', t);
+  end loop;
+end $$;
+
 -- ---------------------------------------------------------------------
 -- CONFERÊNCIA: deve listar as 3 funções e 15 tabelas com updated_at.
 -- ---------------------------------------------------------------------
