@@ -300,9 +300,9 @@
   "aposentado": true
  },
  "R105": {
-  "execucoes": 5,
+  "execucoes": 6,
   "falhas": 3,
-  "seguidos": 2,
-  "aposentado": false
+  "seguidos": 3,
+  "aposentado": true
  }
 }

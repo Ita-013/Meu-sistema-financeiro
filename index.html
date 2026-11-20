@@ -2501,7 +2501,7 @@ updSec();if(document.documentElement.classList.contains('locked'))lkPrep();
 // ----- nuvem (Firebase): login e sincronização -----
 // Backend de teste: abrir com ?backend=supabase liga o Supabase neste aparelho (fica gravado); ?backend=firebase volta.
 // Sem a chave, nada muda. URL e anon key são públicas por desenho (o RLS do banco protege os dados).
-window.SB_URL='SUPABASE_URL_AQUI';window.SB_KEY='SUPABASE_ANON_KEY_AQUI';
+window.SB_URL='https://oabxmzubzkkdzqaoynlg.supabase.co';window.SB_KEY='sb_publishable_FowZR0FJy5Az6vyVRb9Xzg_2my9wOxQ';
 let USE_SB=window.SBMODE=(()=>{try{const q=location.search.match(/[?&]backend=(\w+)/);if(q)localStorage.setItem('caixa-backend',q[1]);return localStorage.getItem('caixa-backend')==='supabase'}catch(e){return false}})();
 var leReady=false,leBase=null,cu=null,pushT=null,pulling=false,wiping=false,localOnly=false,lastPull=0,cstat='';
 const blankS=()=>({tx:[],bud:{},goal:{name:'',target:0,saved:0},sheet:[],rec:[],rules:{},myname:'',budm:{},cx:[],mig:0,cats:null,lastConv:null,cards:[],lastCard:null,cmig:0,comp:[],cfix:[],ord:{fx:[],vr:[]},emo:{}});
@@ -3208,7 +3208,7 @@ window.FB={onAuthStateChanged:f=>onAuthStateChanged(auth,f),signIn:(e,p)=>signIn
 push:async(reg,key)=>{const m=await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js");if(!(await m.isSupported()))return null;return m.getToken(m.getMessaging(app),{vapidKey:key,serviceWorkerRegistration:reg})}};
 window.dispatchEvent(new Event("fb-ready"));
 if(window.SBMODE)(async()=>{try{
-const{createClient}=await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm");
+const{createClient}=await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
 const c=createClient(window.SB_URL,window.SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const nu=s=>s&&s.user?{uid:s.user.id,email:s.user.email}:null;
 const erro=e=>{const k=e&&e.code||'',m=String(e&&e.message||'');const code=k==='invalid_credentials'||/invalid login/i.test(m)?'auth/invalid-credential':/rate limit|over_/i.test(k+m)?'auth/too-many-requests':/fetch|network/i.test(m)||e&&e.name==='AuthRetryableFetchError'?'auth/network-request-failed':'auth/unknown';return{code,message:m}};
